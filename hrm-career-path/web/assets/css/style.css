@@ -1,0 +1,368 @@
+/* CSS den trang toi gian, chi dung khung vien */
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    background-color: #ffffff;
+    color: #000000;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+/* Bo cuc tong the */
+.app-container {
+    display: flex;
+    min-height: 100vh;
+    border: 1px solid #000000;
+}
+
+/* Menu ben trai */
+.sidebar {
+    width: 220px;
+    background-color: #f5f5f5;
+    border-right: 1px solid #000000;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-brand {
+    padding: 12px 10px;
+    border-bottom: 1px solid #000000;
+    background-color: #ffffff;
+}
+
+.sidebar-brand h3 {
+    font-size: 14px;
+    color: #000000;
+}
+
+.sidebar-brand span {
+    font-size: 11px;
+    color: #555555;
+}
+
+.sidebar-menu {
+    list-style: none;
+    padding: 10px 0;
+    flex: 1;
+}
+
+.sidebar-menu-category {
+    font-size: 11px;
+    font-weight: bold;
+    color: #333333;
+    padding: 10px 10px 4px;
+    text-transform: uppercase;
+    border-bottom: 1px dashed #cccccc;
+    margin: 5px 0;
+}
+
+.sidebar-menu li a {
+    display: block;
+    padding: 8px 12px;
+    color: #000000;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.sidebar-menu li a:hover {
+    background-color: #e0e0e0;
+}
+
+.sidebar-menu li.active a {
+    background-color: #000000;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.sidebar-user {
+    padding: 10px;
+    border-top: 1px solid #000000;
+    background-color: #ffffff;
+    font-size: 12px;
+}
+
+.sidebar-user .user-name {
+    font-weight: bold;
+}
+
+.sidebar-user .user-role {
+    color: #444444;
+    margin: 2px 0 6px;
+}
+
+.sidebar-user .logout-link {
+    color: #000000;
+    font-weight: bold;
+}
+
+/* Phan noi dung chinh */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+}
+
+.topbar {
+    padding: 10px 15px;
+    border-bottom: 1px solid #000000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fafafa;
+}
+
+.topbar h1 {
+    font-size: 16px;
+    color: #000000;
+}
+
+.content-body {
+    padding: 15px;
+    flex: 1;
+}
+
+/* Hop thong ke (Stats) */
+.stats-grid {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.stat-box {
+    flex: 1;
+    min-width: 140px;
+    background-color: #ffffff;
+    border: 1px solid #000000;
+    padding: 10px;
+}
+
+.stat-box h3 {
+    font-size: 20px;
+    color: #000000;
+}
+
+.stat-box p {
+    font-size: 12px;
+    color: #555555;
+}
+
+/* Khung chua bang / form */
+.card {
+    border: 1px solid #000000;
+    margin-bottom: 15px;
+    background-color: #ffffff;
+}
+
+.card-header {
+    padding: 8px 12px;
+    border-bottom: 1px solid #000000;
+    background-color: #eeeeee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h2 {
+    font-size: 13px;
+    font-weight: bold;
+    color: #000000;
+}
+
+.card-body {
+    padding: 12px;
+}
+
+/* Bang du lieu */
+table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+table.data-table th, table.data-table td {
+    border: 1px solid #000000;
+    padding: 6px 8px;
+    text-align: left;
+    font-size: 12px;
+}
+
+table.data-table th {
+    background-color: #e5e5e5;
+    font-weight: bold;
+}
+
+table.data-table tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* Nut bam (Buttons) */
+.btn {
+    display: inline-block;
+    padding: 4px 10px;
+    font-size: 12px;
+    border: 1px solid #000000;
+    background-color: #ffffff;
+    color: #000000;
+    cursor: pointer;
+    text-decoration: none;
+    border-radius: 0;
+}
+
+.btn:hover {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+.btn-primary {
+    background-color: #000000;
+    color: #ffffff;
+    border-color: #000000;
+}
+.btn-primary:hover {
+    background-color: #333333;
+}
+
+.btn-secondary {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #000000;
+}
+.btn-secondary:hover {
+    background-color: #e0e0e0;
+    color: #000000;
+}
+
+.btn-danger {
+    background-color: #ffffff;
+    color: #000000;
+    border-color: #000000;
+}
+.btn-danger:hover {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+.btn-sm {
+    padding: 2px 6px;
+    font-size: 11px;
+}
+
+/* Nhan trang thai */
+.badge {
+    display: inline-block;
+    padding: 1px 5px;
+    font-size: 11px;
+    border: 1px solid #000000;
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* Form */
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: bold;
+    font-size: 12px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid #000000;
+    border-radius: 0;
+    background-color: #ffffff;
+    color: #000000;
+}
+
+.form-control:focus {
+    outline: 2px solid #000000;
+}
+
+.form-row {
+    display: flex;
+    gap: 12px;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+.form-actions {
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px solid #cccccc;
+    display: flex;
+    gap: 8px;
+}
+
+/* Thong bao */
+.alert {
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    border: 1px solid #000000;
+    font-size: 12px;
+}
+.alert-success { background-color: #f0f0f0; }
+.alert-danger { background-color: #e0e0e0; font-weight: bold; }
+
+/* Hop loc */
+.filter-box {
+    border: 1px solid #000000;
+    padding: 10px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    background-color: #fafafa;
+}
+
+.filter-box .form-group {
+    margin-bottom: 0;
+    min-width: 140px;
+}
+
+/* Trang dang nhap */
+.login-wrapper {
+    width: 340px;
+    margin: 60px auto;
+    border: 1px solid #000000;
+    padding: 20px;
+    background-color: #ffffff;
+}
+
+.login-wrapper h2 {
+    text-align: center;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.login-wrapper p.subtitle {
+    text-align: center;
+    font-size: 11px;
+    color: #555555;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #000000;
+    padding-bottom: 8px;
+}
+
+.test-accounts {
+    margin-top: 15px;
+    padding: 8px;
+    border: 1px dashed #000000;
+    font-size: 11px;
+    line-height: 1.5;
+    background-color: #fafafa;
+}
