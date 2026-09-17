@@ -41,6 +41,7 @@
             - HR Manager: <code>hr_manager</code> / <code>123</code><br>
             - Admin: <code>admin</code> / <code>123</code><br>
             - Manager IT: <code>manager_it</code> / <code>123</code><br>
+            - Mentor: <code>mentor_dev</code> / <code>123</code><br>
             - Nhan vien Fresher: <code>dev_fresher</code> / <code>123</code>
         </div>
     </div>
