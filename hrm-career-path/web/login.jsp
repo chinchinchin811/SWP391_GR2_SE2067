@@ -35,14 +35,6 @@
                 Dang Nhap
             </button>
         </form>
-
-        <div class="test-accounts">
-            <b>Tai khoan dung thu:</b><br>
-            - HR Manager: <code>hr_manager</code> / <code>123</code><br>
-            - Admin: <code>admin</code> / <code>123</code><br>
-            - Manager IT: <code>manager_it</code> / <code>123</code><br>
-            - Nhan vien Fresher: <code>dev_fresher</code> / <code>123</code>
-        </div>
     </div>
 
 </body>
