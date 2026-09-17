@@ -23,9 +23,9 @@ từ session, tải `TestActor` từ DB và dùng tham số Java thay cho các D
 
 ## Chạy module
 
-1. Schema đã gộp vào **một file** `database/schema/create_tables_sqlserver.sql`,
-   gồm bảng HRM, dữ liệu mẫu, module bài test và kho bộ đề/câu hỏi.
-   **Chạy toàn bộ file sẽ xóa và tạo lại HRM_Project_DB**, giống script gốc.
+1. Phần tạo bảng nằm trong file `database/schema/create_tables_sqlserver.sql`,
+   gồm bảng HRM, module bài test và kho bộ đề/câu hỏi, không chứa dữ liệu mẫu.
+   **Chạy toàn bộ file sẽ xóa và tạo lại HRM_Project_DB**, giống script gốc. Sau đó chạy `database/seed_data/seed_data_sqlserver.sql` một lần để nạp dữ liệu mẫu vào database mới.
    Với database đang có dữ liệu, chọn đúng `HRM_Project_DB` và chỉ chạy phần từ
    dòng `-- BEGIN TEST MODULE` đến cuối file. Phần này có thể chạy lại, không xóa dữ liệu.
 2. NetBeans: Clean and Build, chạy bằng Tomcat 10.1 + JDK 17.
