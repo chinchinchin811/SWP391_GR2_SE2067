@@ -51,7 +51,8 @@ INSERT INTO dbo.Users (username, password, full_name, email, phone, gender, role
 GO
 
 INSERT INTO dbo.Users (username, password, full_name, email, phone, gender, role_id, department_id, position_id, level_id, hire_date, status, is_deleted) VALUES
-('mentor_java', '123', N'Le Huu Mentor', 'mentor.java@hrm.com', '0988888888', N'Nam', 5, 1, 1, 5, '2021-01-01');
+('mentor_java', '123', N'Le Huu Mentor', 'mentor.java@hrm.com', '0988888888',
+ N'Nam', 6, 1, 1, 5, '2021-01-01', 1, 0);
 GO
 
 UPDATE dbo.Departments SET manager_id = 3 WHERE department_id = 1;
@@ -68,12 +69,12 @@ GO
 -- =======================================================
 
 INSERT INTO dbo.FlashcardDecks (title, description) VALUES 
-(N'Quy trình Onboarding', N'Ki?n th?c nh?p môn công ty'),
-(N'Java Core', N'Ki?n th?c chuyên môn Java');
+(N'Quy trình Onboarding', N'Kien thuc nhap môn công ty'),
+(N'Java Core', N'Kien thuc chuyen mon Java');
 
 INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES 
-(1, N'Gi? làm vi?c b?t ??u lúc m?y gi??', N'8:30 Sáng'),
-(2, N'OOP có m?y tính ch?t c? b?n?', N'4 tính ch?t: ?óng gói, K? th?a, ?a hình, Tr?u t??ng');
+(1, N'Gio lam viec bat dau luc may gio', N'8:30 Sang'),
+(2, N'OOP có may tinh chat co ban?', N'4 tinh chat: Dong goi, Ke thua, Da hinh, Truu tuong');
 GO
 
 
