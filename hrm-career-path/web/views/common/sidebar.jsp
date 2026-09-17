@@ -3,6 +3,10 @@
 <%
     User user = (User) session.getAttribute("currentUser");
     String currentURI = request.getRequestURI();
+    // THÊM MỚI: Lấy thêm queryString để active đúng menu ghép cặp / đánh giá Mentor
+    String queryString = request.getQueryString();
+    String fullURI = currentURI + (queryString != null ? "?" + queryString : "");
+    
     int roleId = (user != null) ? user.getRoleId() : 4;
 %>
 <aside class="sidebar">
@@ -17,6 +21,14 @@
                 Tong quan
             </a>
         </li>
+
+        <!-- ================= THÊM MỚI: MENU FLASHCARDS ================= -->
+        <li class="<%= currentURI.contains("/flashcards") ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/flashcards">
+                Flashcards (Hoc tap)
+            </a>
+        </li>
+        <!-- ============================================================= -->
 
         <% if (roleId == 1 || roleId == 2) { %>
         <div class="sidebar-menu-category">Quan tri To chuc</div>
@@ -46,6 +58,20 @@
                 Khai bao Nhan vien moi
             </a>
         </li>
+
+        <!-- ================= THÊM MỚI: QUẢN LÝ MENTOR CHO ADMIN/HR ================= -->
+        <div class="sidebar-menu-category">Quan tri Mentor</div>
+        <li class="<%= fullURI.contains("mentors?action=pair") ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/mentors?action=pair">
+                Ghep Noi Mentor
+            </a>
+        </li>
+        <li class="<%= fullURI.contains("mentors?action=evaluations") ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/mentors?action=evaluations">
+                Ket Qua Danh Gia Mentor
+            </a>
+        </li>
+        <!-- ========================================================================= -->
 
         <% } else if (roleId == 3) { %>
         <div class="sidebar-menu-category">Phong Ban Phu Trach</div>
@@ -77,6 +103,18 @@
             </a>
         </li>
         <% } %>
+
+        <!-- ================= THÊM MỚI: WORKSPACE RIÊNG CHO MENTOR ================= -->
+        <% if (roleId == 5) { %>
+        <div class="sidebar-menu-category">Mentor Workspace</div>
+        <li class="<%= fullURI.contains("mentors?action=evaluations") ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/mentors?action=evaluations">
+                Danh gia Mentee
+            </a>
+        </li>
+        <% } %>
+        <!-- ======================================================================== -->
+
         <div class="sidebar-menu-category">Bài test & Đánh giá</div>
         <li><a href="<%= request.getContextPath() %>/tests">Danh sách bài test</a></li>
         <li><a href="<%= request.getContextPath() %>/tests?action=mine">Bài được giao cho tôi</a></li>
