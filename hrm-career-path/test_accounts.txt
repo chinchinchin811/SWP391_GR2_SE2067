@@ -1,0 +1,72 @@
+================================================================================
+                    DANH SACH TAI KHOAN DUNG THU (TEST ACCOUNTS)
+                     HE THONG HRM & LO TRINH PHAT TRIEN NGHE NGHIEP
+================================================================================
+
+Mat khau chung cho tat ca tai khoan: 123
+
+--------------------------------------------------------------------------------
+1. TAI KHOAN: QUAN TRI HE THONG (ADMIN)
+--------------------------------------------------------------------------------
+- Username   : admin
+- Password   : 123
+- Ho va ten  : Quan Tri Vien
+- Email      : admin@hrm.com
+- Role       : ADMIN
+- Quyen han  : 
+  + Xem thong ke tong quan toan bo he thong.
+  + Quan ly danh sach nguoi dung, phan quyen he thong.
+  + Toan quyen quan tri.
+
+--------------------------------------------------------------------------------
+2. TAI KHOAN: QUAN LY NHAN SU (HR MANAGER)
+--------------------------------------------------------------------------------
+- Username   : hr_manager
+- Password   : 123
+- Ho va ten  : Pham Thu Ha
+- Email      : ha.pt@hrm.com
+- Role       : HR
+- Quyen han  :
+  + Quan ly Phong ban (Them, Sua, Xoa mem, Gan Truong phong).
+  + Quan ly Vi tri cong viec (Them, Sua, Xoa mem theo phong ban).
+  + Khai bao, them moi, cap nhat thong tin nhan su & dieu chuyen nhan su.
+  + Xem lich su dieu chuyen nhan su.
+
+--------------------------------------------------------------------------------
+3. TAI KHOAN: TRUONG PHONG KY THUAT (MANAGER - IT)
+--------------------------------------------------------------------------------
+- Username   : manager_it
+- Password   : 123
+- Ho va ten  : Tran Van Minh
+- Email      : minh.tv@hrm.com
+- Role       : MANAGER
+- Quyen han  :
+  + Xem thong ke va danh sach nhan vien thuoc Phong ban cua minh (IT).
+  + Xem thong tin chi tiet nhan vien phong ban.
+
+--------------------------------------------------------------------------------
+4. TAI KHOAN: NHAN VIEN LAP TRINH (EMPLOYEE - FRESHER)
+--------------------------------------------------------------------------------
+- Username   : dev_fresher
+- Password   : 123
+- Ho va ten  : Pham Duc Trong
+- Email      : trong.pd@hrm.com
+- Role       : EMPLOYEE
+- Vi tri     : Java Developer (Cap bac: Fresher)
+- Quyen han  :
+  + Xem ho so ca nhan, phong ban va vi tri hien tai cua chinh minh.
+  + Khong the xem dashboard tong quan hay can thiep danh sach nhan su khac.
+
+--------------------------------------------------------------------------------
+5. TAI KHOAN: NHAN VIEN KIEM THU (EMPLOYEE - JUNIOR)
+--------------------------------------------------------------------------------
+- Username   : dev_tester
+- Password   : 123
+- Ho va ten  : Ngo Mai Phuong
+- Email      : phuong.nm@hrm.com
+- Role       : EMPLOYEE
+- Vi tri     : QA Tester (Cap bac: Junior)
+- Quyen han  :
+  + Xem ho so ca nhan cua chinh minh.
+
+================================================================================
