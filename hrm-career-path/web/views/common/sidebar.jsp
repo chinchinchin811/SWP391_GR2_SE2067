@@ -19,64 +19,72 @@
         </li>
 
         <% if (roleId == 1 || roleId == 2) { %>
-            <div class="sidebar-menu-category">Quan tri To chuc</div>
+        <div class="sidebar-menu-category">Quan tri To chuc</div>
 
-            <li class="<%= currentURI.contains("/departments") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/departments">
-                    Quan ly Phong Ban
-                </a>
-            </li>
+        <li class="<%= currentURI.contains("/departments") ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/departments">
+                Quan ly Phong Ban
+            </a>
+        </li>
 
-            <li class="<%= currentURI.contains("/positions") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/positions">
-                    Vi tri & Cap bac
-                </a>
-            </li>
+        <li class="<%= currentURI.contains("/positions") ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/positions">
+                Vi tri & Cap bac
+            </a>
+        </li>
 
-            <div class="sidebar-menu-category">Quan tri Nhan su</div>
+        <div class="sidebar-menu-category">Quan tri Nhan su</div>
 
-            <li class="<%= currentURI.contains("/employees") && !currentURI.contains("action=create") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/employees">
-                    Danh sach Nhan vien
-                </a>
-            </li>
+        <li class="<%= currentURI.contains("/employees") && !currentURI.contains("action=create") ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/employees">
+                Danh sach Nhan vien
+            </a>
+        </li>
 
-            <li>
-                <a href="<%= request.getContextPath() %>/employees?action=create">
-                    Khai bao Nhan vien moi
-                </a>
-            </li>
+        <li>
+            <a href="<%= request.getContextPath() %>/employees?action=create">
+                Khai bao Nhan vien moi
+            </a>
+        </li>
 
         <% } else if (roleId == 3) { %>
-            <div class="sidebar-menu-category">Phong Ban Phu Trach</div>
+        <div class="sidebar-menu-category">Phong Ban Phu Trach</div>
 
-            <li class="<%= currentURI.contains("/departments") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/departments">
-                    Thong tin Phong Ban
-                </a>
-            </li>
+        <li class="<%= currentURI.contains("/departments") ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/departments">
+                Thong tin Phong Ban
+            </a>
+        </li>
 
-            <li class="<%= currentURI.contains("/employees") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/employees">
-                    Nhan vien truc thuoc
-                </a>
-            </li>
+        <li class="<%= currentURI.contains("/employees") ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/employees">
+                Nhan vien truc thuoc
+            </a>
+        </li>
 
-            <li class="<%= currentURI.contains("/positions") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/positions">
-                    Vi tri Chuyen mon
-                </a>
-            </li>
+        <li class="<%= currentURI.contains("/positions") ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/positions">
+                Vi tri Chuyen mon
+            </a>
+        </li>
 
         <% } else { %>
-            <div class="sidebar-menu-category">Ca Nhan</div>
+        <div class="sidebar-menu-category">Ca Nhan</div>
 
-            <li class="<%= currentURI.contains("/employees") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= user != null ? user.getUserId() : 0 %>">
-                    Ho so ca nhan
-                </a>
-            </li>
+        <li class="<%= currentURI.contains("/employees") ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= user != null ? user.getUserId() : 0 %>">
+                Ho so ca nhan
+            </a>
+        </li>
         <% } %>
+        <div class="sidebar-menu-category">Bài test & Đánh giá</div>
+        <li><a href="<%= request.getContextPath() %>/tests">Danh sách bài test</a></li>
+        <li><a href="<%= request.getContextPath() %>/tests?action=mine">Bài được giao cho tôi</a></li>
+        <li><a href="<%= request.getContextPath() %>/tests?action=calendar">Lịch bài test</a></li>
+        <li><a href="<%= request.getContextPath() %>/tests?action=notifications">Thông báo nhắc lịch</a></li>
+            <% if (roleId == 1 || roleId == 2 || roleId == 3) { %>
+        <li><a href="<%= request.getContextPath() %>/tests?action=bank">Bộ đề & Câu hỏi</a></li>
+            <% } %>
     </ul>
 
     <div class="sidebar-user">

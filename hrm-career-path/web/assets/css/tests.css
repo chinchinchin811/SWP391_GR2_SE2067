@@ -1,0 +1,23 @@
+.test-module .card { margin-bottom: 22px; }
+.test-nav, .test-actions, .test-filters { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; margin: 18px 0; }
+.test-nav a { color: #234ec4; text-decoration: underline; text-underline-offset: 3px; }
+.test-form { display: grid; gap: 18px; max-width: 900px; margin-top: 20px; }
+.test-form label, .test-filters label { display: grid; gap: 7px; font-weight: 600; }
+.test-form input:not([type=checkbox]), .test-form textarea, .test-form select, .test-filters input {
+    width: 100%; border: 1px solid #aeb9c9; border-radius: 6px; padding: 10px 12px; font: inherit; background: white;
+}
+.test-form textarea { resize: vertical; }
+.test-question { border: 1px solid #cbd2dd; border-radius: 6px; padding: 18px; margin: 18px 0; }
+.test-form .test-option { display: flex; align-items: center; gap: 12px; padding: 8px 0; font-weight: normal; }
+.test-form .test-option input[type=radio] { width: 18px; height: 18px; flex-shrink: 0; }
+.test-form button { justify-self: start; }
+.test-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.test-prose { white-space: pre-wrap; overflow-wrap: anywhere; background: #f5f7fb; border-radius: 6px; padding: 18px; margin: 18px 0; line-height: 1.7; }
+.test-candidates { border: 1px solid #cbd2dd; padding: 16px; max-height: 320px; overflow: auto; }
+.test-candidates label { display: flex; align-items: center; gap: 10px; padding: 7px; font-weight: normal; }
+.test-candidates input { width: 18px; height: 18px; }
+.test-table { overflow-x: auto; }
+.test-notification { border-bottom: 1px solid #dce1ea; padding: 18px 0; }
+.test-module p { margin: 12px 0; line-height: 1.6; }
+.test-module :focus-visible { outline: 3px solid #496fff; outline-offset: 3px; }
+@media (max-width: 700px) { .test-columns { grid-template-columns: 1fr; } .test-module .topbar { flex-wrap: wrap; gap: 12px; } }
