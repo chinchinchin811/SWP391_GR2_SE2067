@@ -1,5 +1,3 @@
-package model;
-
-public class admin {
+public class Admin {
 
 }

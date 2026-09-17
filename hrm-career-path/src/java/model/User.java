@@ -30,9 +30,9 @@ public class User implements Serializable {
     public User() {
     }
 
-    public User(int userId, String username, String password, String fullName, String email,
-                String phone, String gender, Date dob, String avatar, int roleId,
-                Integer departmentId, Integer positionId, Integer levelId, Date hireDate,
+    public User(int userId, String username, String password, String fullName, String email, 
+                String phone, String gender, Date dob, String avatar, int roleId, 
+                Integer departmentId, Integer positionId, Integer levelId, Date hireDate, 
                 boolean status, Timestamp createdAt) {
         this.userId = userId;
         this.username = username;
