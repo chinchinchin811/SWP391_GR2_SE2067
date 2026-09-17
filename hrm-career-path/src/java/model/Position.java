@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 
 public class Position implements Serializable {
-
     private int positionId;
     private String positionName;
     private Integer departmentId;

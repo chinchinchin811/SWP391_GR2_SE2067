@@ -24,6 +24,7 @@ nbproject/genfiles.properties.bak
 *.tar.gz
 *.rar
 !**/WEB-INF/lib/*.jar
+!**/libs/*.jar
 
 # ==========================================
 # IntelliJ IDEA

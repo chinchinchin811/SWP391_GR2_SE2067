@@ -5,7 +5,6 @@ import java.sql.Date;
 import java.sql.Timestamp;
 
 public class User implements Serializable {
-
     private int userId;
     private String username;
     private String password;
@@ -32,9 +31,9 @@ public class User implements Serializable {
     }
 
     public User(int userId, String username, String password, String fullName, String email,
-            String phone, String gender, Date dob, String avatar, int roleId,
-            Integer departmentId, Integer positionId, Integer levelId, Date hireDate,
-            boolean status, Timestamp createdAt) {
+                String phone, String gender, Date dob, String avatar, int roleId,
+                Integer departmentId, Integer positionId, Integer levelId, Date hireDate,
+                boolean status, Timestamp createdAt) {
         this.userId = userId;
         this.username = username;
         this.password = password;

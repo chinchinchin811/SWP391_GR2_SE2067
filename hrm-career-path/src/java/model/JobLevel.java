@@ -3,7 +3,6 @@ package model;
 import java.io.Serializable;
 
 public class JobLevel implements Serializable {
-
     private int levelId;
     private String levelName;
     private int rankOrder;

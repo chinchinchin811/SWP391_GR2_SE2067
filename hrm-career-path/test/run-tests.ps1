@@ -10,7 +10,7 @@ $testOutput = Join-Path ([IO.Path]::GetTempPath()) ('hrm-module-tests-' + [guid]
 New-Item -ItemType Directory -Path $testOutput | Out-Null
 Push-Location $testProjectRoot
 try {
-    & (Join-Path $AntHome 'bin/ant.bat') dist
+    & (Join-Path $AntHome 'bin/ant.bat') "-Dj2ee.server.home=$TomcatHome" dist
     if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
 
     $testClasspath = "build/web/WEB-INF/classes;build/web/WEB-INF/lib/*;$TomcatHome/lib/*;$TomcatHome/bin/tomcat-juli.jar;$testOutput"
