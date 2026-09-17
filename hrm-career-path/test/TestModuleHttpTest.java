@@ -191,7 +191,7 @@ public class TestModuleHttpTest {
                 int moduleStart = schema.indexOf("-- BEGIN TEST MODULE");
                 if (moduleStart < 0) throw new IllegalStateException("Missing test module schema section");
                 String moduleSchema = schema.substring(moduleStart);
-                schema = schema.substring(schema.indexOf("CREATE TABLE dbo.Roles"), schema.indexOf("-- 7. DU LIEU"));
+                schema = schema.substring(schema.indexOf("CREATE TABLE dbo.Roles"), moduleStart);
                 for (String batch : schema.split("(?m)^GO\\s*$")) {
                     if (!batch.isBlank()) {
                         execute(admin, batch);
