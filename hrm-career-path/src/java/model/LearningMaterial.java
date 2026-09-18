@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 
 public class LearningMaterial implements Serializable {
+
     private int materialId;
     private String title;
     private String description;
@@ -37,83 +38,211 @@ public class LearningMaterial implements Serializable {
         this.durationMinutes = 15;
     }
 
-    public int getMaterialId() { return materialId; }
-    public void setMaterialId(int materialId) { this.materialId = materialId; }
+    public int getMaterialId() {
+        return materialId;
+    }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public void setMaterialId(int materialId) {
+        this.materialId = materialId;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public String getTitle() {
+        return title;
+    }
 
-    public String getMaterialType() { return materialType; }
-    public void setMaterialType(String materialType) { this.materialType = materialType; }
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-    public String getScopeType() { return scopeType; }
-    public void setScopeType(String scopeType) { this.scopeType = scopeType; }
+    public String getDescription() {
+        return description;
+    }
 
-    public Integer getDepartmentId() { return departmentId; }
-    public void setDepartmentId(Integer departmentId) { this.departmentId = departmentId; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public String getDepartmentName() { return departmentName; }
-    public void setDepartmentName(String departmentName) { this.departmentName = departmentName; }
+    public String getMaterialType() {
+        return materialType;
+    }
 
-    public Integer getPositionId() { return positionId; }
-    public void setPositionId(Integer positionId) { this.positionId = positionId; }
+    public void setMaterialType(String materialType) {
+        this.materialType = materialType;
+    }
 
-    public String getPositionName() { return positionName; }
-    public void setPositionName(String positionName) { this.positionName = positionName; }
+    public String getScopeType() {
+        return scopeType;
+    }
 
-    public Integer getLevelId() { return levelId; }
-    public void setLevelId(Integer levelId) { this.levelId = levelId; }
+    public void setScopeType(String scopeType) {
+        this.scopeType = scopeType;
+    }
 
-    public String getLevelName() { return levelName; }
-    public void setLevelName(String levelName) { this.levelName = levelName; }
+    public Integer getDepartmentId() {
+        return departmentId;
+    }
 
-    public String getFileName() { return fileName; }
-    public void setFileName(String fileName) { this.fileName = fileName; }
+    public void setDepartmentId(Integer departmentId) {
+        this.departmentId = departmentId;
+    }
 
-    public String getFileType() { return fileType; }
-    public void setFileType(String fileType) { this.fileType = fileType; }
+    public String getDepartmentName() {
+        return departmentName;
+    }
 
-    public Long getFileSize() { return fileSize; }
-    public void setFileSize(Long fileSize) { this.fileSize = fileSize; }
-    public byte[] getFileData() { return fileData; }
-    public void setFileData(byte[] fileData) { this.fileData = fileData; }
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
+    }
 
-    public String getVideoUrl() { return videoUrl; }
-    public void setVideoUrl(String videoUrl) { this.videoUrl = videoUrl; }
+    public Integer getPositionId() {
+        return positionId;
+    }
 
-    public int getDurationMinutes() { return durationMinutes; }
-    public void setDurationMinutes(int durationMinutes) { this.durationMinutes = durationMinutes; }
+    public void setPositionId(Integer positionId) {
+        this.positionId = positionId;
+    }
 
-    public boolean isStatus() { return status; }
-    public void setStatus(boolean status) { this.status = status; }
+    public String getPositionName() {
+        return positionName;
+    }
 
-    public boolean isDeleted() { return isDeleted; }
-    public void setDeleted(boolean isDeleted) { this.isDeleted = isDeleted; }
+    public void setPositionName(String positionName) {
+        this.positionName = positionName;
+    }
 
-    public int getCreatedBy() { return createdBy; }
-    public void setCreatedBy(int createdBy) { this.createdBy = createdBy; }
+    public Integer getLevelId() {
+        return levelId;
+    }
 
-    public String getCreatorName() { return creatorName; }
-    public void setCreatorName(String creatorName) { this.creatorName = creatorName; }
+    public void setLevelId(Integer levelId) {
+        this.levelId = levelId;
+    }
 
-    public Timestamp getCreatedAt() { return createdAt; }
-    public void setCreatedAt(Timestamp createdAt) { this.createdAt = createdAt; }
+    public String getLevelName() {
+        return levelName;
+    }
 
-    public Timestamp getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(Timestamp updatedAt) { this.updatedAt = updatedAt; }
+    public void setLevelName(String levelName) {
+        this.levelName = levelName;
+    }
 
-    public String getUserProgressStatus() { return userProgressStatus; }
-    public void setUserProgressStatus(String userProgressStatus) { this.userProgressStatus = userProgressStatus; }
+    public String getFileName() {
+        return fileName;
+    }
 
-    public int getCheckpointCount() { return checkpointCount; }
-    public void setCheckpointCount(int checkpointCount) { this.checkpointCount = checkpointCount; }
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
+    }
+
+    public Long getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(Long fileSize) {
+        this.fileSize = fileSize;
+    }
+
+    public byte[] getFileData() {
+        return fileData;
+    }
+
+    public void setFileData(byte[] fileData) {
+        this.fileData = fileData;
+    }
+
+    public String getVideoUrl() {
+        return videoUrl;
+    }
+
+    public void setVideoUrl(String videoUrl) {
+        this.videoUrl = videoUrl;
+    }
+
+    public int getDurationMinutes() {
+        return durationMinutes;
+    }
+
+    public void setDurationMinutes(int durationMinutes) {
+        this.durationMinutes = durationMinutes;
+    }
+
+    public boolean isStatus() {
+        return status;
+    }
+
+    public void setStatus(boolean status) {
+        this.status = status;
+    }
+
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean isDeleted) {
+        this.isDeleted = isDeleted;
+    }
+
+    public int getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(int createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    public String getCreatorName() {
+        return creatorName;
+    }
+
+    public void setCreatorName(String creatorName) {
+        this.creatorName = creatorName;
+    }
+
+    public Timestamp getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Timestamp createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Timestamp getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Timestamp updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public String getUserProgressStatus() {
+        return userProgressStatus;
+    }
+
+    public void setUserProgressStatus(String userProgressStatus) {
+        this.userProgressStatus = userProgressStatus;
+    }
+
+    public int getCheckpointCount() {
+        return checkpointCount;
+    }
+
+    public void setCheckpointCount(int checkpointCount) {
+        this.checkpointCount = checkpointCount;
+    }
 
     // Helper: trích xuất YouTube Embed ID nếu là link YouTube
     public String getYoutubeEmbedId() {
-        if (videoUrl == null || videoUrl.isEmpty()) return null;
+        if (videoUrl == null || videoUrl.isEmpty()) {
+            return null;
+        }
         if (videoUrl.contains("v=")) {
             String[] parts = videoUrl.split("v=");
             if (parts.length > 1) {
