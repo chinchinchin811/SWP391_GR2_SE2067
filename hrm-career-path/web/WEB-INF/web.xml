@@ -63,6 +63,8 @@
         <servlet-name>EmployeeServlet</servlet-name>
         <url-pattern>/employees</url-pattern>
     </servlet-mapping>
+    <servlet><servlet-name>MaterialServlet</servlet-name><servlet-class>controller.MaterialServlet</servlet-class></servlet>
+    <servlet-mapping><servlet-name>MaterialServlet</servlet-name><url-pattern>/materials</url-pattern></servlet-mapping>
 
     <!-- Session Configuration -->
     <session-config>

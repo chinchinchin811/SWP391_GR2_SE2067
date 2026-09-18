@@ -82,6 +82,7 @@
         <li><a href="<%= request.getContextPath() %>/tests?action=mine">Bài được giao cho tôi</a></li>
         <li><a href="<%= request.getContextPath() %>/tests?action=calendar">Lịch bài test</a></li>
         <li><a href="<%= request.getContextPath() %>/tests?action=notifications">Thông báo nhắc lịch</a></li>
+        <li class="<%= currentURI.contains("/materials") ? "active" : "" %>"><a href="<%= request.getContextPath() %>/materials">Học liệu & Đào tạo</a></li>
             <% if (roleId == 1 || roleId == 2 || roleId == 3) { %>
         <li><a href="<%= request.getContextPath() %>/tests?action=bank">Bộ đề & Câu hỏi</a></li>
             <% } %>
