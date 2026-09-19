@@ -1,5 +1,9 @@
 -- =======================================================
 -- SQL Server Script: create_tables_sqlserver.sql
+-- DDL: HRM + bai test + kho bo de/cau hoi. Seed nam trong database/seed_data/.
+-- CHAY TOAN BO FILE SE XOA VA TAO LAI HRM_Project_DB (giu hanh vi script goc).
+-- De cap nhat module tren DB da co: chon dung database va chi chay tu
+-- moc BEGIN TEST MODULE o cuoi file; khong chay phan reset.
 -- Project: HRM & Career Path Management (SWP291 / SE2067)
 -- Database: HRM_Project_DB
 -- Thu muc: database/schema/
@@ -143,3 +147,153 @@ CREATE TABLE dbo.Employee_History (
         REFERENCES dbo.Users(user_id)
 );
 GO
+
+-- BEGIN TEST MODULE
+-- Migration bổ sung, chạy trên database HRM hiện có; không xóa dữ liệu.
+-- Thời gian trong module luôn lưu UTC. Có thể chạy lại migration này.
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+
+IF OBJECT_ID('dbo.Test_Templates', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Test_Templates (
+        id INT IDENTITY PRIMARY KEY,
+        title NVARCHAR(200) NOT NULL,
+        description NVARCHAR(MAX) NOT NULL,
+        type VARCHAR(20) NOT NULL,
+        department_id INT NULL REFERENCES dbo.Departments(department_id),
+        created_by INT NOT NULL REFERENCES dbo.Users(user_id),
+        status VARCHAR(20) NOT NULL DEFAULT 'draft',
+        start_time DATETIME2 NOT NULL,
+        end_time DATETIME2 NOT NULL,
+        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        updated_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        is_deleted BIT NOT NULL DEFAULT 0,
+        CONSTRAINT CK_Test_Type CHECK ((type='culture' AND department_id IS NULL)
+            OR (type='department' AND department_id IS NOT NULL)),
+        CONSTRAINT CK_Test_Status CHECK (status IN ('draft','published','closed')),
+        CONSTRAINT CK_Test_Time CHECK (start_time < end_time)
+    );
+    CREATE INDEX IX_Test_Scope ON dbo.Test_Templates(department_id, status, start_time);
+END;
+
+IF OBJECT_ID('dbo.Test_Assignments', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Test_Assignments (
+        id INT IDENTITY PRIMARY KEY,
+        test_template_id INT NOT NULL REFERENCES dbo.Test_Templates(id),
+        assignee_id INT NOT NULL REFERENCES dbo.Users(user_id),
+        assigned_by INT NOT NULL REFERENCES dbo.Users(user_id),
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        assigned_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        submitted_at DATETIME2 NULL,
+        submission_content NVARCHAR(MAX) NULL,
+        file_name NVARCHAR(200) NULL,
+        file_data VARBINARY(MAX) NULL,
+        is_deleted BIT NOT NULL DEFAULT 0,
+        CONSTRAINT UQ_Test_Assignee UNIQUE (test_template_id, assignee_id),
+        CONSTRAINT CK_Assignment_Status CHECK (status IN ('pending','in_progress','submitted','evaluated')),
+        CONSTRAINT CK_Submission_Time CHECK ((status IN ('pending','in_progress') AND submitted_at IS NULL)
+            OR (status IN ('submitted','evaluated') AND submitted_at IS NOT NULL)),
+        CONSTRAINT CK_Submission_File CHECK ((file_name IS NULL AND file_data IS NULL)
+            OR (file_name IS NOT NULL AND file_data IS NOT NULL AND DATALENGTH(file_data) BETWEEN 1 AND 5242880))
+    );
+    CREATE INDEX IX_Assignment_Owner ON dbo.Test_Assignments(assignee_id, status);
+END;
+
+IF OBJECT_ID('dbo.Test_Evaluations', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Test_Evaluations (
+        id INT IDENTITY PRIMARY KEY,
+        test_assignment_id INT NOT NULL UNIQUE REFERENCES dbo.Test_Assignments(id),
+        evaluator_id INT NOT NULL REFERENCES dbo.Users(user_id),
+        score DECIMAL(4,2) NOT NULL CHECK (score BETWEEN 0 AND 10),
+        comment NVARCHAR(4000) NOT NULL,
+        evaluated_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+END;
+
+IF OBJECT_ID('dbo.Test_Reminder_Outbox', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Test_Reminder_Outbox (
+        id INT IDENTITY PRIMARY KEY,
+        assignment_id INT NOT NULL REFERENCES dbo.Test_Assignments(id),
+        scheduled_start DATETIME2 NOT NULL,
+        delivered_at DATETIME2 NULL,
+        CONSTRAINT UQ_Test_Reminder UNIQUE (assignment_id, scheduled_start)
+    );
+END;
+
+IF OBJECT_ID('dbo.Test_Notifications', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Test_Notifications (
+        id INT IDENTITY PRIMARY KEY,
+        outbox_id INT NOT NULL UNIQUE REFERENCES dbo.Test_Reminder_Outbox(id),
+        user_id INT NOT NULL REFERENCES dbo.Users(user_id),
+        assignment_id INT NOT NULL REFERENCES dbo.Test_Assignments(id),
+        message NVARCHAR(300) NOT NULL,
+        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        read_at DATETIME2 NULL
+    );
+END;
+
+IF OBJECT_ID('dbo.Test_Audit', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Test_Audit (
+        id BIGINT IDENTITY PRIMARY KEY,
+        actor_id INT NOT NULL REFERENCES dbo.Users(user_id),
+        action VARCHAR(40) NOT NULL,
+        template_id INT NOT NULL REFERENCES dbo.Test_Templates(id),
+        assignment_id INT NULL REFERENCES dbo.Test_Assignments(id),
+        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
+    );
+END;
+COMMIT;
+
+-- Kho bộ đề/câu hỏi: thực hiện sau các bảng module bài test ở trên.
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+IF OBJECT_ID('dbo.Test_Content', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Test_Content (
+        id INT IDENTITY PRIMARY KEY,
+        title NVARCHAR(200) NOT NULL,
+        prompt NVARCHAR(MAX) NOT NULL,
+        kind VARCHAR(20) NOT NULL CHECK (kind IN ('quiz','question')),
+        type VARCHAR(20) NOT NULL,
+        department_id INT NULL REFERENCES dbo.Departments(department_id),
+        created_by INT NOT NULL REFERENCES dbo.Users(user_id),
+        status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','ready')),
+        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        CONSTRAINT CK_Content_Scope CHECK ((type='culture' AND department_id IS NULL)
+            OR (type='department' AND department_id IS NOT NULL))
+    );
+END;
+IF OBJECT_ID('dbo.Test_Questions', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Test_Questions (
+        id INT IDENTITY PRIMARY KEY,
+        content_id INT NOT NULL REFERENCES dbo.Test_Content(id),
+        prompt NVARCHAR(4000) NOT NULL,
+        option_a NVARCHAR(1000) NOT NULL,
+        option_b NVARCHAR(1000) NOT NULL,
+        option_c NVARCHAR(1000) NOT NULL,
+        option_d NVARCHAR(1000) NOT NULL,
+        correct_option INT NOT NULL CHECK (correct_option BETWEEN 0 AND 3)
+    );
+    CREATE INDEX IX_Questions_Content ON dbo.Test_Questions(content_id,id);
+END;
+IF COL_LENGTH('dbo.Test_Assignments','content_id') IS NULL
+    ALTER TABLE dbo.Test_Assignments ADD content_id INT NULL REFERENCES dbo.Test_Content(id);
+IF COL_LENGTH('dbo.Test_Assignments','quiz_score') IS NULL
+    ALTER TABLE dbo.Test_Assignments ADD quiz_score DECIMAL(4,2) NULL CHECK (quiz_score BETWEEN 0 AND 10);
+IF OBJECT_ID('dbo.Test_Answers','U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Test_Answers (
+        assignment_id INT NOT NULL REFERENCES dbo.Test_Assignments(id),
+        question_id INT NOT NULL REFERENCES dbo.Test_Questions(id),
+        selected_option INT NOT NULL CHECK (selected_option BETWEEN 0 AND 3),
+        PRIMARY KEY (assignment_id,question_id)
+    );
+END;
+COMMIT;
