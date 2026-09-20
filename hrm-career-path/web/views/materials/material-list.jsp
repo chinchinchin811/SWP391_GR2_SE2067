@@ -1,22 +1,21 @@
-<%@page import="java.util.List,model.*"%>
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="java.util.List,model.LearningMaterial,model.TrainingClass,model.User" %>
 <%
-List<LearningMaterial> materials=(List<LearningMaterial>)request.getAttribute("materials");
-List<TrainingClass> classes=(List<TrainingClass>)request.getAttribute("classes");
-User me=(User)session.getAttribute("currentUser"); boolean manage=me!=null&&me.getRoleId()<=3;
+    request.setAttribute("pageTitle", "Hoc lieu & Dao tao | HRM");
+    List<LearningMaterial> materials = (List<LearningMaterial>) request.getAttribute("materials");
+    List<TrainingClass> classes = (List<TrainingClass>) request.getAttribute("classes");
+    User currentUser = (User) session.getAttribute("currentUser");
+    boolean canManage = currentUser != null && currentUser.getRoleId() <= 3;
+    String successMessage = (String) session.getAttribute("successMessage");
+    session.removeAttribute("successMessage");
 %>
-<jsp:include page="/views/common/header.jsp"/>
-<jsp:include page="/views/common/sidebar.jsp"/>
-<main class="main-content"><div class="content-body materials-page">
-  <section class="materials-hero">
-    <div><span class="eyebrow">TRUNG TÂM ĐÀO TẠO</span><h1>Học liệu của bạn</h1><p>Đọc tài liệu, xem slide và học video ngay trên trình duyệt.</p></div>
-    <%if(manage){%><a class="btn btn-primary" href="<%=request.getContextPath()%>/materials?action=create">+ Thêm học liệu</a><%}%>
-  </section>
-  <%if(session.getAttribute("successMessage")!=null){%><div class="alert alert-success"><%=session.getAttribute("successMessage")%></div><%session.removeAttribute("successMessage");}%>
-  <section class="material-grid">
-  <%for(LearningMaterial m:materials){ String icon="VIDEO".equals(m.getMaterialType())?"▶":"PDF".equals(m.getMaterialType())?"▤":"▧";%>
-    <article class="material-card"><div class="material-icon"><%=icon%></div><div class="material-type"><%=m.getMaterialType()%></div><h2><%=m.getTitle()%></h2><p><%=m.getDescription()==null?"Chưa có mô tả.":m.getDescription()%></p><div class="material-meta"><span><%=m.getDurationMinutes()%> phút</span><span><%=m.getScopeType()%></span></div><div class="material-actions"><a class="btn btn-primary" href="<%=request.getContextPath()%>/materials?action=view&id=<%=m.getMaterialId()%>">Xem trực tiếp</a><%if(manage){%><a class="btn" href="<%=request.getContextPath()%>/materials?action=edit&id=<%=m.getMaterialId()%>">Sửa</a><%}%></div></article>
-  <%}%>
-  </section>
-  <section class="my-classes"><div class="section-heading"><div><span class="eyebrow">LỘ TRÌNH CỦA TÔI</span><h2>Lớp đào tạo</h2></div><a class="btn" href="<%=request.getContextPath()%>/materials?action=classList">Tất cả lớp</a></div><%if(classes.isEmpty()){%><p class="empty-state">Bạn chưa được ghi danh vào lớp nào.</p><%}else{%><div class="class-chip-list"><%for(TrainingClass c:classes){%><a class="class-chip" href="<%=request.getContextPath()%>/materials?action=classDetail&id=<%=c.getClassId()%>"><b><%=c.getClassName()%></b><span><%=c.getStatus()%></span></a><%}%></div><%}%></section>
-</div></main><jsp:include page="/views/common/footer.jsp"/>
+<jsp:include page="/views/common/header.jsp" />
+<jsp:include page="/views/common/sidebar.jsp" />
+<main class="main-content">
+    <div class="topbar"><h1>Hoc Lieu & Dao Tao</h1><div><a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials?action=classList">Quan ly lop dao tao</a><% if (canManage) { %><a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=create">+ Them hoc lieu</a><% } %></div></div>
+    <div class="content-body">
+        <% if (successMessage != null) { %><div class="alert alert-success"><%= successMessage %></div><% } %>
+        <div class="card"><div class="card-header"><h2>Kho Hoc Lieu</h2><span>Tong: <%= materials != null ? materials.size() : 0 %> hoc lieu</span></div><div class="card-body"><table class="data-table"><thead><tr><th>Hoc lieu</th><th>Loai</th><th>Pham vi</th><th>Thoi luong</th><th>Thao tac</th></tr></thead><tbody><% if (materials != null && !materials.isEmpty()) { for (LearningMaterial m : materials) { %><tr><td><b><%= m.getTitle() %></b><br><span style="font-size:11px;color:#555"><%= m.getDescription() != null ? m.getDescription() : "" %></span></td><td><span class="badge"><%= m.getMaterialType() %></span></td><td><%= m.getScopeType() %></td><td><%= m.getDurationMinutes() %> phut</td><td><a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=view&id=<%= m.getMaterialId() %>">Xem</a><% if (canManage) { %> <a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=edit&id=<%= m.getMaterialId() %>">Sua</a><% } %></td></tr><% } } else { %><tr><td colspan="5" style="text-align:center">Chua co hoc lieu.</td></tr><% } %></tbody></table></div></div>
+        <div class="card"><div class="card-header"><h2>Lop Dao Tao Cua Toi</h2><a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=classList">Xem tat ca</a></div><div class="card-body"><% if (classes != null && !classes.isEmpty()) { %><table class="data-table"><thead><tr><th>Ma lop</th><th>Ten lop</th><th>Trang thai</th><th></th></tr></thead><tbody><% for (TrainingClass c : classes) { %><tr><td><%= c.getClassCode() %></td><td><%= c.getClassName() %></td><td><span class="badge"><%= c.getStatus() %></span></td><td><a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=classDetail&id=<%= c.getClassId() %>">Vao lop</a></td></tr><% } %></tbody></table><% } else { %>Ban chua duoc ghi danh vao lop nao.<% } %></div></div>
+    </div>
+</main><jsp:include page="/views/common/footer.jsp" />

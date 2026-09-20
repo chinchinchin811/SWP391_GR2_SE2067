@@ -327,19 +327,6 @@ public class MaterialDAO {
         return out;
     }
 
-    public boolean updateEnrollment(int enrollmentId, String status, int progress) {
-        String sql = "UPDATE Class_Enrollments SET status=?,progress_percent=?,completed_at=CASE WHEN ?='PASSED' THEN GETDATE() ELSE NULL END WHERE enrollment_id=?";
-        try (Connection c = DBContext.getInstance().getConnection(); PreparedStatement p = c.prepareStatement(sql)) {
-            p.setString(1, status);
-            p.setInt(2, Math.max(0, Math.min(100, progress)));
-            p.setString(3, status);
-            p.setInt(4, enrollmentId);
-            return p.executeUpdate() > 0;
-        } catch (SQLException e) {
-            return false;
-        }
-    }
-
     public boolean deleteEnrollment(int enrollmentId) {
         return exec("DELETE FROM Class_Enrollments WHERE enrollment_id=?", enrollmentId);
     }

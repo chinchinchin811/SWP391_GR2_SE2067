@@ -6,6 +6,7 @@ import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.*;
 import java.io.*;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.*;
 import model.*;
 
@@ -82,7 +83,9 @@ public class MaterialServlet extends HttpServlet {
                 return;
             }
             formData(q);
-            q.setAttribute("material", "edit".equals(a) ? dao.getMaterial(num(q, "id")) : new LearningMaterial());
+            LearningMaterial material = "edit".equals(a) ? dao.getMaterial(num(q, "id")) : new LearningMaterial();
+            q.setAttribute("material", material);
+            q.setAttribute("checkpoints", material != null && material.getMaterialId() > 0 ? dao.getCheckpoints(material.getMaterialId()) : Collections.emptyList());
             go(q, s, "/views/materials/material-form.jsp");
             return;
         }
@@ -131,10 +134,26 @@ public class MaterialServlet extends HttpServlet {
             c.setTargetPositionId(opt(q, "positionId"));
             c.setTargetLevelId(opt(q, "levelId"));
             c.setMentorId(opt(q, "mentorId"));
-            c.setStartDate(Date.valueOf(q.getParameter("startDate")));
-            String end = q.getParameter("endDate");
-            if (end != null && !end.isEmpty()) {
-                c.setEndDate(Date.valueOf(end));
+            try {
+                Date startDate = Date.valueOf(q.getParameter("startDate"));
+                String end = q.getParameter("endDate");
+                Date endDate = end == null || end.trim().isEmpty() ? null : Date.valueOf(end);
+                if (startDate.toLocalDate().isBefore(LocalDate.now())) {
+                    error(q, "Ngay bat dau khong duoc nam trong qua khu.");
+                    s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
+                    return;
+                }
+                if (endDate != null && endDate.before(startDate)) {
+                    error(q, "Ngay ket thuc phai sau hoac bang ngay bat dau.");
+                    s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
+                    return;
+                }
+                c.setStartDate(startDate);
+                c.setEndDate(endDate);
+            } catch (IllegalArgumentException ex) {
+                error(q, "Ngay bat dau va ngay ket thuc khong hop le.");
+                s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
+                return;
             }
             c.setStatus(param(q, "status", "OPEN"));
             c.setCreatedBy(u.getUserId());
@@ -149,13 +168,6 @@ public class MaterialServlet extends HttpServlet {
             int n = dao.enrollBatch(num(q, "classId"), q.getParameterValues("userIds"), u.getUserId());
             flash(q, "Đã ghi danh " + n + " nhân sự.");
             s.sendRedirect(q.getContextPath() + "/materials?action=classAssign&id=" + num(q, "classId"));
-            return;
-        }
-        if ("updateEnrollment".equals(a)) {
-            int classId = num(q, "classId");
-            dao.updateEnrollment(num(q, "enrollmentId"), param(q, "status", "ENROLLED"), num(q, "progressPercent"));
-            flash(q, "Đã cập nhật học viên.");
-            s.sendRedirect(q.getContextPath() + "/materials?action=classDetail&id=" + classId);
             return;
         }
         if ("deleteEnrollment".equals(a)) {
@@ -290,6 +302,10 @@ public class MaterialServlet extends HttpServlet {
 
     private void flash(HttpServletRequest q, String v) {
         q.getSession().setAttribute("successMessage", v);
+    }
+
+    private void error(HttpServletRequest q, String v) {
+        q.getSession().setAttribute("errorMessage", v);
     }
 
     private String json(String x) {

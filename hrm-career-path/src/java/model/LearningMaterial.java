@@ -2,6 +2,8 @@ package model;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 public class LearningMaterial implements Serializable {
 
@@ -259,5 +261,23 @@ public class LearningMaterial implements Serializable {
             }
         }
         return null;
+    }
+
+    /** Returns a browser-friendly embed URL for public Google Slides/Drive or Office links. */
+    public String getSlideEmbedUrl() {
+        if (videoUrl == null || videoUrl.trim().isEmpty()) return null;
+        String url = videoUrl.trim();
+        if (url.contains("docs.google.com/presentation/")) {
+            return url.replaceFirst("/(edit|view)(\\?.*)?$", "/embed");
+        }
+        if (url.contains("drive.google.com/file/")) {
+            return url.replaceFirst("/(view|edit)(\\?.*)?$", "/preview");
+        }
+        if (url.contains("view.officeapps.live.com") || url.contains("office.com")) return url;
+        if (url.matches("(?i)^https?://.*\\.(ppt|pptx)(\\?.*)?$")) {
+            return "https://view.officeapps.live.com/op/embed.aspx?src="
+                    + URLEncoder.encode(url, StandardCharsets.UTF_8);
+        }
+        return url;
     }
 }
