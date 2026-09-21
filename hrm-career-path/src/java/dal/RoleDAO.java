@@ -12,7 +12,11 @@ public class RoleDAO {
 
     public List<Role> getAllRoles() {
         List<Role> list = new ArrayList<>();
-        String sql = "SELECT role_id, role_name, description FROM Roles ORDER BY role_id ASC";
+        String sql = """
+            SELECT role_id, role_name, description 
+            FROM Roles 
+            ORDER BY role_id ASC
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {

@@ -15,13 +15,15 @@ import java.util.List;
 public class UserDAO {
 
     public User login(String username, String password) {
-        String sql = "SELECT u.*, r.role_name, d.department_name, p.position_name, l.level_name "
-                   + "FROM Users u "
-                   + "JOIN Roles r ON u.role_id = r.role_id "
-                   + "LEFT JOIN Departments d ON u.department_id = d.department_id "
-                   + "LEFT JOIN Positions p ON u.position_id = p.position_id "
-                   + "LEFT JOIN Job_Levels l ON u.level_id = l.level_id "
-                   + "WHERE (u.username = ? OR u.email = ?) AND u.password = ? AND u.is_deleted = 0 AND u.status = 1";
+        String sql = """
+            SELECT u.*, r.role_name, d.department_name, p.position_name, l.level_name
+            FROM Users u
+            JOIN Roles r ON u.role_id = r.role_id
+            LEFT JOIN Departments d ON u.department_id = d.department_id
+            LEFT JOIN Positions p ON u.position_id = p.position_id
+            LEFT JOIN Job_Levels l ON u.level_id = l.level_id
+            WHERE (u.username = ? OR u.email = ?) AND u.password = ? AND u.is_deleted = 0 AND u.status = 1
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
@@ -40,32 +42,32 @@ public class UserDAO {
 
     public List<User> getAllEmployees(String search, Integer deptId, Integer posId, Integer roleId) {
         List<User> list = new ArrayList<>();
-        StringBuilder sql = new StringBuilder(
-            "SELECT u.*, r.role_name, d.department_name, p.position_name, l.level_name "
-          + "FROM Users u "
-          + "JOIN Roles r ON u.role_id = r.role_id "
-          + "LEFT JOIN Departments d ON u.department_id = d.department_id "
-          + "LEFT JOIN Positions p ON u.position_id = p.position_id "
-          + "LEFT JOIN Job_Levels l ON u.level_id = l.level_id "
-          + "WHERE u.is_deleted = 0 "
-        );
+        StringBuilder sql = new StringBuilder("""
+            SELECT u.*, r.role_name, d.department_name, p.position_name, l.level_name
+            FROM Users u
+            JOIN Roles r ON u.role_id = r.role_id
+            LEFT JOIN Departments d ON u.department_id = d.department_id
+            LEFT JOIN Positions p ON u.position_id = p.position_id
+            LEFT JOIN Job_Levels l ON u.level_id = l.level_id
+            WHERE u.is_deleted = 0
+            """);
 
         if (search != null && !search.trim().isEmpty()) {
-            sql.append("AND (u.full_name LIKE ? OR u.email LIKE ? OR u.username LIKE ? OR u.phone LIKE ?) ");
+            sql.append(" AND (u.full_name LIKE ? OR u.email LIKE ? OR u.username LIKE ? OR u.phone LIKE ?)");
         }
         if (deptId != null && deptId > 0) {
-            sql.append("AND u.department_id = ? ");
+            sql.append(" AND u.department_id = ?");
         } else if (deptId != null && deptId == -1) {
-            sql.append("AND 1=0 "); // Manager khong quan ly phong nao
+            sql.append(" AND 1=0"); // Manager khong quan ly phong nao
         }
         if (posId != null && posId > 0) {
-            sql.append("AND u.position_id = ? ");
+            sql.append(" AND u.position_id = ?");
         }
         if (roleId != null && roleId > 0) {
-            sql.append("AND u.role_id = ? ");
+            sql.append(" AND u.role_id = ?");
         }
 
-        sql.append("ORDER BY u.user_id DESC");
+        sql.append(" ORDER BY u.user_id DESC");
 
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
@@ -100,14 +102,16 @@ public class UserDAO {
 
     public List<User> getManagersCandidates() {
         List<User> list = new ArrayList<>();
-        String sql = "SELECT u.*, r.role_name, d.department_name, p.position_name, l.level_name "
-                   + "FROM Users u "
-                   + "JOIN Roles r ON u.role_id = r.role_id "
-                   + "LEFT JOIN Departments d ON u.department_id = d.department_id "
-                   + "LEFT JOIN Positions p ON u.position_id = p.position_id "
-                   + "LEFT JOIN Job_Levels l ON u.level_id = l.level_id "
-                   + "WHERE u.is_deleted = 0 AND u.status = 1 AND u.role_id IN (1, 2, 3) "
-                   + "ORDER BY u.full_name ASC";
+        String sql = """
+            SELECT u.*, r.role_name, d.department_name, p.position_name, l.level_name
+            FROM Users u
+            JOIN Roles r ON u.role_id = r.role_id
+            LEFT JOIN Departments d ON u.department_id = d.department_id
+            LEFT JOIN Positions p ON u.position_id = p.position_id
+            LEFT JOIN Job_Levels l ON u.level_id = l.level_id
+            WHERE u.is_deleted = 0 AND u.status = 1 AND u.role_id IN (1, 2, 3)
+            ORDER BY u.full_name ASC
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -121,13 +125,15 @@ public class UserDAO {
     }
 
     public User getUserById(int id) {
-        String sql = "SELECT u.*, r.role_name, d.department_name, p.position_name, l.level_name "
-                   + "FROM Users u "
-                   + "JOIN Roles r ON u.role_id = r.role_id "
-                   + "LEFT JOIN Departments d ON u.department_id = d.department_id "
-                   + "LEFT JOIN Positions p ON u.position_id = p.position_id "
-                   + "LEFT JOIN Job_Levels l ON u.level_id = l.level_id "
-                   + "WHERE u.user_id = ? AND u.is_deleted = 0";
+        String sql = """
+            SELECT u.*, r.role_name, d.department_name, p.position_name, l.level_name
+            FROM Users u
+            JOIN Roles r ON u.role_id = r.role_id
+            LEFT JOIN Departments d ON u.department_id = d.department_id
+            LEFT JOIN Positions p ON u.position_id = p.position_id
+            LEFT JOIN Job_Levels l ON u.level_id = l.level_id
+            WHERE u.user_id = ? AND u.is_deleted = 0
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -143,8 +149,10 @@ public class UserDAO {
     }
 
     public boolean addEmployee(User user, int createdBy) {
-        String sqlUser = "INSERT INTO Users (username, password, full_name, email, phone, gender, dob, role_id, department_id, position_id, level_id, hire_date, status, is_deleted) "
-                       + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)";
+        String sqlUser = """
+            INSERT INTO Users (username, password, full_name, email, phone, gender, dob, role_id, department_id, position_id, level_id, hire_date, status, is_deleted)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+            """;
         Connection conn = null;
         try {
             conn = DBContext.getInstance().getConnection();
@@ -202,8 +210,10 @@ public class UserDAO {
 
             if (newUserId > 0) {
                 // Ghi nhan lich su tuyen dung
-                String sqlHistory = "INSERT INTO Employee_History (user_id, old_department_id, new_department_id, old_position_id, new_position_id, old_level_id, new_level_id, change_type, change_date, notes, created_by) "
-                                  + "VALUES (?, NULL, ?, NULL, ?, NULL, ?, 'NEW_HIRE', GETDATE(), ?, ?)";
+                String sqlHistory = """
+                    INSERT INTO Employee_History (user_id, old_department_id, new_department_id, old_position_id, new_position_id, old_level_id, new_level_id, change_type, change_date, notes, created_by)
+                    VALUES (?, NULL, ?, NULL, ?, NULL, ?, 'NEW_HIRE', GETDATE(), ?, ?)
+                    """;
                 try (PreparedStatement psHist = conn.prepareStatement(sqlHistory)) {
                     psHist.setInt(1, newUserId);
                     if (user.getDepartmentId() != null && user.getDepartmentId() > 0) {
@@ -256,7 +266,11 @@ public class UserDAO {
     }
 
     public boolean updateEmployee(User user) {
-        String sql = "UPDATE Users SET full_name = ?, email = ?, phone = ?, gender = ?, dob = ?, role_id = ?, status = ? WHERE user_id = ? AND is_deleted = 0";
+        String sql = """
+            UPDATE Users 
+            SET full_name = ?, email = ?, phone = ?, gender = ?, dob = ?, role_id = ?, status = ? 
+            WHERE user_id = ? AND is_deleted = 0
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, user.getFullName());
@@ -280,7 +294,11 @@ public class UserDAO {
 
     // XOA MEM NHAN SU (Soft Delete)
     public boolean deleteEmployee(int id) {
-        String sql = "UPDATE Users SET is_deleted = 1 WHERE user_id = ?";
+        String sql = """
+            UPDATE Users 
+            SET is_deleted = 1 
+            WHERE user_id = ?
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -302,7 +320,11 @@ public class UserDAO {
             Integer oldPosId = null;
             Integer oldLevelId = null;
 
-            String selectSql = "SELECT department_id, position_id, level_id FROM Users WHERE user_id = ? AND is_deleted = 0";
+            String selectSql = """
+                SELECT department_id, position_id, level_id 
+                FROM Users 
+                WHERE user_id = ? AND is_deleted = 0
+                """;
             try (PreparedStatement psSelect = conn.prepareStatement(selectSql)) {
                 psSelect.setInt(1, userId);
                 try (ResultSet rs = psSelect.executeQuery()) {
@@ -315,7 +337,11 @@ public class UserDAO {
             }
 
             // 2. Cap nhat bang Users
-            String updateSql = "UPDATE Users SET department_id = ?, position_id = ?, level_id = ? WHERE user_id = ? AND is_deleted = 0";
+            String updateSql = """
+                UPDATE Users 
+                SET department_id = ?, position_id = ?, level_id = ? 
+                WHERE user_id = ? AND is_deleted = 0
+                """;
             try (PreparedStatement psUpdate = conn.prepareStatement(updateSql)) {
                 if (newDeptId != null && newDeptId > 0) {
                     psUpdate.setInt(1, newDeptId);
@@ -339,8 +365,10 @@ public class UserDAO {
             }
 
             // 3. Ghi lich su
-            String historySql = "INSERT INTO Employee_History (user_id, old_department_id, new_department_id, old_position_id, new_position_id, old_level_id, new_level_id, change_type, change_date, notes, created_by) "
-                              + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?)";
+            String historySql = """
+                INSERT INTO Employee_History (user_id, old_department_id, new_department_id, old_position_id, new_position_id, old_level_id, new_level_id, change_type, change_date, notes, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE(), ?, ?)
+                """;
             try (PreparedStatement psHist = conn.prepareStatement(historySql)) {
                 psHist.setInt(1, userId);
                 if (oldDeptId != null) psHist.setInt(2, oldDeptId); else psHist.setNull(2, Types.INTEGER);
@@ -381,22 +409,24 @@ public class UserDAO {
 
     public List<EmployeeHistory> getHistoryByUserId(int userId) {
         List<EmployeeHistory> list = new ArrayList<>();
-        String sql = "SELECT h.*, u.full_name AS user_name, "
-                   + "d_old.department_name AS old_dept_name, d_new.department_name AS new_dept_name, "
-                   + "p_old.position_name AS old_pos_name, p_new.position_name AS new_pos_name, "
-                   + "l_old.level_name AS old_lvl_name, l_new.level_name AS new_lvl_name, "
-                   + "creator.full_name AS creator_name "
-                   + "FROM Employee_History h "
-                   + "JOIN Users u ON h.user_id = u.user_id "
-                   + "LEFT JOIN Departments d_old ON h.old_department_id = d_old.department_id "
-                   + "LEFT JOIN Departments d_new ON h.new_department_id = d_new.department_id "
-                   + "LEFT JOIN Positions p_old ON h.old_position_id = p_old.position_id "
-                   + "LEFT JOIN Positions p_new ON h.new_position_id = p_new.position_id "
-                   + "LEFT JOIN Job_Levels l_old ON h.old_level_id = l_old.level_id "
-                   + "LEFT JOIN Job_Levels l_new ON h.new_level_id = l_new.level_id "
-                   + "LEFT JOIN Users creator ON h.created_by = creator.user_id "
-                   + "WHERE h.user_id = ? "
-                   + "ORDER BY h.change_date DESC";
+        String sql = """
+            SELECT h.*, u.full_name AS user_name,
+                   d_old.department_name AS old_dept_name, d_new.department_name AS new_dept_name,
+                   p_old.position_name AS old_pos_name, p_new.position_name AS new_pos_name,
+                   l_old.level_name AS old_lvl_name, l_new.level_name AS new_lvl_name,
+                   creator.full_name AS creator_name
+            FROM Employee_History h
+            JOIN Users u ON h.user_id = u.user_id
+            LEFT JOIN Departments d_old ON h.old_department_id = d_old.department_id
+            LEFT JOIN Departments d_new ON h.new_department_id = d_new.department_id
+            LEFT JOIN Positions p_old ON h.old_position_id = p_old.position_id
+            LEFT JOIN Positions p_new ON h.new_position_id = p_new.position_id
+            LEFT JOIN Job_Levels l_old ON h.old_level_id = l_old.level_id
+            LEFT JOIN Job_Levels l_new ON h.new_level_id = l_new.level_id
+            LEFT JOIN Users creator ON h.created_by = creator.user_id
+            WHERE h.user_id = ?
+            ORDER BY h.change_date DESC
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
@@ -433,7 +463,11 @@ public class UserDAO {
     }
 
     public int countEmployees() {
-        String sql = "SELECT COUNT(*) FROM Users WHERE is_deleted = 0 AND status = 1";
+        String sql = """
+            SELECT COUNT(*) 
+            FROM Users 
+            WHERE is_deleted = 0 AND status = 1
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -447,7 +481,12 @@ public class UserDAO {
     }
 
     public int countNewHires() {
-        String sql = "SELECT COUNT(*) FROM Employee_History h JOIN Users u ON h.user_id = u.user_id WHERE u.is_deleted = 0 AND h.change_type = 'NEW_HIRE'";
+        String sql = """
+            SELECT COUNT(*) 
+            FROM Employee_History h 
+            JOIN Users u ON h.user_id = u.user_id 
+            WHERE u.is_deleted = 0 AND h.change_type = 'NEW_HIRE'
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -461,7 +500,12 @@ public class UserDAO {
     }
 
     public int countRoleChanges() {
-        String sql = "SELECT COUNT(*) FROM Employee_History h JOIN Users u ON h.user_id = u.user_id WHERE u.is_deleted = 0 AND h.change_type IN ('ROLE_CHANGE', 'DEPARTMENT_TRANSFER', 'PROMOTION')";
+        String sql = """
+            SELECT COUNT(*) 
+            FROM Employee_History h 
+            JOIN Users u ON h.user_id = u.user_id 
+            WHERE u.is_deleted = 0 AND h.change_type IN ('ROLE_CHANGE', 'DEPARTMENT_TRANSFER', 'PROMOTION')
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
