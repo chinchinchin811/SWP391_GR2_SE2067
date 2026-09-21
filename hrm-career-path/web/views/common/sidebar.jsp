@@ -12,94 +12,96 @@
 <aside class="sidebar">
     <div class="sidebar-brand">
         <h3>HRM Career Path</h3>
-        <span>He thong Quan tri</span>
+        <span>Hệ thống Quản trị</span>
     </div>
 
     <ul class="sidebar-menu">
         <li class="<%= currentURI.contains("/dashboard") ? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/dashboard">
-                Tong quan
+                Tổng quan
             </a>
         </li>
 
         <!-- ================= THÊM MỚI: MENU FLASHCARDS ================= -->
-        <li class="<%= currentURI.contains("/flashcards") ? "active" : "" %>">
+        <li class="<%= currentURI.contains("/flashcards")|| currentURI.contains("/flashcard-list.jsp") ? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/flashcards">
-                Flashcards (Hoc tap)
+                Flashcards (Học tập)
             </a>
         </li>
         <!-- ============================================================= -->
 
         <% if (roleId == 1 || roleId == 2) { %>
-        <div class="sidebar-menu-category">Quan tri To chuc</div>
+        <div class="sidebar-menu-category">Quản trị Tổ chức</div>
 
         <li class="<%= currentURI.contains("/departments") ? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/departments">
-                Quan ly Phong Ban
+                Quản lý Phòng Ban
             </a>
         </li>
 
         <li class="<%= currentURI.contains("/positions") ? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/positions">
-                Vi tri & Cap bac
+                Vị trí & Cấp bậc
             </a>
         </li>
 
-        <div class="sidebar-menu-category">Quan tri Nhan su</div>
+        <div class="sidebar-menu-category">Quản trị Nhân sự</div>
 
-        <li class="<%= currentURI.contains("/employees") && !currentURI.contains("action=create") ? "active" : "" %>">
+        <li class="<%= currentURI.contains("/employees") && request.getParameter("action") == null? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/employees">
-                Danh sach Nhan vien
+                Danh sách Nhân viên
             </a>
         </li>
 
-        <li>
+        <li class="<%= currentURI.contains("/employees") && "create".equals(request.getParameter("action"))? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/employees?action=create">
-                Khai bao Nhan vien moi
+                Khai báo Nhân viên mới
             </a>
         </li>
 
         <!-- ================= THÊM MỚI: QUẢN LÝ MENTOR CHO ADMIN/HR ================= -->
-        <div class="sidebar-menu-category">Quan tri Mentor</div>
-        <li class="<%= fullURI.contains("mentors?action=pair") ? "active" : "" %>">
+        <div class="sidebar-menu-category">Quản trị Mentor</div>
+
+        <li class="<%= "pair".equals(request.getParameter("action"))? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/mentors?action=pair">
-                Ghep Noi Mentor
+                Ghép Nối Mentor
             </a>
         </li>
-        <li class="<%= fullURI.contains("mentors?action=evaluations") ? "active" : "" %>">
+
+        <li class="<%= "evaluations".equals(request.getParameter("action"))? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/mentors?action=evaluations">
-                Ket Qua Danh Gia Mentor
+                Kết Quả Đánh Giá của Mentor
             </a>
         </li>
         <!-- ========================================================================= -->
 
         <% } else if (roleId == 3) { %>
-        <div class="sidebar-menu-category">Phong Ban Phu Trach</div>
+        <div class="sidebar-menu-category">Phòng Ban Phụ Trách</div>
 
         <li class="<%= currentURI.contains("/departments") ? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/departments">
-                Thong tin Phong Ban
+                Thông tin Phòng Ban
             </a>
         </li>
 
         <li class="<%= currentURI.contains("/employees") ? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/employees">
-                Nhan vien truc thuoc
+                Nhân viên trực thuộc
             </a>
         </li>
 
         <li class="<%= currentURI.contains("/positions") ? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/positions">
-                Vi tri Chuyen mon
+                Vị trí Chuyên môn
             </a>
         </li>
 
         <% } else { %>
-        <div class="sidebar-menu-category">Ca Nhan</div>
+        <div class="sidebar-menu-category">Cá Nhân</div>
 
         <li class="<%= currentURI.contains("/employees") ? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= user != null ? user.getUserId() : 0 %>">
-                Ho so ca nhan
+                Hồ sơ cá nhân
             </a>
         </li>
         <% } %>
@@ -109,25 +111,54 @@
         <div class="sidebar-menu-category">Mentor Workspace</div>
         <li class="<%= fullURI.contains("mentors?action=evaluations") ? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/mentors?action=evaluations">
-                Danh gia Mentee
+                Đánh giá Mentee
             </a>
         </li>
         <% } %>
         <!-- ======================================================================== -->
 
         <div class="sidebar-menu-category">Bài test & Đánh giá</div>
-        <li><a href="<%= request.getContextPath() %>/tests">Danh sách bài test</a></li>
-        <li><a href="<%= request.getContextPath() %>/tests?action=mine">Bài được giao cho tôi</a></li>
-        <li><a href="<%= request.getContextPath() %>/tests?action=calendar">Lịch bài test</a></li>
-        <li><a href="<%= request.getContextPath() %>/tests?action=notifications">Thông báo nhắc lịch</a></li>
-            <% if (roleId == 1 || roleId == 2 || roleId == 3) { %>
-        <li><a href="<%= request.getContextPath() %>/tests?action=bank">Bộ đề & Câu hỏi</a></li>
-            <% } %>
+
+        <li class="<%= currentURI.contains("/tests") && request.getParameter("action") == null? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/tests">
+                Danh sách bài test
+            </a>
+        </li>
+
+        <li class="<%= currentURI.contains("/tests") && "mine".equals(request.getParameter("action"))? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/tests?action=mine">
+                Bài được giao cho tôi
+            </a>
+        </li>
+
+        <li class="<%= currentURI.contains("/tests") && "calendar".equals(request.getParameter("action"))? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/tests?action=calendar">
+                Lịch bài test
+            </a>
+        </li>
+
+        <li class="<%= currentURI.contains("/tests") && "notifications".equals(request.getParameter("action"))? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/tests?action=notifications">
+                Thông báo nhắc lịch
+            </a>
+        </li>
+
+        <% if (roleId == 1 || roleId == 2 || roleId == 3) { %>
+        <li class="<%= currentURI.contains("/tests") && "bank".equals(request.getParameter("action"))? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/tests?action=bank">
+                Bộ đề & Câu hỏi
+            </a>
+        </li>
+        <% } %>
     </ul>
+
 
     <div class="sidebar-user">
         <div class="user-name"><%= user != null ? user.getFullName() : "Nguoi dung" %></div>
-        <div class="user-role">Vai tro: [<%= user != null ? user.getRoleName() : "EMPLOYEE" %>]</div>
-        <a href="<%= request.getContextPath() %>/logout" class="logout-link">[Dang xuat]</a>
+        <div class="user-role">Vai trò: [<%= user != null ? user.getRoleName() : "EMPLOYEE" %>]</div>
+        <a href="<%= request.getContextPath() %>/logout" class="logout-link">[Đăng xuất]</a>
     </div>
+
+
+
 </aside>

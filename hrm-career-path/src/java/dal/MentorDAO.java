@@ -16,21 +16,24 @@ import java.util.List;
  */
 public class MentorDAO {
 
-    // Lấy nhân viên mới (EMPLOYEE - role 4) kèm thông tin chuyên môn / rank
     public List<User> getUnassignedNewEmployees() {
         List<User> list = new ArrayList<>();
-        String sql = "SELECT u.user_id, u.full_name, p.position_name, d.department_name, jl.level_name "
+        String sql = "SELECT u.user_id, u.full_name, u.position_id, p.position_name, d.department_name, jl.level_name "
                 + "FROM Users u "
                 + "LEFT JOIN Positions p ON u.position_id = p.position_id "
                 + "LEFT JOIN Departments d ON u.department_id = d.department_id "
                 + "LEFT JOIN Job_Levels jl ON u.level_id = jl.level_id "
-                + "WHERE u.role_id = 4 AND u.is_deleted = 0 "
+                + "WHERE u.role_id = 4 AND (u.is_deleted = 0 OR u.is_deleted IS NULL) "
+                + "AND (LOWER(jl.level_name) LIKE '%intern%' OR LOWER(jl.level_name) LIKE '%fresher%') "
                 + "AND u.user_id NOT IN (SELECT mentee_id FROM MentorAssignments WHERE status = 'ACTIVE')";
+
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 User u = new User();
                 u.setUserId(rs.getInt("user_id"));
                 u.setFullName(rs.getString("full_name"));
+                u.setPositionId(rs.getInt("position_id"));
                 u.setPositionName(rs.getString("position_name"));
                 u.setDepartmentName(rs.getString("department_name"));
                 u.setLevelName(rs.getString("level_name"));
@@ -42,20 +45,24 @@ public class MentorDAO {
         return list;
     }
 
-    // Lấy MENTOR (role 5) kèm thông tin
+    
     public List<User> getAllMentorsWithSpecialty() {
-        List<User> list = new ArrayList<>();
-        String sql = "SELECT u.user_id, u.full_name, p.position_name, d.department_name, jl.level_name "
+        List<User> list = new ArrayList<>();       
+        String sql = "SELECT u.user_id, u.full_name, u.position_id, p.position_name, d.department_name, jl.level_name "
                 + "FROM Users u "
                 + "LEFT JOIN Positions p ON u.position_id = p.position_id "
                 + "LEFT JOIN Departments d ON u.department_id = d.department_id "
                 + "LEFT JOIN Job_Levels jl ON u.level_id = jl.level_id "
-                + "WHERE u.role_id = 5 AND u.is_deleted = 0";
+                + "INNER JOIN Roles r ON u.role_id = r.role_id "
+                + "WHERE r.role_name = 'MENTOR' AND (u.is_deleted = 0 OR u.is_deleted IS NULL)";
+
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+
             while (rs.next()) {
                 User u = new User();
                 u.setUserId(rs.getInt("user_id"));
-                u.setFullName(rs.getString("full_name"));
+                u.setFullName(rs.getString("full_name"));                
+                u.setPositionId(rs.getInt("position_id")); 
                 u.setPositionName(rs.getString("position_name"));
                 u.setDepartmentName(rs.getString("department_name"));
                 u.setLevelName(rs.getString("level_name"));

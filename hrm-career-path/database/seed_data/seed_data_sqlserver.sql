@@ -52,8 +52,16 @@ GO
 
 INSERT INTO dbo.Users (username, password, full_name, email, phone, gender, role_id, department_id, position_id, level_id, hire_date, status, is_deleted) VALUES
 ('mentor_java', '123', N'Le Huu Mentor', 'mentor.java@hrm.com', '0988888888',
- N'Nam', 6, 1, 1, 5, '2021-01-01', 1, 0);
+ N'Nam', 5, 1, 1, 5, '2021-01-01', 1, 0);
 GO
+
+UPDATE dbo.Users
+SET role_id = 5
+WHERE email = 'mentor.java@hrm.com';
+
+UPDATE dbo.Users
+SET role_id = (SELECT TOP 1 role_id FROM dbo.Roles WHERE role_name = 'MENTOR')
+WHERE email = 'mentor.java@hrm.com';
 
 UPDATE dbo.Departments SET manager_id = 3 WHERE department_id = 1;
 UPDATE dbo.Departments SET manager_id = 2 WHERE department_id = 2;
@@ -72,13 +80,27 @@ INSERT INTO dbo.FlashcardDecks (title, description) VALUES
 (N'Quy trình Onboarding', N'Kien thuc nhap môn công ty'),
 (N'Java Core', N'Kien thuc chuyen mon Java');
 
+SELECT *
+FROM dbo.FlashcardDecks
+WHERE title IN (N'Quy trình Onboarding', N'Java Core', N'Kien thuc nhap môn công ty' );
+
+
+UPDATE dbo.FlashcardDecks
+SET title = N'Van hoa cong ty'
+WHERE deck_id = 1;
+
+UPDATE dbo.FlashcardDecks
+SET title = N'Chuyen mon'
+WHERE deck_id = 2;
+
+
 INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES 
 (1, N'Gio lam viec bat dau luc may gio', N'8:30 Sang'),
 (2, N'OOP có may tinh chat co ban?', N'4 tinh chat: Dong goi, Ke thua, Da hinh, Truu tuong');
 GO
 
 
-
+use HRM_Project_DB
 -- =======================================================
 -- KIEM TRA DU LIEU: SELECT * FROM TAT CA BANG
 -- =======================================================
@@ -88,4 +110,6 @@ SELECT * FROM dbo.Departments;
 SELECT * FROM dbo.Positions;
 SELECT * FROM dbo.Users;
 SELECT * FROM dbo.Employee_History;
+select * from Flashcards
+select * from FlashcardDecks
 GO

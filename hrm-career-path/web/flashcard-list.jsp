@@ -54,12 +54,12 @@
 </style>
 
 <main class="main-content">
-    <div class="topbar"><h1>Hoc Tap: Flashcards</h1></div>
+    <div class="topbar"><h1>Học Tập: Flashcards</h1></div>
 
     <div class="content-body flashcard-container">
         <!-- Sidebar danh sách bộ thẻ -->
         <div class="deck-sidebar">
-            <h3 style="border-bottom: 1px solid #000; padding-bottom: 5px;">Bo the (#Decks)</h3>
+            <h3 style="border-bottom: 1px solid #000; padding-bottom: 5px;">Bộ Thẻ</h3>
             <% if (decks != null) {
                 for (FlashcardDeck d : decks) { 
                     boolean isAct = (currentDeck != null && currentDeck.getDeckId() == d.getDeckId());
@@ -89,12 +89,12 @@
                             </div>
                         </div>
                     </div>
-                    <p style="margin-top:20px; font-size:14px;">(Click vao the de xem dap an)</p>
+                    <p style="margin-top:20px; font-size:14px;">(Click vào thẻ để xem đáp án)</p>
                 <% } else { %>
-                    <p>[!] Bo the nay chua co cau hoi nao.</p>
+                    <p>[!] Bộ thẻ này chưa có câu hỏi nào.</p>
                 <% } %>
             <% } else { %>
-                <p>Vui long chon 1 bo the ben trai.</p>
+                <p>Vui lòng chọn 1 bộ thẻ bên trái.</p>
             <% } %>
         </div>
     </div>

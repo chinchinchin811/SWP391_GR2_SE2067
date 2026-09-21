@@ -18,11 +18,11 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1><%= (roleId == 3) ? "Thong Tin Phong Ban Phu Trach" : "Co Cau To Chuc Phong Ban" %></h1>
+        <h1><%= (roleId == 3) ? "Thông Tin Phòng Ban Phụ Trách" : "Cơ Cấu Tổ Chức Phòng Ban" %></h1>
         <div>
             <% if (roleId == 1 || roleId == 2) { %>
                 <a href="<%= request.getContextPath() %>/departments?action=create" class="btn btn-primary">
-                    + Tao Phong Ban Moi
+                    + Tạo Phòng Ban Mới
                 </a>
             <% } %>
         </div>
@@ -38,21 +38,21 @@
 
         <div class="card">
             <div class="card-header">
-                <h2><%= (roleId == 3) ? "Phong Ban Cua Ban" : "Danh Sach Phong Ban & Truong Phong Quan Ly" %></h2>
-                <span style="font-size: 12px; color: #555555;">Tong so: <%= departments != null ? departments.size() : 0 %> phong ban</span>
+                <h2><%= (roleId == 3) ? "Phòng Ban Của Bạn" : "Danh Sách Phòng Ban & Trưởng Phòng Quản Lý" %></h2>
+                <span style="font-size: 12px; color: #555555;">Tong so: <%= departments != null ? departments.size() : 0 %> phòng ban</span>
             </div>
             <div class="card-body">
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th style="width: 50px;">ID</th>
-                            <th>Ten Phong Ban</th>
-                            <th>Truong Phong (Manager)</th>
-                            <th>Mo Ta Chuc Nang</th>
-                            <th>So Nhan Su</th>
-                            <th>Trang Thai</th>
+                            <th>Tên Phòng Ban</th>
+                            <th>Trưởng Phòng (Manager)</th>
+                            <th>Mô Tả Chức Năng</th>
+                            <th>Số Nhân Sự</th>
+                            <th>Trạng Thái</th>
                             <% if (roleId == 1 || roleId == 2) { %>
-                                <th style="text-align: center; width: 140px;">Thao Tac</th>
+                                <th style="text-align: center; width: 140px;">Thao Tác</th>
                             <% } %>
                         </tr>
                     </thead>
@@ -70,7 +70,7 @@
                                         <input type="hidden" name="action" value="assign-manager">
                                         <input type="hidden" name="departmentId" value="<%= d.getDepartmentId() %>">
                                         <select name="managerId" class="form-control" style="padding: 2px 4px; font-size: 11px;" onchange="this.form.submit()">
-                                            <option value="0">-- Chua bo nhiem --</option>
+                                            <option value="0">-- Chưa bổ nhiệm --</option>
                                             <%
                                                 if (managerCandidates != null) {
                                                     for (User u : managerCandidates) {
@@ -86,31 +86,31 @@
                                         </select>
                                     </form>
                                 <% } else { %>
-                                    <%= d.getManagerName() != null ? d.getManagerName() : "Chua bo nhiem" %>
+                                    <%= d.getManagerName() != null ? d.getManagerName() : "Chưa bổ nhiệm" %>
                                 <% } %>
                             </td>
                             <td><%= d.getDescription() != null ? d.getDescription() : "-" %></td>
                             <td>
                                 <a href="<%= request.getContextPath() %>/employees?departmentId=<%= d.getDepartmentId() %>">
-                                    <%= d.getEmployeeCount() %> nhan vien
+                                    <%= d.getEmployeeCount() %> nhân viên
                                 </a>
                             </td>
                             <td>
                                 <% if (d.isStatus()) { %>
-                                    <span class="badge">Hoat dong</span>
+                                    <span class="badge">Hoạt động</span>
                                 <% } else { %>
-                                    <span class="badge">Tam ngung</span>
+                                    <span class="badge">Tạm ngưng</span>
                                 <% } %>
                             </td>
                             <% if (roleId == 1 || roleId == 2) { %>
                                 <td style="text-align: center;">
                                     <a href="<%= request.getContextPath() %>/departments?action=edit&id=<%= d.getDepartmentId() %>" class="btn btn-sm btn-secondary">
-                                        Sua
+                                        Sửa
                                     </a>
-                                    <form action="<%= request.getContextPath() %>/departments" method="POST" style="display: inline-block;" onsubmit="return confirm('Ban co chac chan muon xoa phong ban nay?');">
+                                    <form action="<%= request.getContextPath() %>/departments" method="POST" style="display: inline-block;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phòng ban này?');">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<%= d.getDepartmentId() %>">
-                                        <button type="submit" class="btn btn-sm btn-danger">Xoa</button>
+                                        <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
                                     </form>
                                 </td>
                             <% } %>
@@ -120,7 +120,7 @@
                             } else {
                         %>
                         <tr>
-                            <td colspan="<%= (roleId == 1 || roleId == 2) ? "7" : "6" %>" style="text-align: center; padding: 15px;">Chua co phong ban nao.</td>
+                            <td colspan="<%= (roleId == 1 || roleId == 2) ? "7" : "6" %>" style="text-align: center; padding: 15px;">Chưa có phòng ban nào.</td>
                         </tr>
                         <% } %>
                     </tbody>

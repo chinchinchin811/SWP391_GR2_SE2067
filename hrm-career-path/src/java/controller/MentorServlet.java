@@ -69,7 +69,7 @@ public class MentorServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
-        
+
         // Chặn Employee (Role 4) truy cập
         if (currentUser.getRoleId() == 4) {
             response.sendRedirect(request.getContextPath() + "/dashboard");
@@ -80,7 +80,7 @@ public class MentorServlet extends HttpServlet {
         if (action == null) {
             action = "evaluations";
         }
-        
+
         MentorDAO mentorDAO = new MentorDAO();
 
         switch (action) {
@@ -89,12 +89,14 @@ public class MentorServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }
+
+                // Thuộc tính được đẩy lên JSP
                 request.setAttribute("newEmployees", mentorDAO.getUnassignedNewEmployees());
                 request.setAttribute("mentors", mentorDAO.getAllMentorsWithSpecialty());
 
                 request.getRequestDispatcher("mentor-pairing.jsp").forward(request, response);
                 break;
-                
+
             case "evaluations":
                 request.setAttribute("evaluations", mentorDAO.getAllEvaluations());
                 request.getRequestDispatcher("mentor-evaluation.jsp").forward(request, response);
@@ -115,7 +117,7 @@ public class MentorServlet extends HttpServlet {
             throws ServletException, IOException {
         HttpSession session = request.getSession();
         User currentUser = (User) session.getAttribute("currentUser");
-        
+
         if (currentUser == null) {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
@@ -124,21 +126,28 @@ public class MentorServlet extends HttpServlet {
         String action = request.getParameter("action");
 
         if ("assign".equals(action)) {
-            int menteeId = Integer.parseInt(request.getParameter("menteeId"));
-            int mentorId = Integer.parseInt(request.getParameter("mentorId"));
-            
-            int positionId = 0;
-            String posParam = request.getParameter("positionId");
-            if (posParam != null && !posParam.trim().isEmpty()) {
-                positionId = Integer.parseInt(posParam);
-            }
+            // SỬA LỖI: Cần lấy String trước, kiểm tra null/empty để tránh lỗi 500
+            String menteeIdStr = request.getParameter("menteeId");
+            String mentorIdStr = request.getParameter("mentorId");
 
-            boolean success = new MentorDAO().assignMentorWithPosition(menteeId, mentorId, positionId, currentUser.getUserId());
-            if (success) {
-                session.setAttribute("successMessage", "Ghep Mentor thanh cong!");
+            if (menteeIdStr != null && mentorIdStr != null && !menteeIdStr.isEmpty() && !mentorIdStr.isEmpty()) {
+                int menteeId = Integer.parseInt(menteeIdStr);
+                int mentorId = Integer.parseInt(mentorIdStr);
+
+                int positionId = 0;
+                String posParam = request.getParameter("positionId");
+                if (posParam != null && !posParam.trim().isEmpty()) {
+                    positionId = Integer.parseInt(posParam);
+                }
+
+                boolean success = new MentorDAO().assignMentorWithPosition(menteeId, mentorId, positionId, currentUser.getUserId());
+                if (success) {
+                    session.setAttribute("successMessage", "Ghep Mentor thanh cong!");
+                }
             }
             response.sendRedirect(request.getContextPath() + "/mentors?action=pair");
         }
+
     }
 
     /**
