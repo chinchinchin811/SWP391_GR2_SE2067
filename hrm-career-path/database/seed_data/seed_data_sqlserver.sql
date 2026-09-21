@@ -99,6 +99,87 @@ INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
 (2, N'OOP có may tinh chat co ban?', N'4 tinh chat: Dong goi, Ke thua, Da hinh, Truu tuong');
 GO
 
+INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
+(1, N'Gio lam viec ket thuc luc may gio?', 
+    N'17:30 hang ngay.'),
+
+(1, N'Thanh vien moi can lam gi trong ngay dau tien?', 
+    N'Hoan tat thu tuc onboarding, lam quen voi team, tai khoan he thong va noi quy cong ty.'),
+
+(1, N'Nhan vien can bao truoc bao nhieu ngay khi xin nghi phep?', 
+    N'Thuc hien theo quy dinh nghi phep cua cong ty va thong bao cho quan ly truoc thoi gian nghi.'),
+
+(1, N'Khi gap van de trong cong viec, nhan vien nen lam gi?', 
+    N'Chu dong trao doi voi Leader, Manager hoac nguoi huong dan de duoc ho tro.'),
+
+(1, N'Onboarding la gi?', 
+    N'La qua trinh giup nhan vien moi lam quen voi cong ty, cong viec, van hoa va quy trinh lam viec.'),
+
+(1, N'Muc dich cua viec onboarding nhan vien moi la gi?', 
+    N'Giup nhan vien nhanh chong hoa nhap, hieu cong viec va co the lam viec hieu qua.'),
+
+(1, N'Nhan vien co can bao mat thong tin cong ty khong?', 
+    N'Co. Nhan vien phai bao mat thong tin noi bo, thong tin khach hang va du lieu cua cong ty.'),
+
+(1, N'Khi den muon, nhan vien nen lam gi?', 
+    N'Thong bao cho quan ly hoac nguoi phu trach va tuan thu quy dinh cham cong cua cong ty.'),
+
+(1, N'Tai sao can tham gia cac buoi training cua cong ty?', 
+    N'De cap nhat kien thuc, quy trinh, ky nang va cac quy dinh can thiet cho cong viec.'),
+
+(1, N'Nhan vien moi co the hoi ai khi khong hieu cong viec?', 
+    N'Co the hoi Mentor, Team Leader, Manager hoac dong nghiep phu hop.');
+
+GO
+
+
+INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
+(2, N'Java la gi?', 
+    N'Java la mot ngon ngu lap trinh huong doi tuong, duoc su dung pho bien de phat trien ung dung web, desktop va backend.'),
+
+(2, N'OOP co may tinh chat co ban?', 
+    N'4 tinh chat: Dong goi, Ke thua, Da hinh va Truu tuong.'),
+
+(2, N'Class trong Java la gi?', 
+    N'Class la mot khuon mau dung de dinh nghia thuoc tinh va hanh vi cua object.'),
+
+(2, N'Object trong Java la gi?', 
+    N'Object la mot the hien cu the duoc tao ra tu mot class.'),
+
+(2, N'Tinh dong goi trong OOP la gi?', 
+    N'La viec dong goi du lieu va cac phuong thuc lien quan trong mot class va kiem soat quyen truy cap.'),
+
+(2, N'Tinh ke thua trong OOP la gi?', 
+    N'La co che cho phep mot class con ke thua thuoc tinh va phuong thuc tu class cha.'),
+
+(2, N'Tinh da hinh trong OOP la gi?', 
+    N'La kha nang cung mot phuong thuc co the co cach thuc hien khac nhau tuy theo object.'),
+
+(2, N'Tinh truu tuong trong OOP la gi?', 
+    N'La viec an di cac chi tiet cai dat va chi hien thi nhung thong tin can thiet cho nguoi su dung.'),
+
+(2, N'Constructor trong Java dung de lam gi?', 
+    N'Dung de khoi tao object khi object duoc tao ra.'),
+
+(2, N'Interface trong Java la gi?', 
+    N'Interface la mot tap hop cac phuong thuc ma class implement can cung cap phan cai dat.'),
+
+(2, N'Exception trong Java la gi?', 
+    N'Exception la loi xay ra trong qua trinh chuong trinh dang thuc thi.'),
+
+(2, N'Try-catch trong Java dung de lam gi?', 
+    N'Dung de xu ly exception va tranh lam chuong trinh ket thuc dot ngot.'),
+
+(2, N'ArrayList trong Java la gi?', 
+    N'ArrayList la mot collection co the luu tru nhieu phan tu va co kich thuoc co the thay doi.'),
+
+(2, N'Git dung de lam gi?', 
+    N'Git la he thong quan ly phien ban giup theo doi, luu tru va quan ly cac thay doi cua source code.'),
+
+(2, N'API la gi?', 
+    N'API la giao dien cho phep cac ung dung hoac he thong giao tiep va trao doi du lieu voi nhau.');
+
+GO
 
 use HRM_Project_DB
 -- =======================================================
