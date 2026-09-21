@@ -32,12 +32,8 @@
         <nav class="test-nav" aria-label="Bài test">
             <a href="<%= base %>">Tất cả đề</a>
             <a href="<%= base %>?scope=upcoming">Sắp diễn ra</a>
-            <a href="<%= base %>?action=mine">Bài của tôi</a>
+            <% if(!"ADMIN".equals(actor.role())) { %><a href="<%= base %>?action=mine">Bài của tôi</a><% } %>
             <a href="<%= base %>?action=calendar">Lịch</a>
-            <a href="<%= base %>?action=notifications">Thông báo</a>
-            <% if (actor.cultureManager() || actor.departmentManager()) { %>
-            <a href="<%= base %>?action=bank">Bộ đề & Câu hỏi</a>
-            <% } %>
         </nav>
         <% if (flash != null) { %><div class="alert alert-success" role="status"><%= h(flash) %></div><% } %>
         <% if ("bank".equals(view) || "bankDetail".equals(view)) { %>
@@ -46,22 +42,26 @@
 
         <% if ("new".equals(view)) { %>
         <section class="card"><div class="card-header"><h2>Tạo bài test</h2></div><div class="card-body">
-            <p>Đặt lịch và phạm vi. Sau khi công bố, chọn bộ đề trắc nghiệm hoặc câu hỏi tự luận tại phần Giao bài.</p>
+            <p>Đặt lịch, chọn đề tự luận hoặc một bộ trắc nghiệm. Phạm vi người nhận là toàn công ty, ngoại trừ ADMIN.</p>
             <form method="post" action="<%= base %>" class="test-form">
                 <input type="hidden" name="csrf" value="<%= h(csrf) %>">
                 <input type="hidden" name="action" value="create">
                 <label>Tiêu đề <input name="title" required maxlength="200"></label>
                 <label>Loại bài
-                    <select name="type">
-                        <% if (actor.departmentManager()) { %><option value="department">Chuyên môn phòng ban của tôi</option><% } %>
+                    <select name="type" id="testType" onchange="syncTestCreateForm()">
+                        <% if (actor.departmentManager() || actor.cultureManager()) { %><option value="department">Đánh giá chuyên môn</option><% } %>
                         <% if (actor.cultureManager()) { %><option value="culture">Văn hóa chung</option><% } %>
                     </select>
                 </label>
                 <label>Nội dung yêu cầu <textarea name="description" rows="9" required maxlength="20000"></textarea></label>
+                <label>Hình thức đề thi <select name="contentId" id="contentMode" onchange="syncTestCreateForm()">
+                    <option value="">Đề tự luận theo nội dung yêu cầu phía trên</option><option value="newQuiz">Tạo bộ đề trắc nghiệm mới</option>
+                    <% List<TestContent> newChoices=(List<TestContent>)request.getAttribute("contentChoices");if(newChoices!=null)for(TestContent item:newChoices){if("quiz".equals(item.kind())&&"ready".equals(item.status())){%><option value="<%= item.id() %>" data-test-type="<%= h(item.type()) %>">Trắc nghiệm: <%= h(item.title()) %></option><% }} %>
+                </select></label>
+                <div id="newQuizFields" hidden><label>Tên bộ đề trắc nghiệm mới <input name="quizTitle" maxlength="200"></label><label>Hướng dẫn làm bài <textarea name="quizPrompt" rows="4" maxlength="20000"></textarea></label><p>Sau khi lưu, hãy thêm/sửa/xóa câu hỏi rồi bấm “Sẵn sàng để giao”.</p></div>
                 <div class="test-columns">
-                    <label>Bắt đầu (giờ Việt Nam) <input type="datetime-local" name="start" required min="2000-01-01T00:00" max="2099-12-31T23:59"></label>
-                    <label>Kết thúc (giờ Việt Nam) <input type="datetime-local" name="end" required min="2000-01-01T00:00" max="2099-12-31T23:59"></label>
-                </div>
+                    <label>Thời gian bắt đầu (GMT+7) <input type="date" name="startDate" required min="2000-01-01" max="2099-12-31"><input type="time" name="startTime" required></label>
+                    <label>Thời gian kết thúc (GMT+7) <input type="date" name="endDate" required min="2000-01-01" max="2099-12-31"><input type="time" name="endTime" required></label></div>
                 <button class="btn btn-primary">Lưu bản nháp</button>
             </form>
         </div></section>
@@ -85,7 +85,7 @@
             <table class="data-table"><thead><tr><th>Bài test</th><th>Phạm vi</th><th>Bắt đầu</th><th>Kết thúc</th><th>Trạng thái</th></tr></thead><tbody>
                 <% for (TestTemplate t : templates) { %>
                 <tr><td><a href="<%= base %>?action=detail&amp;id=<%= t.id() %>"><%= h(t.title()) %></a></td>
-                    <td><%= "culture".equals(t.type()) ? "Văn hóa chung" : "Phòng ban #" + t.departmentId() %></td>
+                    <td><%= "culture".equals(t.type()) ? "Văn hóa chung" : "Đánh giá chuyên môn" %></td>
                     <td><%= time(t.startTime()) %></td><td><%= time(t.endTime()) %></td><td><%= h(status(t.status())) %></td></tr>
                 <% } %>
             </tbody></table><% } %>
@@ -93,18 +93,18 @@
                 String query = "calendar".equals(view) ? "action=calendar&from=" + request.getAttribute("from") + "&to=" + request.getAttribute("to")
                         : "action=list&scope=" + request.getAttribute("scope");
             %>
-            <nav class="test-nav" aria-label="Phân trang đề">
+            <% if(pageNo>1 || templates.size()==20) { %><nav class="test-nav" aria-label="Phân trang đề">
                 <% if (pageNo > 1) { %><a href="<%= base %>?<%= h(query) %>&amp;page=<%= pageNo - 1 %>">← Trang trước</a><% } %>
                 <span>Trang <%= pageNo %></span>
                 <% if (templates.size() == 20) { %><a href="<%= base %>?<%= h(query) %>&amp;page=<%= pageNo + 1 %>">Trang tiếp →</a><% } %>
-            </nav>
+            </nav><% } %>
         </div></section>
         <% } %>
 
         <% if ("detail".equals(view)) { %>
         <section class="card"><div class="card-header"><h2><%= h(template.title()) %></h2><span><%= h(status(template.status())) %></span></div>
             <div class="card-body">
-                <p><%= "culture".equals(template.type()) ? "Văn hóa chung" : "Chuyên môn phòng ban #" + template.departmentId() %>
+                <p><%= "culture".equals(template.type()) ? "Văn hóa chung" : "Đánh giá chuyên môn" %>
                     · <%= time(template.startTime()) %> — <%= time(template.endTime()) %> (giờ Việt Nam)</p>
                 <div class="test-prose"><%= h(template.description()) %></div>
                 <% if (policy.canManage(actor, template)) { %>
@@ -137,13 +137,13 @@
                            for (String kind : List.of("quiz","question")) { %>
                         <optgroup label="<%= "quiz".equals(kind) ? "Bộ đề trắc nghiệm" : "Câu hỏi tự luận" %>">
                             <% for (TestContent item:choices) { if (kind.equals(item.kind())) { %>
-                            <option value="<%= item.id() %>"><%= h(item.title()) %></option>
+                            <option value="<%= item.id() %>" <%= Objects.equals(template.defaultContentId(),item.id())?"selected":"" %>><%= h(item.title()) %></option>
                             <% } } %>
                         </optgroup><% } %>
                     </select>
                 </label>
                 <p>Chỉ hiển thị nội dung đã chốt cùng phạm vi. <a href="<%= base %>?action=bank">Tạo bộ đề/câu hỏi</a></p>
-                <fieldset class="test-candidates"><legend>Chọn người nhận (tối đa 500 mỗi lần)</legend>
+                <fieldset class="test-candidates"><legend>Chọn người nhận toàn công ty, ngoại trừ ADMIN (tối đa 500 mỗi lần)</legend>
                     <% for (TestActor candidate : candidates) { %>
                     <label><input type="checkbox" name="assigneeId" value="<%= candidate.id() %>">
                         <%= h(candidate.name()) %> · #<%= candidate.id() %><%= candidate.departmentId() == null ? "" : " · Phòng #" + candidate.departmentId() %></label>
@@ -165,11 +165,11 @@
                     <% } %>
                 </tbody></table><% } %>
                 <% String query = "mine".equals(view) ? "action=mine" : "action=detail&id=" + template.id(); %>
-                <nav class="test-nav" aria-label="Phân trang bài được giao">
+                <% if(pageNo>1 || assignments.size()==20) { %><nav class="test-nav" aria-label="Phân trang bài được giao">
                     <% if (pageNo > 1) { %><a href="<%= base %>?<%= h(query) %>&amp;page=<%= pageNo - 1 %>">← Trang trước</a><% } %>
                     <span>Trang <%= pageNo %></span>
                     <% if (assignments.size() == 20) { %><a href="<%= base %>?<%= h(query) %>&amp;page=<%= pageNo + 1 %>">Trang tiếp →</a><% } %>
-                </nav>
+                </nav><% } %>
             </div>
         </section>
         <% } %>
@@ -253,23 +253,17 @@
         </div></section>
         <% } %>
 
-        <% if ("notifications".equals(view)) {
-            List<TestNotification> notifications = (List<TestNotification>) request.getAttribute("notifications"); %>
-        <section class="card"><div class="card-header"><h2>Thông báo nhắc lịch</h2></div><div class="card-body">
-            <p>Nhắc các bài chưa bắt đầu trong 24 giờ trước lịch. Hiển thị tối đa 100 thông báo mới nhất.</p>
-            <% if (notifications.isEmpty()) { %><p>Chưa có thông báo.</p><% } %>
-            <% for (TestNotification n : notifications) { %>
-            <article class="test-notification">
-                <a href="<%= base %>?action=assignment&amp;id=<%= n.assignmentId() %>"><%= h(n.message()) %></a>
-                <p><%= time(n.createdAt()) %> · <%= n.read() ? "Đã đọc" : "Chưa đọc" %></p>
-                <% if (!n.read()) { %>
-                <form method="post" action="<%= base %>">
-                    <input type="hidden" name="csrf" value="<%= h(csrf) %>"><input type="hidden" name="action" value="read">
-                    <input type="hidden" name="id" value="<%= n.id() %>"><button class="btn btn-secondary">Đánh dấu đã đọc</button>
-                </form><% } %>
-            </article><% } %>
-        </div></section>
-        <% } %>
     </div>
 </main>
+<script>
+function syncTestCreateForm(){
+    var type=document.getElementById('testType'),mode=document.getElementById('contentMode'),fields=document.getElementById('newQuizFields');
+    if(!type||!mode||!fields)return;
+    Array.prototype.forEach.call(mode.options,function(option){if(option.dataset.testType)option.disabled=option.dataset.testType!==type.value;});
+    if(mode.selectedOptions.length&&mode.selectedOptions[0].disabled)mode.value='';
+    var creating=mode.value==='newQuiz';fields.hidden=!creating;
+    Array.prototype.forEach.call(fields.querySelectorAll('input,textarea'),function(input){input.required=creating;});
+}
+document.addEventListener('DOMContentLoaded',syncTestCreateForm);
+</script>
 <jsp:include page="/views/common/footer.jsp" />
