@@ -57,6 +57,77 @@ INSERT INTO dbo.Employee_History (user_id, old_department_id, new_department_id,
 GO
 
 -- =======================================================
+-- SEED DATA: HỌC LIỆU (LEARNING MATERIALS) & LỚP ĐÀO TẠO
+-- =======================================================
+IF NOT EXISTS (SELECT 1 FROM dbo.Learning_Materials WHERE title = N'So Tay Van Hoa & Quy Dinh Cong Ty')
+BEGIN
+    INSERT INTO dbo.Learning_Materials 
+    (title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, video_url, duration_minutes, status, created_by)
+    VALUES 
+    (N'So Tay Van Hoa & Quy Dinh Cong Ty', 
+     N'Tai lieu dinh huong nhan su moi ve tam nhin, su menh, gia tri cot loi va noi quy lao dong cong ty.', 
+     'PDF', 'CULTURE', NULL, NULL, NULL, 'So_Tay_Van_Hoa_Doanh_Nghiep.pdf', 'application/pdf', NULL, 30, 1, 2);
+
+    INSERT INTO dbo.Learning_Materials 
+    (title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, video_url, duration_minutes, status, created_by)
+    VALUES 
+    (N'Slide Gioi Thieu Quy Trinh Phat Trien Phan Mem Scrum/Agile', 
+     N'Trinh chieu tong quan ve quy trinh phoi hop Agile/Scrum, cac buoi le Sprint va trach nhiem vi tri.', 
+     'SLIDE', 'DEPARTMENT', 1, 1, 2, 'Agile_Scrum_Onboarding.pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', NULL, 45, 1, 3);
+
+    INSERT INTO dbo.Learning_Materials 
+    (title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, video_url, duration_minutes, status, created_by)
+    VALUES 
+    (N'Video Bai Giang: Kien Truc Java Backend & Servlet Jakarta EE', 
+     N'Video huong dan chuan kien truc MVC, vong doi Servlet va tuong tac co so du lieu qua JDBC trong du an doanh nghiep.', 
+     'VIDEO', 'DEPARTMENT', 1, 1, 2, NULL, 'video/mp4', 'https://www.youtube.com/watch?v=kYJzphqI3qA', 25, 1, 3);
+
+    DECLARE @video_id INT = SCOPE_IDENTITY();
+
+    INSERT INTO dbo.Video_Checkpoints 
+    (material_id, stop_time_seconds, question_prompt, option_a, option_b, option_c, option_d, correct_option, explanation)
+    VALUES 
+    (@video_id, 45, 
+     N'Theo kien truc MVC trong Jakarta EE, tang nao truc tiep nhan va dieu phoi HTTP Request tu nguoi dung?',
+     N'Model (Java Bean)',
+     N'Controller (Servlet)',
+     N'View (JSP/HTML)',
+     N'DAL (Data Access Layer)',
+     1, 
+     N'Chinh xac! Servlet dong vai tro Controller, tiep nhan request, kiem tra xac thuc va dieu huong toi Service/JSP.');
+
+    INSERT INTO dbo.Video_Checkpoints 
+    (material_id, stop_time_seconds, question_prompt, option_a, option_b, option_c, option_d, correct_option, explanation)
+    VALUES 
+    (@video_id, 120, 
+     N'De bao ve an toan toan ven du lieu khi thuc hien nhieu thao tac INSERT/UPDATE lien quan, ky thuat nao duoc ap dung?',
+     N'Bat AutoCommit = true',
+     N'Su dung Statement thay vi PreparedStatement',
+     N'Su dung Database Transaction (setAutoCommit(false), commit, rollback)',
+     N'Bo qua viec bat SQLException',
+     2, 
+     N'Chinh xac! Database Transaction dam bao tinh toan ven (ACID) khi cap nhat nhieu bang cung luc.');
+
+    INSERT INTO dbo.Training_Classes 
+    (class_code, class_name, description, department_id, target_position_id, target_level_id, mentor_id, start_date, end_date, status, created_by)
+    VALUES 
+    ('CLS-IT-FRESHER-2026', 
+     N'Khoa Dao Tao Onboarding Ky Thuat Cho Fresher 2026', 
+     N'Lop dao tao nen tang kien thuc cong nghe, van hoa lam viec va quy trinh ky thuat danh cho cac ban Fresher/Junior moi gia nhap phong IT.', 
+     1, 1, 2, 3, CAST(GETDATE() AS DATE), DATEADD(DAY, 30, CAST(GETDATE() AS DATE)), 'OPEN', 2);
+
+    DECLARE @class_id INT = SCOPE_IDENTITY();
+
+    DECLARE @culture_id INT = (SELECT material_id FROM dbo.Learning_Materials WHERE title = N'So Tay Van Hoa & Quy Dinh Cong Ty');
+    DECLARE @slide_id INT = (SELECT material_id FROM dbo.Learning_Materials WHERE title = N'Slide Gioi Thieu Quy Trinh Phat Trien Phan Mem Scrum/Agile');
+    INSERT INTO dbo.Class_Materials (class_id, material_id, order_index, is_mandatory) VALUES
+    (@class_id, @culture_id, 1, 1),
+    (@class_id, @slide_id, 2, 1),
+    (@class_id, @video_id, 3, 1);
+END;
+GO
+
+-- =======================================================
 -- KIEM TRA DU LIEU: SELECT * FROM TAT CA BANG
 -- =======================================================
 SELECT * FROM dbo.Roles;
@@ -65,4 +136,8 @@ SELECT * FROM dbo.Departments;
 SELECT * FROM dbo.Positions;
 SELECT * FROM dbo.Users;
 SELECT * FROM dbo.Employee_History;
+SELECT * FROM dbo.Learning_Materials;
+SELECT * FROM dbo.Training_Classes;
+SELECT * FROM dbo.Class_Materials;
+SELECT * FROM dbo.Video_Checkpoints;
 GO

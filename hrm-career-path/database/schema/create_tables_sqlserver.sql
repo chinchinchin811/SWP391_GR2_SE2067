@@ -1,13 +1,12 @@
 -- =======================================================
 -- SQL Server Script: create_tables_sqlserver.sql
--- DDL: HRM + bai test + kho bo de/cau hoi. Seed nam trong database/seed_data/.
+-- DDL: HRM + Bai test + Kho bo de/cau hoi + Hoc lieu & Dao tao.
+-- Seed nam trong database/seed_data/seed_data_sqlserver.sql.
 -- CHAY TOAN BO FILE SE XOA VA TAO LAI HRM_Project_DB (giu hanh vi script goc).
--- De cap nhat module tren DB da co: chon dung database va chi chay tu
--- moc BEGIN TEST MODULE o cuoi file; khong chay phan reset.
--- Project: HRM & Career Path Management (SWP291 / SE2067)
+-- Project: HRM & Career Path Management (SWP391 / SE2067)
 -- Database: HRM_Project_DB
 -- Thu muc: database/schema/
--- Mo ta: Tao Database va cac Bang (DDL) ap dung Xoa Mem (Soft Delete)
+-- Mo ta: Tao Database va toan bo cac Bang (DDL) ap dung Xoa Mem (Soft Delete)
 -- =======================================================
 
 USE master;
@@ -297,3 +296,161 @@ BEGIN
     );
 END;
 COMMIT;
+GO
+
+-- =======================================================
+-- MODULE: HỌC LIỆU (LEARNING MATERIALS) & ĐÀO TẠO
+-- =======================================================
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+
+-- 1. BẢNG HỌC LIỆU (LEARNING_MATERIALS)
+IF OBJECT_ID('dbo.Learning_Materials', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Learning_Materials (
+        material_id INT IDENTITY(1,1) PRIMARY KEY,
+        title NVARCHAR(200) NOT NULL,
+        description NVARCHAR(MAX) NULL,
+        material_type VARCHAR(20) NOT NULL, -- 'PDF', 'SLIDE', 'VIDEO'
+        scope_type VARCHAR(20) NOT NULL DEFAULT 'CULTURE', -- 'CULTURE' hoặc 'DEPARTMENT'
+        department_id INT NULL REFERENCES dbo.Departments(department_id),
+        position_id INT NULL REFERENCES dbo.Positions(position_id),
+        level_id INT NULL REFERENCES dbo.Job_Levels(level_id),
+        
+        -- Dành cho file upload (PDF, SLIDE, file VIDEO mp4/webm)
+        file_name NVARCHAR(255) NULL,
+        file_type VARCHAR(100) NULL,
+        file_data VARBINARY(MAX) NULL,
+        file_size BIGINT NULL,
+        
+        -- Dành cho Video nhúng (YouTube, Google Drive, Vimeo...)
+        video_url NVARCHAR(500) NULL,
+        duration_minutes INT NULL DEFAULT 15,
+        
+        status BIT DEFAULT 1,             -- 1: Hoạt động/Công bố, 0: Ẩn/Bản nháp
+        is_deleted BIT DEFAULT 0,         -- Xóa mềm
+        created_by INT NOT NULL REFERENCES dbo.Users(user_id),
+        created_at DATETIME DEFAULT GETDATE(),
+        updated_at DATETIME DEFAULT GETDATE(),
+        
+        CONSTRAINT CK_Material_Type CHECK (material_type IN ('PDF', 'SLIDE', 'VIDEO')),
+        CONSTRAINT CK_Material_Scope CHECK (
+            (scope_type = 'CULTURE' AND department_id IS NULL) OR
+            (scope_type = 'DEPARTMENT' AND department_id IS NOT NULL)
+        )
+    );
+    CREATE INDEX IX_Material_Dept_Type ON dbo.Learning_Materials(department_id, material_type, is_deleted);
+END;
+
+-- 2. BẢNG LỚP ĐÀO TẠO (TRAINING_CLASSES)
+IF OBJECT_ID('dbo.Training_Classes', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Training_Classes (
+        class_id INT IDENTITY(1,1) PRIMARY KEY,
+        class_code VARCHAR(50) NOT NULL UNIQUE,
+        class_name NVARCHAR(200) NOT NULL,
+        description NVARCHAR(MAX) NULL,
+        department_id INT NULL REFERENCES dbo.Departments(department_id),
+        target_position_id INT NULL REFERENCES dbo.Positions(position_id),
+        target_level_id INT NULL REFERENCES dbo.Job_Levels(level_id),
+        mentor_id INT NULL REFERENCES dbo.Users(user_id),
+        start_date DATE NOT NULL,
+        end_date DATE NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'OPEN', -- 'OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'
+        is_deleted BIT DEFAULT 0,
+        created_by INT NOT NULL REFERENCES dbo.Users(user_id),
+        created_at DATETIME DEFAULT GETDATE(),
+        CONSTRAINT CK_Class_Status CHECK (status IN ('OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'))
+    );
+    CREATE INDEX IX_Class_Dept_Status ON dbo.Training_Classes(department_id, status, is_deleted);
+END;
+
+-- 3. BẢNG LIÊN KẾT LỚP HỌC VÀ HỌC LIỆU (CLASS_MATERIALS)
+IF OBJECT_ID('dbo.Class_Materials', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Class_Materials (
+        class_id INT NOT NULL REFERENCES dbo.Training_Classes(class_id) ON DELETE CASCADE,
+        material_id INT NOT NULL REFERENCES dbo.Learning_Materials(material_id) ON DELETE CASCADE,
+        order_index INT NOT NULL DEFAULT 1,
+        is_mandatory BIT NOT NULL DEFAULT 1,
+        PRIMARY KEY (class_id, material_id)
+    );
+END;
+
+-- 4. BẢNG GHI DANH NHÂN SỰ VÀO LỚP (CLASS_ENROLLMENTS)
+IF OBJECT_ID('dbo.Class_Enrollments', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Class_Enrollments (
+        enrollment_id INT IDENTITY(1,1) PRIMARY KEY,
+        class_id INT NOT NULL REFERENCES dbo.Training_Classes(class_id) ON DELETE CASCADE,
+        user_id INT NOT NULL REFERENCES dbo.Users(user_id),
+        enrolled_by INT NOT NULL REFERENCES dbo.Users(user_id),
+        enrollment_type VARCHAR(30) NOT NULL DEFAULT 'MANUAL', -- 'SMART_ASSIGN', 'MANUAL'
+        assigned_reason NVARCHAR(255) NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'ENROLLED', -- 'ENROLLED', 'IN_PROGRESS', 'PASSED', 'FAILED'
+        progress_percent INT NOT NULL DEFAULT 0,
+        enrolled_at DATETIME DEFAULT GETDATE(),
+        completed_at DATETIME NULL,
+        CONSTRAINT UQ_Class_User UNIQUE (class_id, user_id),
+        CONSTRAINT CK_Enrollment_Status CHECK (status IN ('ENROLLED', 'IN_PROGRESS', 'PASSED', 'FAILED')),
+        CONSTRAINT CK_Enrollment_Progress CHECK (progress_percent BETWEEN 0 AND 100)
+    );
+    CREATE INDEX IX_Enrollment_User ON dbo.Class_Enrollments(user_id, status);
+END;
+
+-- 5. BẢNG TIẾN ĐỘ HỌC TẬP TỪNG HỌC LIỆU (LEARNING_PROGRESS)
+IF OBJECT_ID('dbo.Learning_Progress', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Learning_Progress (
+        progress_id INT IDENTITY(1,1) PRIMARY KEY,
+        user_id INT NOT NULL REFERENCES dbo.Users(user_id),
+        material_id INT NOT NULL REFERENCES dbo.Learning_Materials(material_id) ON DELETE CASCADE,
+        class_id INT NULL REFERENCES dbo.Training_Classes(class_id),
+        status VARCHAR(20) NOT NULL DEFAULT 'NOT_STARTED', -- 'NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'
+        last_accessed_at DATETIME DEFAULT GETDATE(),
+        completed_at DATETIME NULL,
+        notes NVARCHAR(500) NULL,
+        CONSTRAINT UQ_User_Material_Class UNIQUE (user_id, material_id, class_id),
+        CONSTRAINT CK_Progress_Status CHECK (status IN ('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'))
+    );
+END;
+
+-- 6. BẢNG MỐC DỪNG VIDEO & CÂU HỎI TRẮC NGHIỆM (VIDEO_CHECKPOINTS)
+IF OBJECT_ID('dbo.Video_Checkpoints', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Video_Checkpoints (
+        checkpoint_id INT IDENTITY(1,1) PRIMARY KEY,
+        material_id INT NOT NULL REFERENCES dbo.Learning_Materials(material_id) ON DELETE CASCADE,
+        stop_time_seconds INT NOT NULL, -- Thời điểm dừng (tính bằng giây)
+        question_prompt NVARCHAR(1000) NOT NULL,
+        option_a NVARCHAR(500) NOT NULL,
+        option_b NVARCHAR(500) NOT NULL,
+        option_c NVARCHAR(500) NULL,
+        option_d NVARCHAR(500) NULL,
+        correct_option INT NOT NULL, -- 0: A, 1: B, 2: C, 3: D
+        explanation NVARCHAR(1000) NULL,
+        created_at DATETIME DEFAULT GETDATE(),
+        CONSTRAINT CK_Checkpoint_Correct CHECK (correct_option BETWEEN 0 AND 3),
+        CONSTRAINT CK_Checkpoint_Time CHECK (stop_time_seconds >= 0)
+    );
+    CREATE INDEX IX_Checkpoints_Material ON dbo.Video_Checkpoints(material_id, stop_time_seconds);
+END;
+
+-- 7. BẢNG LƯU KẾT QUẢ TRẢ LỜI CÂU HỎI VIDEO (VIDEO_QUESTION_ANSWERS)
+IF OBJECT_ID('dbo.Video_Question_Answers', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Video_Question_Answers (
+        answer_id INT IDENTITY(1,1) PRIMARY KEY,
+        checkpoint_id INT NOT NULL REFERENCES dbo.Video_Checkpoints(checkpoint_id) ON DELETE CASCADE,
+        user_id INT NOT NULL REFERENCES dbo.Users(user_id),
+        selected_option INT NOT NULL,
+        is_correct BIT NOT NULL,
+        attempt_count INT NOT NULL DEFAULT 1,
+        answered_at DATETIME DEFAULT GETDATE(),
+        CONSTRAINT UQ_Checkpoint_User UNIQUE (checkpoint_id, user_id)
+    );
+END;
+
+COMMIT;
+GO
+
