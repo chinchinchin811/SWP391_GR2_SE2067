@@ -29,8 +29,7 @@
 
             <form action="<%= request.getContextPath() %>/mentors" method="POST">
                 <input type="hidden" name="action" value="assign">
-
-                <!-- 1. CHỌN NHÂN VIÊN MỚI -->
+                
                 <div style="margin-bottom: 15px;">
                     <label style="font-weight: bold; display: block; margin-bottom: 5px;">1. Chon Nhan vien moi (*):</label>
                     <select id="menteeSelect" name="menteeId" onchange="filterMentorsByPosition()" required style="width: 100%; padding: 8px;">
@@ -49,7 +48,7 @@
                     </select>
                 </div>
 
-                <!-- 2. CHỌN MENTOR HƯỚNG DẪN -->
+               
                 <div style="margin-bottom: 15px;">
                     <label style="font-weight: bold; display: block; margin-bottom: 5px;">2. Chon Mentor huong dan (*):</label>
                     <select id="mentorSelect" name="mentorId" required style="width: 100%; padding: 8px;">
@@ -68,7 +67,7 @@
 </main>
 
 <script>
-    // 1. Chuyển danh sách Mentor từ Java sang JS và loại bỏ khoảng trắng thừa
+   
     var allMentors = [
         <% if (mentors != null) {
             for (int i = 0; i < mentors.size(); i++) {
@@ -84,8 +83,7 @@
         <%  } 
            } %>
     ];
-
-    // 2. Hàm lọc Mentor linh hoạt
+   
     function filterMentorsByPosition() {
         var menteeSelect = document.getElementById("menteeSelect");
         var mentorSelect = document.getElementById("mentorSelect");
@@ -109,15 +107,12 @@
         defaultOpt.value = "";
         defaultOpt.textContent = "-- Chọn Mentor --";
         mentorSelect.appendChild(defaultOpt);
-
-        // Chuẩn hóa tên vị trí của mentee về dạng chữ thường để so sánh
+        
         var cleanMenteePosName = menteePosName ? menteePosName.trim().toLowerCase() : "";
 
         allMentors.forEach(function(mentor) {
             var isMatch = false;
             var cleanMentorPosName = mentor.positionName ? mentor.positionName.trim().toLowerCase() : "";
-
-            // Kiểm tra khớp ID vị trí HOẶC khớp tên vị trí (không phân biệt hoa thường)
             if (menteePosId && menteePosId !== "0" && Number(mentor.positionId) === Number(menteePosId)) {
                 isMatch = true;
             } else if (cleanMenteePosName !== "" && cleanMentorPosName === cleanMenteePosName) {

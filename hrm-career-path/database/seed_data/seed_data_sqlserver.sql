@@ -1,4 +1,4 @@
--- =======================================================
+﻿-- =======================================================
 -- SQL Server Script: seed_data_sqlserver.sql
 -- Project: HRM & Career Path Management (SWP291 / SE2067)
 -- Database: HRM_Project_DB
@@ -77,108 +77,64 @@ GO
 -- =======================================================
 
 INSERT INTO dbo.FlashcardDecks (title, description) VALUES 
-(N'Quy tr�nh Onboarding', N'Kien thuc nhap m�n c�ng ty'),
+(N'Quy trình Onboarding', N'Kien thuc nhap môn công ty'),
 (N'Java Core', N'Kien thuc chuyen mon Java');
 
 SELECT *
 FROM dbo.FlashcardDecks
-WHERE title IN (N'Quy tr�nh Onboarding', N'Java Core', N'Kien thuc nhap m�n c�ng ty' );
+WHERE title IN (N'Quy trình Onboarding', N'Java Core', N'Kien thuc nhap môn công ty' );
 
 
 UPDATE dbo.FlashcardDecks
-SET title = N'Van hoa cong ty'
+SET title = N'Văn hóa công ty'
 WHERE deck_id = 1;
 
 UPDATE dbo.FlashcardDecks
-SET title = N'Chuyen mon'
+SET title = N'Chuyên môn'
 WHERE deck_id = 2;
 
 
 INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES 
 (1, N'Gio lam viec bat dau luc may gio', N'8:30 Sang'),
-(2, N'OOP c� may tinh chat co ban?', N'4 tinh chat: Dong goi, Ke thua, Da hinh, Truu tuong');
+(2, N'OOP có may tinh chat co ban?', N'4 tinh chat: Dong goi, Ke thua, Da hinh, Truu tuong');
+GO
+
+DELETE FROM dbo.Flashcards WHERE deck_id = 1;
 GO
 
 INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
-(1, N'Gio lam viec ket thuc luc may gio?', 
-    N'17:30 hang ngay.'),
-
-(1, N'Thanh vien moi can lam gi trong ngay dau tien?', 
-    N'Hoan tat thu tuc onboarding, lam quen voi team, tai khoan he thong va noi quy cong ty.'),
-
-(1, N'Nhan vien can bao truoc bao nhieu ngay khi xin nghi phep?', 
-    N'Thuc hien theo quy dinh nghi phep cua cong ty va thong bao cho quan ly truoc thoi gian nghi.'),
-
-(1, N'Khi gap van de trong cong viec, nhan vien nen lam gi?', 
-    N'Chu dong trao doi voi Leader, Manager hoac nguoi huong dan de duoc ho tro.'),
-
-(1, N'Onboarding la gi?', 
-    N'La qua trinh giup nhan vien moi lam quen voi cong ty, cong viec, van hoa va quy trinh lam viec.'),
-
-(1, N'Muc dich cua viec onboarding nhan vien moi la gi?', 
-    N'Giup nhan vien nhanh chong hoa nhap, hieu cong viec va co the lam viec hieu qua.'),
-
-(1, N'Nhan vien co can bao mat thong tin cong ty khong?', 
-    N'Co. Nhan vien phai bao mat thong tin noi bo, thong tin khach hang va du lieu cua cong ty.'),
-
-(1, N'Khi den muon, nhan vien nen lam gi?', 
-    N'Thong bao cho quan ly hoac nguoi phu trach va tuan thu quy dinh cham cong cua cong ty.'),
-
-(1, N'Tai sao can tham gia cac buoi training cua cong ty?', 
-    N'De cap nhat kien thuc, quy trinh, ky nang va cac quy dinh can thiet cho cong viec.'),
-
-(1, N'Nhan vien moi co the hoi ai khi khong hieu cong viec?', 
-    N'Co the hoi Mentor, Team Leader, Manager hoac dong nghiep phu hop.');
-
+(1, N'Giờ làm việc kết thúc lúc mấy giờ?', N'17:30 hàng ngày.'),
+(1, N'Thành viên mới cần làm gì trong ngày đầu tiên?', N'Hoàn tất thủ tục onboarding, làm quen với team, tài khoản hệ thống và nội quy công ty.'),
+(1, N'Nhân viên cần báo trước bao nhiêu ngày khi xin nghỉ phép?', N'Thực hiện theo quy định nghỉ phép của công ty và thông báo cho quản lý trước thời gian nghỉ.'),
+(1, N'Khi gặp vấn đề trong công việc, nhân viên nên làm gì?', N'Chủ động trao đổi với Leader, Manager hoặc người hướng dẫn để được hỗ trợ.'),
+(1, N'Onboarding là gì?', N'Là quá trình giúp nhân viên mới làm quen với công ty, công việc, văn hóa và quy trình làm việc.'),
+(1, N'Mục đích của việc onboarding nhân viên mới là gì?', N'Giúp nhân viên nhanh chóng hòa nhập, hiểu công việc và có thể làm việc hiệu quả.'),
+(1, N'Nhân viên có cần bảo mật thông tin công ty không?', N'Có. Nhân viên phải bảo mật thông tin nội bộ, thông tin khách hàng và dữ liệu của công ty.'),
+(1, N'Khi đến muộn, nhân viên nên làm gì?', N'Thông báo cho quản lý hoặc người phụ trách và tuân thủ quy định chấm công của công ty.'),
+(1, N'Tại sao cần tham gia các buổi training của công ty?', N'Để cập nhật kiến thức, quy trình, kỹ năng và các quy định cần thiết cho công việc.'),
+(1, N'Nhân viên mới có thể hỏi ai khi không hiểu công việc?', N'Có thể hỏi Mentor, Team Leader, Manager hoặc đồng nghiệp phù hợp.');
 GO
 
 
+DELETE FROM dbo.Flashcards WHERE deck_id = 2;
+GO
+
 INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
-(2, N'Java la gi?', 
-    N'Java la mot ngon ngu lap trinh huong doi tuong, duoc su dung pho bien de phat trien ung dung web, desktop va backend.'),
-
-(2, N'OOP co may tinh chat co ban?', 
-    N'4 tinh chat: Dong goi, Ke thua, Da hinh va Truu tuong.'),
-
-(2, N'Class trong Java la gi?', 
-    N'Class la mot khuon mau dung de dinh nghia thuoc tinh va hanh vi cua object.'),
-
-(2, N'Object trong Java la gi?', 
-    N'Object la mot the hien cu the duoc tao ra tu mot class.'),
-
-(2, N'Tinh dong goi trong OOP la gi?', 
-    N'La viec dong goi du lieu va cac phuong thuc lien quan trong mot class va kiem soat quyen truy cap.'),
-
-(2, N'Tinh ke thua trong OOP la gi?', 
-    N'La co che cho phep mot class con ke thua thuoc tinh va phuong thuc tu class cha.'),
-
-(2, N'Tinh da hinh trong OOP la gi?', 
-    N'La kha nang cung mot phuong thuc co the co cach thuc hien khac nhau tuy theo object.'),
-
-(2, N'Tinh truu tuong trong OOP la gi?', 
-    N'La viec an di cac chi tiet cai dat va chi hien thi nhung thong tin can thiet cho nguoi su dung.'),
-
-(2, N'Constructor trong Java dung de lam gi?', 
-    N'Dung de khoi tao object khi object duoc tao ra.'),
-
-(2, N'Interface trong Java la gi?', 
-    N'Interface la mot tap hop cac phuong thuc ma class implement can cung cap phan cai dat.'),
-
-(2, N'Exception trong Java la gi?', 
-    N'Exception la loi xay ra trong qua trinh chuong trinh dang thuc thi.'),
-
-(2, N'Try-catch trong Java dung de lam gi?', 
-    N'Dung de xu ly exception va tranh lam chuong trinh ket thuc dot ngot.'),
-
-(2, N'ArrayList trong Java la gi?', 
-    N'ArrayList la mot collection co the luu tru nhieu phan tu va co kich thuoc co the thay doi.'),
-
-(2, N'Git dung de lam gi?', 
-    N'Git la he thong quan ly phien ban giup theo doi, luu tru va quan ly cac thay doi cua source code.'),
-
-(2, N'API la gi?', 
-    N'API la giao dien cho phep cac ung dung hoac he thong giao tiep va trao doi du lieu voi nhau.');
-
+(2, N'Java là gì?', N'Java là một ngôn ngữ lập trình hướng đối tượng, được sử dụng phổ biến để phát triển ứng dụng web, desktop và backend.'),
+(2, N'OOP có mấy tính chất cơ bản?', N'4 tính chất: Đóng gói, Kế thừa, Đa hình và Trừu tượng.'),
+(2, N'Class trong Java là gì?', N'Class là một khuôn mẫu dùng để định nghĩa thuộc tính và hành vi của object.'),
+(2, N'Object trong Java là gì?', N'Object là một thể hiện cụ thể được tạo ra từ một class.'),
+(2, N'Tính đóng gói trong OOP là gì?', N'Là việc đóng gói dữ liệu và các phương thức liên quan trong một class và kiểm soát quyền truy cập.'),
+(2, N'Tính kế thừa trong OOP là gì?', N'Là cơ chế cho phép một class con kế thừa thuộc tính và phương thức từ class cha.'),
+(2, N'Tính đa hình trong OOP là gì?', N'Là khả năng cùng một phương thức có thể có cách thực hiện khác nhau tùy theo object.'),
+(2, N'Tính trừu tượng trong OOP là gì?', N'Là việc ẩn đi các chi tiết cài đặt và chỉ hiển thị những thông tin cần thiết cho người sử dụng.'),
+(2, N'Constructor trong Java dùng để làm gì?', N'Dùng để khởi tạo object khi object được tạo ra.'),
+(2, N'Interface trong Java là gì?', N'Interface là một tập hợp các phương thức mà class implement cần cung cấp phần cài đặt.'),
+(2, N'Exception trong Java là gì?', N'Exception là lỗi xảy ra trong quá trình chương trình đang thực thi.'),
+(2, N'Try-catch trong Java dùng để làm gì?', N'Dùng để xử lý exception và tránh làm chương trình kết thúc đột ngột.'),
+(2, N'ArrayList trong Java là gì?', N'ArrayList là một collection có thể lưu trữ nhiều phần tử và có kích thước có thể thay đổi.'),
+(2, N'Git dùng để làm gì?', N'Git là hệ thống quản lý phiên bản giúp theo dõi, lưu trữ và quản lý các thay đổi của source code.'),
+(2, N'API là gì?', N'API là giao diện cho phép các ứng dụng hoặc hệ thống giao tiếp và trao đổi dữ liệu với nhau.');
 GO
 
 use HRM_Project_DB

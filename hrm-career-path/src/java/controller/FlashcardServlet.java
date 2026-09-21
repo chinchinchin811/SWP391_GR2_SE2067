@@ -64,14 +64,22 @@ public class FlashcardServlet extends HttpServlet {
 
         int currentDeckId = -1;
         String deckIdParam = request.getParameter("deckId");
+
         if (deckIdParam != null && !deckIdParam.isEmpty()) {
-            currentDeckId = Integer.parseInt(deckIdParam);
-        } else if (decks != null && !decks.isEmpty()) {
+            try {                
+                currentDeckId = Integer.parseInt(deckIdParam);
+            } catch (NumberFormatException e) {
+                currentDeckId = -1; 
+            }
+        }
+        
+        if (currentDeckId == -1 && decks != null && !decks.isEmpty()) {
             currentDeckId = decks.get(0).getDeckId();
         }
 
         FlashcardDeck currentDeck = null;
         List<Flashcard> cards = null;
+
         if (currentDeckId != -1) {
             cards = dao.getCardsByDeckId(currentDeckId);
             for (FlashcardDeck d : decks) {
@@ -81,12 +89,10 @@ public class FlashcardServlet extends HttpServlet {
                 }
             }
         }
-
         request.setAttribute("decks", decks);
         request.setAttribute("cards", cards);
         request.setAttribute("currentDeck", currentDeck);
         request.getRequestDispatcher("flashcard-list.jsp").forward(request, response);
-
     }
 
     /**

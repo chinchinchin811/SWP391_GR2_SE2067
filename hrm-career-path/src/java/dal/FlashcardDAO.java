@@ -40,7 +40,9 @@ public class FlashcardDAO {
             ps.setInt(1, deckId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Flashcard c = new Flashcard();
+                    Flashcard c = new Flashcard();                   
+                    c.setCardId(rs.getInt("card_id"));                   
+                    c.setDeckId(rs.getInt("deck_id"));
                     c.setQuestion(rs.getString("question"));
                     c.setAnswer(rs.getString("answer"));
                     list.add(c);

@@ -5,8 +5,7 @@
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-
-    // BẢO MẬT GIAO DIỆN: EMPLOYEE (ROLE 4) CHẶN KHÔNG CHO TRUY CẬP
+   
     if (roleId == 4) {
         response.sendRedirect(request.getContextPath() + "/dashboard");
         return;
