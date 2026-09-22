@@ -60,16 +60,21 @@ public class FlashcardServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         FlashcardDAO dao = new FlashcardDAO();
-        List<FlashcardDeck> decks = dao.getAllDecks();
+        List<FlashcardDeck> decks;
+        try {
+            decks = dao.getAllDecks();
+        } catch (IllegalStateException e) {
+            throw new ServletException("Khong the tai du lieu Flashcard. Hay chay database/schema/flashcards_sqlserver.sql.", e);
+        }
 
         int currentDeckId = -1;
         String deckIdParam = request.getParameter("deckId");
 
         if (deckIdParam != null && !deckIdParam.isEmpty()) {
-            try {                
+            try {
                 currentDeckId = Integer.parseInt(deckIdParam);
             } catch (NumberFormatException e) {
-                currentDeckId = -1; 
+                currentDeckId = -1;
             }
         }
         
@@ -81,7 +86,11 @@ public class FlashcardServlet extends HttpServlet {
         List<Flashcard> cards = null;
 
         if (currentDeckId != -1) {
-            cards = dao.getCardsByDeckId(currentDeckId);
+            try {
+                cards = dao.getCardsByDeckId(currentDeckId);
+            } catch (IllegalStateException e) {
+                throw new ServletException("Khong the tai cac the Flashcard.", e);
+            }
             for (FlashcardDeck d : decks) {
                 if (d.getDeckId() == currentDeckId) {
                     currentDeck = d;

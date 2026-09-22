@@ -78,33 +78,32 @@
         background: #000;
         color: #fff;
         transform: rotateY(180deg);
+    }
 
-
-        /* Thêm style cho cụm nút điều hướng Trước/Sau */
-        .card-controls {
-            margin-top: 25px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-        }
-        .btn-nav {
-            padding: 10px 20px;
-            border: 2px solid #000;
-            background: #fff;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .btn-nav:hover {
-            background: #000;
-            color: #fff;
-        }
-        .btn-nav:disabled {
-            border-color: #ccc;
-            color: #ccc;
-            cursor: not-allowed;
-            background: #fff;
-        }
+    /* Thêm style cho cụm nút điều hướng Trước/Sau */
+    .card-controls {
+        margin-top: 25px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+    }
+    .btn-nav {
+        padding: 10px 20px;
+        border: 2px solid #000;
+        background: #fff;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    .btn-nav:hover {
+        background: #000;
+        color: #fff;
+    }
+    .btn-nav:disabled {
+        border-color: #ccc;
+        color: #ccc;
+        cursor: not-allowed;
+        background: #fff;
     }
 </style>
 
