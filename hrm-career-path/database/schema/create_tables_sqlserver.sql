@@ -1,12 +1,9 @@
 -- =======================================================
 -- SQL Server Script: create_tables_sqlserver.sql
-<<<<<<< HEAD
-=======
 -- DDL: HRM + bai test + kho bo de/cau hoi. Seed nam trong database/seed_data/.
 -- CHAY TOAN BO FILE SE XOA VA TAO LAI HRM_Project_DB (giu hanh vi script goc).
 -- De cap nhat module tren DB da co: chon dung database va chi chay tu
 -- moc BEGIN TEST MODULE o cuoi file; khong chay phan reset.
->>>>>>> f8a74a049ffd1298d8937b7fa21559b5c6406a80
 -- Project: HRM & Career Path Management (SWP291 / SE2067)
 -- Database: HRM_Project_DB
 -- Thu muc: database/schema/
@@ -151,7 +148,6 @@ CREATE TABLE dbo.Employee_History (
 );
 GO
 
-<<<<<<< HEAD
 -- =======================================================
 -- 7. BANG FlashCard & Mentor
 -- =======================================================
@@ -194,7 +190,6 @@ CREATE TABLE dbo.MentorEvaluations (
     FOREIGN KEY (assignment_id) REFERENCES dbo.MentorAssignments(assignment_id)
 );
 GO
-=======
 -- BEGIN TEST MODULE
 -- Migration bổ sung, chạy trên database HRM hiện có; không xóa dữ liệu.
 -- Thời gian trong module luôn lưu UTC. Có thể chạy lại migration này.
@@ -344,4 +339,3 @@ BEGIN
     );
 END;
 COMMIT;
->>>>>>> f8a74a049ffd1298d8937b7fa21559b5c6406a80
