@@ -116,7 +116,9 @@ public final class TestService {
         return transaction(dao -> dao.actor(userId));
     }
 
-    /** Tạo đợt giao bài nháp, có thể gắn sẵn một nội dung trong ngân hàng. */
+    /**
+     * Tạo đợt giao bài nháp, có thể gắn sẵn một nội dung trong ngân hàng.
+     */
     public int createTemplate(int userId, String title, String description, String type,
             Instant start, Instant end) throws SQLException {
         return createTemplate(userId, title, description, type, start, end, null);
@@ -154,7 +156,9 @@ public final class TestService {
         });
     }
 
-    public record CreatedTemplate(int templateId, int contentId) { }
+    public record CreatedTemplate(int templateId, int contentId) {
+
+    }
 
     private void validateTemplate(String type, Instant start, Instant end) {
         if (start == null || end == null || !start.isBefore(end) || !clock.instant().isBefore(end)
@@ -205,9 +209,10 @@ public final class TestService {
             TestActor actor = dao.actor(userId);
             TestTemplate t = dao.template(actor, id);
             manage(actor, t);
-            if ("published".equals(to) && t.defaultContentId()!=null
-                    && !"ready".equals(dao.managedContent(actor,t.defaultContentId()).status()))
-                throw new TestException(409,"Hãy hoàn tất và chốt bộ trắc nghiệm trước khi công bố đợt giao bài.");
+            if ("published".equals(to) && t.defaultContentId() != null
+                    && !"ready".equals(dao.managedContent(actor, t.defaultContentId()).status())) {
+                throw new TestException(409, "Hãy hoàn tất và chốt bộ trắc nghiệm trước khi công bố đợt giao bài.");
+            }
             if ("published".equals(to) && !clock.instant().isBefore(t.endTime())) {
                 throw new TestException(409, "Đề đã hết hạn, không thể công bố.");
             }
@@ -319,7 +324,9 @@ public final class TestService {
         assignTest(userId, templateId, assigneeIds, null);
     }
 
-    /** Chọn nội dung ready cùng loại/phạm vi quản lý cho toàn bộ người nhận. */
+    /**
+     * Chọn nội dung ready cùng loại/phạm vi quản lý cho toàn bộ người nhận.
+     */
     public void assignTest(int userId, int templateId, List<Integer> assigneeIds, Integer contentId) throws SQLException {
         if (assigneeIds == null || assigneeIds.isEmpty() || assigneeIds.size() > 500) {
             throw new TestException(400, "Chọn từ 1 đến 500 người nhận mỗi lần giao.");
@@ -334,7 +341,7 @@ public final class TestService {
         transaction(dao -> {
             TestActor actor = dao.actor(userId);
             TestTemplate t = dao.template(actor, templateId);
-            Integer selectedContentId=contentId==null?t.defaultContentId():contentId;
+            Integer selectedContentId = contentId == null ? t.defaultContentId() : contentId;
             if (!policy.canAssign(actor, t, clock.instant())) {
                 throw new TestException(403, "Không có quyền giao bài hoặc đề đã hết hạn.");
             }
@@ -343,13 +350,15 @@ public final class TestService {
                 if (!"ready".equals(selected.status())) {
                     throw new TestException(409, "Bộ đề/câu hỏi chưa sẵn sàng để giao.");
                 }
-                if (!selected.type().equals(t.type()) || (selected.departmentId()!=null && !Objects.equals(selected.departmentId(), t.departmentId()))) {
+                if (!selected.type().equals(t.type()) || (selected.departmentId() != null && !Objects.equals(selected.departmentId(), t.departmentId()))) {
                     throw new TestException(403, "Bộ đề/câu hỏi phải cùng phạm vi với đợt giao bài.");
                 }
             }
             for (int id : ids) {
                 TestActor recipient = dao.actor(id);
-                if ("ADMIN".equals(recipient.role())) throw new TestException(403,"Không thể giao bài đánh giá cho tài khoản ADMIN.");
+                if ("ADMIN".equals(recipient.role())) {
+                    throw new TestException(403, "Không thể giao bài đánh giá cho tài khoản ADMIN.");
+                }
                 int assignment = dao.insertId("INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id) "
                         + "OUTPUT INSERTED.id VALUES (?,?,?,?)", templateId, id, actor.id(), selectedContentId);
                 dao.audit(actor, "assign", templateId, assignment);
@@ -553,7 +562,9 @@ public final class TestService {
         });
     }
 
-    /** Kho nội dung chỉ mở cho ADMIN/HR hoặc MANAGER đang quản lý một phòng. */
+    /**
+     * Kho nội dung chỉ mở cho ADMIN/HR hoặc MANAGER đang quản lý một phòng.
+     */
     private void bankManager(TestActor actor) {
         if (!actor.cultureManager() && !actor.departmentManager()) {
             throw new TestException(403, "Bạn không có quyền quản lý bộ đề/câu hỏi.");
@@ -603,7 +614,9 @@ public final class TestService {
         });
     }
 
-    /** Xóa mềm các bộ đề được chọn; bài đã giao vẫn giữ nguyên nội dung lịch sử. */
+    /**
+     * Xóa mềm các bộ đề được chọn; bài đã giao vẫn giữ nguyên nội dung lịch sử.
+     */
     public void deleteContents(int userId, List<Integer> contentIds) throws SQLException {
         if (contentIds == null || contentIds.isEmpty() || contentIds.size() > 100) {
             throw new TestException(400, "Hãy chọn từ 1 đến 100 bộ đề để xóa.");
@@ -613,7 +626,9 @@ public final class TestService {
             TestActor actor = dao.actor(userId);
             bankManager(actor);
             for (Integer id : ids) {
-                if (id == null || id <= 0) throw new TestException(400, "Bộ đề không hợp lệ.");
+                if (id == null || id <= 0) {
+                    throw new TestException(400, "Bộ đề không hợp lệ.");
+                }
                 dao.managedContent(actor, id);
                 changed(dao.execute("UPDATE Test_Content SET is_deleted=1 WHERE id=? AND is_deleted=0", id));
             }
@@ -673,7 +688,9 @@ public final class TestService {
         });
     }
 
-    /** Sửa câu nhập sai khi bộ đề vẫn còn là bản nháp. */
+    /**
+     * Sửa câu nhập sai khi bộ đề vẫn còn là bản nháp.
+     */
     public void updateQuestion(int userId, int id, int questionId, String prompt,
             List<String> options, int correct) throws SQLException {
         String body = text(prompt, 4000, true);
