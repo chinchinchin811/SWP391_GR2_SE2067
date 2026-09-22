@@ -12,22 +12,15 @@ import model.TestTemplate;
  */
 public final class TestPolicy {
 
-    /**
-     * Quyền quản lý không dựa riêng vào người tạo; mất phòng quản lý là mất
-     * quyền.
-     */
+    /** ADMIN/HR quản lý toàn công ty; MANAGER quản lý nội dung gắn với phòng mình. */
     public boolean canManage(TestActor actor, TestTemplate t) {
         return "culture".equals(t.type()) ? actor.cultureManager()
-                : actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId());
+                : actor.cultureManager() || (actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId()));
     }
 
-    /**
-     * Đề nháp chỉ người quản lý xem; đề công bố/đóng hiển thị theo loại và
-     * phòng.
-     */
+    /** Đề nháp chỉ người quản lý xem; đề công bố/đóng hiển thị toàn công ty. */
     public boolean canView(TestActor actor, TestTemplate t) {
-        boolean scope = "culture".equals(t.type()) || (actor.departmentId() != null
-                && actor.departmentId().equals(t.departmentId()));
+        boolean scope = !"ADMIN".equals(actor.role()) || canManage(actor, t);
         return scope && (!"draft".equals(t.status()) || canManage(actor, t));
     }
 
