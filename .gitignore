@@ -2,11 +2,14 @@
 # NetBeans & Ant Build Artifacts
 # ==========================================
 **/nbproject/private/
+**/nbproject/build-impl.xml
+**/nbproject/genfiles.properties
+**/nbproject/ant-deploy.xml
+**/nbproject/genfiles.properties.bak
 **/build/
 **/dist/
 **/nb-configuration.xml
 nbactions.xml
-nbproject/genfiles.properties.bak
 
 # ==========================================
 # Java Compiled Files & Packages
