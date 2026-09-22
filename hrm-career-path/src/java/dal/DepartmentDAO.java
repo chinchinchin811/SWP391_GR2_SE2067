@@ -13,13 +13,15 @@ public class DepartmentDAO {
 
     public List<Department> getAllDepartments() {
         List<Department> list = new ArrayList<>();
-        String sql = "SELECT d.department_id, d.department_name, d.manager_id, d.description, d.status, d.is_deleted, d.created_at, "
-                   + "u.full_name AS manager_name, u.email AS manager_email, "
-                   + "(SELECT COUNT(*) FROM Users WHERE department_id = d.department_id AND is_deleted = 0 AND status = 1) AS employee_count "
-                   + "FROM Departments d "
-                   + "LEFT JOIN Users u ON d.manager_id = u.user_id "
-                   + "WHERE d.is_deleted = 0 "
-                   + "ORDER BY d.department_id ASC";
+        String sql = """
+            SELECT d.department_id, d.department_name, d.manager_id, d.description, d.status, d.is_deleted, d.created_at,
+                   u.full_name AS manager_name, u.email AS manager_email,
+                   (SELECT COUNT(*) FROM Users WHERE department_id = d.department_id AND is_deleted = 0 AND status = 1) AS employee_count
+            FROM Departments d
+            LEFT JOIN Users u ON d.manager_id = u.user_id
+            WHERE d.is_deleted = 0
+            ORDER BY d.department_id ASC
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -45,12 +47,14 @@ public class DepartmentDAO {
     }
 
     public Department getDepartmentById(int id) {
-        String sql = "SELECT d.department_id, d.department_name, d.manager_id, d.description, d.status, d.is_deleted, d.created_at, "
-                   + "u.full_name AS manager_name, u.email AS manager_email, "
-                   + "(SELECT COUNT(*) FROM Users WHERE department_id = d.department_id AND is_deleted = 0 AND status = 1) AS employee_count "
-                   + "FROM Departments d "
-                   + "LEFT JOIN Users u ON d.manager_id = u.user_id "
-                   + "WHERE d.department_id = ? AND d.is_deleted = 0";
+        String sql = """
+            SELECT d.department_id, d.department_name, d.manager_id, d.description, d.status, d.is_deleted, d.created_at,
+                   u.full_name AS manager_name, u.email AS manager_email,
+                   (SELECT COUNT(*) FROM Users WHERE department_id = d.department_id AND is_deleted = 0 AND status = 1) AS employee_count
+            FROM Departments d
+            LEFT JOIN Users u ON d.manager_id = u.user_id
+            WHERE d.department_id = ? AND d.is_deleted = 0
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -78,12 +82,14 @@ public class DepartmentDAO {
     }
 
     public Department getDepartmentByManagerId(int managerId) {
-        String sql = "SELECT d.department_id, d.department_name, d.manager_id, d.description, d.status, d.is_deleted, d.created_at, "
-                   + "u.full_name AS manager_name, u.email AS manager_email, "
-                   + "(SELECT COUNT(*) FROM Users WHERE department_id = d.department_id AND is_deleted = 0 AND status = 1) AS employee_count "
-                   + "FROM Departments d "
-                   + "LEFT JOIN Users u ON d.manager_id = u.user_id "
-                   + "WHERE d.manager_id = ? AND d.is_deleted = 0";
+        String sql = """
+            SELECT d.department_id, d.department_name, d.manager_id, d.description, d.status, d.is_deleted, d.created_at,
+                   u.full_name AS manager_name, u.email AS manager_email,
+                   (SELECT COUNT(*) FROM Users WHERE department_id = d.department_id AND is_deleted = 0 AND status = 1) AS employee_count
+            FROM Departments d
+            LEFT JOIN Users u ON d.manager_id = u.user_id
+            WHERE d.manager_id = ? AND d.is_deleted = 0
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, managerId);
@@ -111,7 +117,10 @@ public class DepartmentDAO {
     }
 
     public boolean addDepartment(Department dept) {
-        String sql = "INSERT INTO Departments (department_name, manager_id, description, status, is_deleted) VALUES (?, ?, ?, ?, 0)";
+        String sql = """
+            INSERT INTO Departments (department_name, manager_id, description, status, is_deleted) 
+            VALUES (?, ?, ?, ?, 0)
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, dept.getDepartmentName());
@@ -130,7 +139,11 @@ public class DepartmentDAO {
     }
 
     public boolean updateDepartment(Department dept) {
-        String sql = "UPDATE Departments SET department_name = ?, manager_id = ?, description = ?, status = ? WHERE department_id = ? AND is_deleted = 0";
+        String sql = """
+            UPDATE Departments 
+            SET department_name = ?, manager_id = ?, description = ?, status = ? 
+            WHERE department_id = ? AND is_deleted = 0
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, dept.getDepartmentName());
@@ -150,7 +163,11 @@ public class DepartmentDAO {
     }
 
     public boolean assignManager(int departmentId, Integer managerId) {
-        String sql = "UPDATE Departments SET manager_id = ? WHERE department_id = ? AND is_deleted = 0";
+        String sql = """
+            UPDATE Departments 
+            SET manager_id = ? 
+            WHERE department_id = ? AND is_deleted = 0
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             if (managerId != null && managerId > 0) {
@@ -168,7 +185,11 @@ public class DepartmentDAO {
 
     // XOA MEM (Soft Delete): Chi cap nhat is_deleted = 1
     public boolean deleteDepartment(int id) {
-        String sql = "UPDATE Departments SET is_deleted = 1 WHERE department_id = ?";
+        String sql = """
+            UPDATE Departments 
+            SET is_deleted = 1 
+            WHERE department_id = ?
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -180,7 +201,11 @@ public class DepartmentDAO {
     }
 
     public int countDepartments() {
-        String sql = "SELECT COUNT(*) FROM Departments WHERE is_deleted = 0 AND status = 1";
+        String sql = """
+            SELECT COUNT(*) 
+            FROM Departments 
+            WHERE is_deleted = 0 AND status = 1
+            """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {

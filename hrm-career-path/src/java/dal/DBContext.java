@@ -13,10 +13,6 @@ public class DBContext {
     private static final String DB_PASSWORD = "123";
     private static final String DB_DRIVER = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
 
-    /**
-     * Mỗi request sở hữu một kết nối riêng; bên gọi đóng bằng
-     * try-with-resources.
-     */
     public Connection getConnection() throws SQLException {
         try {
             Class.forName(DB_DRIVER);
@@ -31,10 +27,7 @@ public class DBContext {
         return instance;
     }
 
-    /**
-     * Thử kết nối mới rồi đóng ngay, không lưu connection dùng chung giữa các
-     * luồng.
-     */
+
     public void checkAndReconnect() {
         try (Connection conn = getConnection()) {
             if (!conn.isValid(3)) {
@@ -45,10 +38,6 @@ public class DBContext {
         }
     }
 
-    /**
-     * Ham main de chay test truc tiep ket noi database. Nhan Shift + F6 (Run
-     * File) trong NetBeans de chay thu.
-     */
     public static void main(String[] args) {
         System.out.println("Dang kiem tra ket noi database.");
         try (Connection conn = DBContext.getInstance().getConnection()) {

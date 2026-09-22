@@ -1,0 +1,6 @@
+package model;
+import java.sql.Timestamp;
+public class ClassEnrollment {
+ private int enrollmentId,classId,userId,progressPercent; private String userName,status,enrollmentType,assignedReason; private Timestamp enrolledAt,completedAt;
+ public int getEnrollmentId(){return enrollmentId;} public void setEnrollmentId(int v){enrollmentId=v;} public int getClassId(){return classId;} public void setClassId(int v){classId=v;} public int getUserId(){return userId;} public void setUserId(int v){userId=v;} public int getProgressPercent(){return progressPercent;} public void setProgressPercent(int v){progressPercent=v;} public String getUserName(){return userName;} public void setUserName(String v){userName=v;} public String getStatus(){return status;} public void setStatus(String v){status=v;} public String getEnrollmentType(){return enrollmentType;} public void setEnrollmentType(String v){enrollmentType=v;} public String getAssignedReason(){return assignedReason;} public void setAssignedReason(String v){assignedReason=v;} public Timestamp getEnrolledAt(){return enrolledAt;} public void setEnrolledAt(Timestamp v){enrolledAt=v;} public Timestamp getCompletedAt(){return completedAt;} public void setCompletedAt(Timestamp v){completedAt=v;}
+}

@@ -119,6 +119,7 @@
 
         <div class="sidebar-menu-category">Bài test & Đánh giá</div>
 
+
         <li class="<%= currentURI.contains("/tests") && request.getParameter("action") == null? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/tests">
                 Danh sách bài test
@@ -150,6 +151,7 @@
             </a>
         </li>
         <% } %>
+
     </ul>
 
 
