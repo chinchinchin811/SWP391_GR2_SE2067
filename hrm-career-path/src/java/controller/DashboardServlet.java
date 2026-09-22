@@ -32,8 +32,7 @@ public class DashboardServlet extends HttpServlet {
         User currentUser = (User) session.getAttribute("currentUser");
         int roleId = currentUser.getRoleId();
 
-        if (roleId == 1 || roleId == 2) {
-            // ADMIN & HR: Thong ke toan cong ty
+        if (roleId == 1 || roleId == 2) {            
             int totalDepartments = departmentDAO.countDepartments();
             int totalPositions = positionDAO.countPositions();
             int totalEmployees = userDAO.countEmployees();
@@ -54,8 +53,7 @@ public class DashboardServlet extends HttpServlet {
             request.setAttribute("departments", departments);
             request.setAttribute("recentEmployees", recentEmployees);
 
-        } else if (roleId == 3) {
-            // MANAGER: Chi lay thong tin phong ban minh phu trach
+        } else if (roleId == 3) {            
             Department myDept = departmentDAO.getDepartmentByManagerId(currentUser.getUserId());
             if (myDept != null) {
                 List<User> deptEmployees = userDAO.getAllEmployees("", myDept.getDepartmentId(), null, null);
@@ -63,8 +61,7 @@ public class DashboardServlet extends HttpServlet {
                 request.setAttribute("deptEmployees", deptEmployees);
             }
 
-        } else {
-            // EMPLOYEE (Role 4): Chi lay thong tin va lich su phat trien cua chinh minh
+        } else {            
             User myProfile = userDAO.getUserById(currentUser.getUserId());
             List<EmployeeHistory> myHistory = userDAO.getHistoryByUserId(currentUser.getUserId());
             request.setAttribute("myProfile", myProfile != null ? myProfile : currentUser);

@@ -17,10 +17,10 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1>Dieu Chuyen Vi Tri & Thang Cap</h1>
+        <h1>Điều Chuyển Vị Trí & Thăng Cấp</h1>
         <div>
             <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">
-                Quay lai danh sach
+                Quay lại danh sach
             </a>
         </div>
     </div>
@@ -32,16 +32,16 @@
 
         <div class="card" style="max-width: 700px; margin: 0 auto;">
             <div class="card-header">
-                <h2>Dieu Chuyen Phong Ban / Doi Chuyen Mon / Thang Chuc</h2>
+                <h2>Điều Chuyển Phòng Ban / ĐỔi Chuyên Môn / Thăng Chức</h2>
             </div>
             <div class="card-body">
                 <!-- Thong tin hien tai -->
                 <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; margin-bottom: 20px; font-size: 13px;">
                     <div><b>Nhan vien:</b> <%= emp.getFullName() %> (Username: <%= emp.getUsername() %>)</div>
                     <div style="margin-top: 5px;">
-                        Phong ban hien tai: <b><%= emp.getDepartmentName() != null ? emp.getDepartmentName() : "Chua co" %></b> | 
-                        Vi tri hien tai: <b><%= emp.getPositionName() != null ? emp.getPositionName() : "Chua co" %></b> | 
-                        Cap bac: <b><%= emp.getLevelName() != null ? emp.getLevelName() : "Chua co" %></b>
+                        Phòng ban hiện tại: <b><%= emp.getDepartmentName() != null ? emp.getDepartmentName() : "Chua co" %></b> | 
+                        Vị trí hiện tại: <b><%= emp.getPositionName() != null ? emp.getPositionName() : "Chua co" %></b> | 
+                        Cấp bậc: <b><%= emp.getLevelName() != null ? emp.getLevelName() : "Chua co" %></b>
                     </div>
                 </div>
 
@@ -50,22 +50,22 @@
                     <input type="hidden" name="userId" value="<%= emp.getUserId() %>">
 
                     <div class="form-group">
-                        <label for="changeType">Loai thay doi (*):</label>
+                        <label for="changeType">Loại thay đổi (*):</label>
                         <select id="changeType" name="changeType" class="form-control" required>
-                            <option value="ROLE_CHANGE">Chuyen doi chuyen mon/vi tri moi (Can ghep Mentor chuyen mon)</option>
-                            <option value="PROMOTION">Thang cap bac / Len chuc (Promotion)</option>
-                            <option value="DEPARTMENT_TRANSFER">Luan chuyen phong ban</option>
+                            <option value="ROLE_CHANGE">Chuyển đổi chuyên môn/vị trí mới (Cần ghép Mentor chuyên môn)</option>
+                            <option value="PROMOTION">Thăng cấp bậc / Lên chức (Promotion)</option>
+                            <option value="DEPARTMENT_TRANSFER">Luân chuyển phòng ban</option>
                         </select>
                         <small style="color: #7f8c8d; display: block; margin-top: 3px;">
-                            He thong se tu dong ghi nhan lich su de xac dinh can ghep Mentor va lam bai thi danh gia nang luc.
+                            Hệ thống sẽ tự động ghi nhận lịch sử để xác định cần ghép Mentor và làm bài thi đánh giá năng lực.
                         </small>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="departmentId">Phong ban moi:</label>
+                            <label for="departmentId">Phòng ban mới:</label>
                             <select id="departmentId" name="departmentId" class="form-control">
-                                <option value="0">-- Giu nguyen hoac Chua phan --</option>
+                                <option value="0">-- Giữ nguyên hoặc Chưa phân --</option>
                                 <%
                                     if (departments != null) {
                                         for (Department d : departments) {
@@ -80,9 +80,9 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="positionId">Vi tri chuyen mon moi:</label>
+                            <label for="positionId">Vị trí chuyên môn mới:</label>
                             <select id="positionId" name="positionId" class="form-control">
-                                <option value="0">-- Giu nguyen hoac Chua phan --</option>
+                                <option value="0">-- Giữ nguyên hoặc Chưa phân --</option>
                                 <%
                                     if (positions != null) {
                                         for (Position p : positions) {
@@ -97,9 +97,9 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="levelId">Cap bac moi:</label>
+                            <label for="levelId">Cấp bậc mới:</label>
                             <select id="levelId" name="levelId" class="form-control">
-                                <option value="0">-- Giu nguyen hoac Chua phan --</option>
+                                <option value="0">-- Giữ nguyên hoặc Chưa phân --</option>
                                 <%
                                     if (jobLevels != null) {
                                         for (JobLevel lvl : jobLevels) {
@@ -115,15 +115,15 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="notes">Ly do / Ghi chu quyet dinh:</label>
+                        <label for="notes">Lý do / Ghi chú quyết định:</label>
                         <textarea id="notes" name="notes" class="form-control" rows="3" 
-                                  placeholder="Ghi chu ly do thuyen chuyen hoac thang chuc..."></textarea>
+                                  placeholder="Ghi chú lý do thuyên chuyển hoặc thăng chức..."></textarea>
                     </div>
 
                     <div class="form-actions">
-                        <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">Huy</a>
+                        <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">Hủy</a>
                         <button type="submit" class="btn btn-primary">
-                            Xac Nhan Dieu Chuyen & Luu Lich Su
+                            Xác Nhận Điều Chuyển & Lưu Lịch Sử
                         </button>
                     </div>
                 </form>

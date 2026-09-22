@@ -148,6 +148,48 @@ CREATE TABLE dbo.Employee_History (
 );
 GO
 
+-- =======================================================
+-- 7. BANG FlashCard & Mentor
+-- =======================================================
+CREATE TABLE dbo.FlashcardDecks (
+    deck_id INT IDENTITY(1,1) PRIMARY KEY,
+    title NVARCHAR(150) NOT NULL,
+    description NVARCHAR(MAX),
+    created_at DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE dbo.Flashcards (
+    card_id INT IDENTITY(1,1) PRIMARY KEY,
+    deck_id INT NOT NULL,
+    question NVARCHAR(MAX) NOT NULL,
+    answer NVARCHAR(MAX) NOT NULL,
+    FOREIGN KEY (deck_id) REFERENCES dbo.FlashcardDecks(deck_id) ON DELETE CASCADE
+);
+
+CREATE TABLE dbo.MentorAssignments (
+    assignment_id INT IDENTITY(1,1) PRIMARY KEY,
+    mentee_id INT NOT NULL,
+    mentor_id INT NOT NULL,
+    position_id INT NULL,
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    assigned_by INT NULL,
+    created_at DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (mentee_id) REFERENCES dbo.Users(user_id),
+    FOREIGN KEY (mentor_id) REFERENCES dbo.Users(user_id),
+    FOREIGN KEY (position_id) REFERENCES dbo.Positions(position_id)
+);
+
+CREATE TABLE dbo.MentorEvaluations (
+    evaluation_id INT IDENTITY(1,1) PRIMARY KEY,
+    assignment_id INT NOT NULL,
+    evaluator_id INT NOT NULL,
+    performance_score INT,
+    feedback NVARCHAR(MAX),
+    approval_status VARCHAR(20) DEFAULT 'PENDING',
+    evaluation_date DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (assignment_id) REFERENCES dbo.MentorAssignments(assignment_id)
+);
+GO
 -- BEGIN TEST MODULE
 -- Migration bổ sung, chạy trên database HRM hiện có; không xóa dữ liệu.
 -- Thời gian trong module luôn lưu UTC. Có thể chạy lại migration này.

@@ -22,15 +22,6 @@
                     <file>${file.reference.mssql-jdbc-12.4.2.jre11.jar}</file>
                     <path-in-war>WEB-INF/lib</path-in-war>
                 </library>
-                <library dirs="200">
-                    <file>${file.reference.servlet-api.jar}</file>
-                </library>
-                <library dirs="200">
-                    <file>${file.reference.jsp-api.jar}</file>
-                </library>
-                <library dirs="200">
-                    <file>${file.reference.el-api.jar}</file>
-                </library>
             </web-module-libraries>
             <web-module-additional-libraries/>
             <source-roots>
