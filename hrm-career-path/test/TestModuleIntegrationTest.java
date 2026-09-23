@@ -105,7 +105,8 @@ public class TestModuleIntegrationTest {
         TestService s = service(NOW);
         rejects(403, () -> s.createTemplate(4, "x", "y", "department", NOW, NOW.plusSeconds(3600)));
         rejects(403, () -> s.createTemplate(3, "x", "y", "culture", NOW, NOW.plusSeconds(3600)));
-        rejects(403, () -> s.createTemplate(1, "x", "y", "department", NOW, NOW.plusSeconds(3600)));
+        int adminProfessional = s.createTemplate(1, "Đánh giá chuyên môn toàn công ty", "Nội dung", "department", NOW, NOW.plusSeconds(3600));
+        check(s.getTemplate(1, adminProfessional).id() == adminProfessional, "ADMIN can manage professional evaluations");
         rejects(400, () -> s.createTemplate(3, "x", "y", "department", NOW, NOW));
         rejects(400, () -> s.createTemplate(3, " ", "y", "department", NOW, NOW.plusSeconds(10)));
         int dept = s.createTemplate(3, "Đề chuyên môn <script>", "Mô tả tự do", "department", NOW.minusSeconds(60), NOW.plusSeconds(3600));
@@ -119,20 +120,22 @@ public class TestModuleIntegrationTest {
         s.publishTemplate(2, culture);
         s.publishTemplate(3, future);
         check(s.getTemplate(6, culture).id() == culture, "culture visible company wide");
-        rejects(404, () -> s.getTemplate(6, dept));
-        rejects(404, () -> s.getTemplate(1, dept));
-        check(s.listTemplates(8, "all", 1, 20).size() == 1, "null department sees culture only");
+        check(s.getTemplate(6, dept).id() == dept, "professional evaluation visible company wide");
+        check(s.getTemplate(1, dept).id() == dept, "ADMIN can manage professional evaluation");
+        check(s.listTemplates(8, "all", 1, 20).size() == 3, "users without department see company evaluations");
         check(s.listTemplates(4, "upcoming", 1, 20).size() == 1, "upcoming scope");
         check(s.getCalendar(4, NOW.minusSeconds(30), NOW.plusSeconds(30), 1, 20).size() == 2, "calendar overlap not just start range");
         rejects(400, () -> s.getCalendar(4, NOW, NOW.plus(Duration.ofDays(367)), 1, 20));
         rejects(400, () -> s.listTemplates(4, "all", 0, 20));
         rejects(403, () -> s.assignTest(4, dept, List.of(7)));
-        rejects(403, () -> s.assignTest(3, dept, List.of(4, 6)));
-        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE test_template_id=" + dept) == 0, "batch rollback on cross-department recipient");
+        s.assignTest(3, dept, List.of(6));
+        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE test_template_id=" + dept) == 1, "professional test can target another department");
+        rejects(403, () -> s.assignTest(3, dept, List.of(1)));
+        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE test_template_id=" + dept) == 1, "ADMIN is excluded from recipients");
         s.assignTest(3, dept, List.of(4, 4, 7));
-        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE test_template_id=" + dept) == 2, "deduplicate request IDs");
+        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE test_template_id=" + dept) == 3, "deduplicate request IDs");
         rejects(409, () -> s.assignTest(3, dept, List.of(3, 4)));
-        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE test_template_id=" + dept) == 2, "duplicate assignment rolls back earlier insert");
+        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE test_template_id=" + dept) == 3, "duplicate assignment rolls back earlier insert");
         int a = assignment(dept, 4), other = assignment(dept, 7);
         rejects(404, () -> s.getAssignment(7, a));
         rejects(404, () -> s.download(6, a));
@@ -213,13 +216,24 @@ public class TestModuleIntegrationTest {
         rejects(409, () -> s.readNotification(7, notice));
         s.readNotification(4, notice);
         check(s.getNotifications(4).get(0).read(), "mark read");
+        int expiring = s.createTemplate(2, "Đợt sắp hết hạn", "Thu hồi bài chưa làm",
+                "culture", NOW.minusSeconds(60), NOW.plusSeconds(10));
+        s.publishTemplate(2, expiring);
+        s.assignTest(2, expiring, List.of(8));
+        int expiringAssignment = assignment(expiring, 8);
+        s.sendUpcomingReminders(NOW.plusSeconds(20));
+        check(count("SELECT COUNT(*) FROM Test_Templates WHERE id=" + expiring + " AND status='closed'") == 1,
+                "expired template automatically closes");
+        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE id=" + expiringAssignment + " AND is_deleted=1") == 1,
+                "expired pending assignment automatically revoked");
+        check(s.getMyAssignments(8, 1, 20).isEmpty(), "revoked expired assignment hidden from candidate");
         sql("UPDATE Users SET department_id=2 WHERE user_id=4");
-        check(s.getMyAssignments(4, 1, 20).isEmpty(), "transfer removes prior department assignments");
-        check(s.getNotifications(4).isEmpty(), "transfer removes old notification visibility");
-        rejects(404, () -> s.download(4, a));
-        rejects(404, () -> s.getAssignment(3, a));
+        check(s.getMyAssignments(4, 1, 20).size() == 2, "transfer keeps company-wide assignments");
+        check(s.getNotifications(4).size() == 1, "transfer keeps company-wide reminder visibility");
+        check(Arrays.equals(s.download(4, a).bytes(), file), "transfer keeps access to own submission");
+        check(s.getAssignment(3, a).id() == a, "manager keeps review access after employee transfer");
         sql("UPDATE Users SET department_id=2 WHERE user_id=3");
-        rejects(404, () -> s.getTemplate(3, dept));
+        check(s.getTemplate(3, dept).id() == dept, "published professional evaluation stays visible after manager transfer");
         rejects(403, () -> s.createTemplate(3, "x", "y", "department", NOW, NOW.plusSeconds(100)));
         sql("UPDATE Users SET department_id=1 WHERE user_id=3");
         s.archiveAssignment(3, assignment(future, 7));
@@ -237,6 +251,7 @@ public class TestModuleIntegrationTest {
         check(s.getAssignment(6, ca).evaluation() != null, "culture full flow");
         sql("UPDATE Users SET status=0 WHERE user_id=6");
         rejects(403, () -> s.getMyAssignments(6, 1, 20));
+        rejects(403, () -> s.getMyAssignments(1, 1, 20));
         check(TestView.h("<script>\"'&").equals("&lt;script&gt;&quot;&#39;&amp;"), "HTML escape");
         check(count("SELECT COUNT(*) FROM Test_Audit WHERE action='submit'") == 3, "submission audit committed");
     }
@@ -250,15 +265,23 @@ public class TestModuleIntegrationTest {
         TestService s = service(NOW);
         rejects(403, () -> s.createContent(7, "quiz", "x", "y"));
         rejects(400, () -> s.createContent(3, "invalid", "x", "y"));
+        int disposable = s.createContent(3, "quiz", "Bộ đề xóa", "Không còn sử dụng");
+        s.deleteContents(3, List.of(disposable));
+        rejects(404, () -> s.getContent(3, disposable));
+        rejects(400, () -> s.deleteContents(3, List.of()));
         int quiz = s.createContent(3, "quiz", "Bộ kiến thức", "Chọn một đáp án"), essay = s.createContent(3, "question", "Câu tự luận", "Mô tả cách xử lý tình huống");
         int culture = s.createContent(2, "question", "Văn hóa", "Giá trị cốt lõi"), draft = s.createContent(3, "question", "Nháp", "Chưa sẵn sàng");
         rejects(400, () -> s.publishContent(3, quiz));
         rejects(400, () -> s.addQuestion(3, quiz, "Q", List.of("A", "A", "C", "D"), 0));
+        rejects(400, () -> s.addQuestion(3, quiz, "Q", List.of("A", "a", "C", "D"), 0));
         rejects(400, () -> s.addQuestion(3, quiz, "Q", List.of("A", "B", "C", "D"), 4));
         for (int i = 0; i < 3; i++) {
             s.addQuestion(3, quiz, "Câu " + i, List.of("A", "B", "C", "D"), i);
         }
         s.addQuestion(3, quiz, "Câu xóa", List.of("A", "B", "C", "D"), 0);
+        int edited = s.getContent(3, quiz).questions().get(0).id();
+        s.updateQuestion(3, quiz, edited, "Câu đã sửa", List.of("A1", "B1", "C1", "D1"), 0);
+        check(s.getContent(3, quiz).questions().get(0).prompt().equals("Câu đã sửa"), "edit draft question");
         int removed = s.getContent(3, quiz).questions().get(3).id();
         s.removeQuestion(3, quiz, removed);
         check(s.getContent(3, quiz).questions().size() == 3, "remove only draft question");
@@ -266,6 +289,7 @@ public class TestModuleIntegrationTest {
         s.publishContent(3, essay);
         s.publishContent(2, culture);
         rejects(409, () -> s.addQuestion(3, quiz, "Q", List.of("A", "B", "C", "D"), 0));
+        rejects(409, () -> s.updateQuestion(3, quiz, edited, "Q", List.of("A", "B", "C", "D"), 0));
         rejects(409, () -> s.removeQuestion(3, quiz, s.getContent(3, quiz).questions().get(0).id()));
         rejects(403, () -> s.listContent(4, 1, 20));
         rejects(404, () -> s.getContent(4, quiz));

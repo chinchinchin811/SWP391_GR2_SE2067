@@ -91,10 +91,12 @@ public class TestModuleHttpTest {
         check(post(manager, "/hrm/tests", "action", "create").statusCode() == 403, "missing CSRF rejected");
         check(post(manager, "/hrm/tests", "csrf", "bad-token", "action", "create").statusCode() == 403, "invalid CSRF rejected");
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+        DateTimeFormatter dateFmt = DateTimeFormatter.ISO_LOCAL_DATE;
+        DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
         String title = "Đề tiếng Việt <script>alert(1)</script>";
         String template = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", title, "description", "Yêu cầu <img src=x onerror=alert(1)>",
-                "type", "department", "start", now.minusMinutes(10).format(fmt), "end", now.plusHours(2).format(fmt)));
+                "type", "department", "startDate", now.minusMinutes(10).format(dateFmt), "startTime", now.minusMinutes(10).format(timeFmt),
+                "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         check(get(member, "/hrm/tests?action=detail&id=" + template).statusCode() == 404, "draft inaccessible to member");
         check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", template).statusCode() == 303, "publish form");
         HttpResponse<String> detail = get(manager, "/hrm/tests?action=detail&id=" + template);
@@ -131,19 +133,24 @@ public class TestModuleHttpTest {
         HttpResponse<String> graded = get(member, "/hrm/tests?action=assignment&id=" + assignment);
         check(graded.body().contains("9.25") && graded.body().contains("&lt;b&gt;ok&lt;/b&gt;"), "grade visible to owner, escaped");
         check(get(member, "/hrm/tests?action=calendar").statusCode() == 200, "calendar renders");
-        check(get(member, "/hrm/tests?action=notifications").statusCode() == 200, "notifications render");
+        check(get(member, "/hrm/tests?action=notifications").statusCode() == 404, "notifications page removed");
         check(get(member, "/hrm/tests?action=mine").statusCode() == 200, "mine renders");
         check(get(member, "/hrm/tests?id=x&action=detail").statusCode() == 400, "malformed ID returns 400");
         check(get(member, "/hrm/tests?action=calendar&from=invalid&to=invalid").statusCode() == 400, "invalid date returns 400");
         check(get(manager, "/hrm/tests?action=bank").statusCode() == 200, "bank management page renders");
         check(get(member, "/hrm/tests?action=bank").statusCode() == 403, "member cannot browse bank");
-        String quiz = newId(post(manager, "/hrm/tests", "csrf", token, "action", "createContent", "kind", "quiz", "title", "Bộ đề mới", "prompt", "Chọn đáp án"));
+        String quiz = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create",
+                "title", "Đợt tạo kèm bộ đề", "description", "Tạo trắc nghiệm trong đợt giao",
+                "type", "department", "contentId", "newQuiz", "quizTitle", "Bộ đề mới", "quizPrompt", "Chọn đáp án",
+                "startDate", now.minusMinutes(10).format(dateFmt), "startTime", now.minusMinutes(10).format(timeFmt),
+                "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         check(get(manager, "/hrm/tests?action=bankDetail&id=" + quiz).statusCode() == 200, "bank detail JSP renders");
         check(post(manager, "/hrm/tests", "csrf", token, "action", "addQuestion", "id", quiz, "prompt", "2 + 2 bằng?", "optionA", "3", "optionB", "4", "optionC", "5", "optionD", "6", "correct", "1").statusCode() == 303, "add quiz question form");
         check(post(manager, "/hrm/tests", "csrf", token, "action", "publishContent", "id", quiz).statusCode() == 303, "publish content form");
         check(get(member, "/hrm/tests?action=bankDetail&id=" + quiz).statusCode() == 404, "member cannot read answer key page");
         String qt = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", "Đợt giao trắc nghiệm", "description", "Giao bộ đề", "type", "department",
-                "start", now.minusMinutes(10).format(fmt), "end", now.plusHours(2).format(fmt)));
+                "startDate", now.minusMinutes(10).format(dateFmt), "startTime", now.minusMinutes(10).format(timeFmt),
+                "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", qt).statusCode() == 303, "publish quiz event");
         String selection = get(manager, "/hrm/tests?action=detail&id=" + qt).body();
         check(selection.contains("name=\"contentId\"") && selection.contains("Bộ đề mới"), "assignment selector lists prepared content");
@@ -164,7 +171,8 @@ public class TestModuleHttpTest {
         String essay = newId(post(manager, "/hrm/tests", "csrf", token, "action", "createContent", "kind", "question", "title", "Câu tình huống", "prompt", "Xử lý phản hồi khách hàng như thế nào?"));
         check(post(manager, "/hrm/tests", "csrf", token, "action", "publishContent", "id", essay).statusCode() == 303, "publish essay question");
         String et = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", "Đợt câu hỏi", "description", "Giao câu hỏi", "type", "department",
-                "start", now.minusMinutes(10).format(fmt), "end", now.plusHours(2).format(fmt)));
+                "startDate", now.minusMinutes(10).format(dateFmt), "startTime", now.minusMinutes(10).format(timeFmt),
+                "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", et).statusCode() == 303, "publish essay event");
         check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", et, "assigneeId", "2", "contentId", essay).statusCode() == 303, "assign selected essay question");
         String essayPage = get(member, "/hrm/tests?action=assignment&id=" + assignmentId(conn, et)).body();

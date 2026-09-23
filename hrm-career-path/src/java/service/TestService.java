@@ -117,13 +117,50 @@ public final class TestService {
     }
 
     /**
-     * Tạo draft, lấy createdBy/phòng từ quyền DB, kiểm tra lịch và nội dung đề
-     * tự do.
+     * Tạo đợt giao bài nháp, có thể gắn sẵn một nội dung trong ngân hàng.
      */
     public int createTemplate(int userId, String title, String description, String type,
             Instant start, Instant end) throws SQLException {
+        return createTemplate(userId, title, description, type, start, end, null);
+    }
+
+    public int createTemplate(int userId, String title, String description, String type,
+            Instant start, Instant end, Integer contentId) throws SQLException {
         final String checkedTitle = text(title, 200, true);
         final String checkedDescription = text(description, 20000, true);
+        validateTemplate(type, start, end);
+        return transaction(dao -> insertTemplate(dao, dao.actor(userId), checkedTitle,
+                checkedDescription, type, start, end, contentId));
+    }
+
+    /**
+     * Tạo đợt giao và bộ trắc nghiệm nháp trong cùng transaction. Nếu một bước
+     * lỗi thì cả hai bản ghi đều được rollback, tránh để lại bộ đề mồ côi.
+     */
+    public CreatedTemplate createTemplateWithNewQuiz(int userId, String title, String description,
+            String type, Instant start, Instant end, String quizTitle, String quizPrompt) throws SQLException {
+        final String checkedTitle = text(title, 200, true);
+        final String checkedDescription = text(description, 20000, true);
+        final String checkedQuizTitle = text(quizTitle, 200, true);
+        final String checkedQuizPrompt = text(quizPrompt, 20000, true);
+        validateTemplate(type, start, end);
+        return transaction(dao -> {
+            TestActor actor = dao.actor(userId);
+            Integer department = templateDepartment(actor, type);
+            int contentId = dao.insertId("INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by) "
+                    + "OUTPUT INSERTED.id VALUES (?,?,?,?,?,?)", checkedQuizTitle,
+                    checkedQuizPrompt, "quiz", type, department, actor.id());
+            int templateId = insertTemplate(dao, actor, checkedTitle, checkedDescription,
+                    type, start, end, contentId);
+            return new CreatedTemplate(templateId, contentId);
+        });
+    }
+
+    public record CreatedTemplate(int templateId, int contentId) {
+
+    }
+
+    private void validateTemplate(String type, Instant start, Instant end) {
         if (start == null || end == null || !start.isBefore(end) || !clock.instant().isBefore(end)
                 || start.isBefore(Instant.parse("2000-01-01T00:00:00Z")) || end.isAfter(Instant.parse("2100-01-01T00:00:00Z"))) {
             throw new TestException(400, "Lịch phải hợp lệ, bắt đầu trước kết thúc và chưa hết hạn (năm 2000–2099).");
@@ -131,24 +168,36 @@ public final class TestService {
         if (!"culture".equals(type) && !"department".equals(type)) {
             throw new TestException(400, "Loại bài test không hợp lệ.");
         }
-        return transaction(dao -> {
-            TestActor actor = dao.actor(userId);
-            Integer department = null;
-            if ("culture".equals(type)) {
-                if (!actor.cultureManager()) {
-                    throw new TestException(403, "Chỉ ADMIN/HR tạo bài văn hóa.");
-                }
-            } else {
-                if (!actor.departmentManager()) {
-                    throw new TestException(403, "Bạn chưa được gán quản lý phòng ban hiện tại.");
-                }
-                department = actor.managedDepartmentId();
+    }
+
+    private Integer templateDepartment(TestActor actor, String type) {
+        if ("culture".equals(type)) {
+            if (!actor.cultureManager()) {
+                throw new TestException(403, "Chỉ ADMIN/HR tạo bài văn hóa.");
             }
-            int id = dao.insertId("INSERT INTO Test_Templates(title,description,type,department_id,created_by,start_time,end_time) "
-                    + "OUTPUT INSERTED.id VALUES (?,?,?,?,?,?,?)", checkedTitle, checkedDescription, type, department, actor.id(), start, end);
-            dao.audit(actor, "create", id, null);
-            return id;
-        });
+            return null;
+        }
+        if (!actor.departmentManager() && !actor.cultureManager()) {
+            throw new TestException(403, "Bạn chưa được gán quyền tạo đánh giá chuyên môn.");
+        }
+        return actor.cultureManager() ? null : actor.managedDepartmentId();
+    }
+
+    private int insertTemplate(TestDAO dao, TestActor actor, String title, String description,
+            String type, Instant start, Instant end, Integer contentId) throws SQLException {
+        Integer department = templateDepartment(actor, type);
+        if (contentId != null) {
+            TestContent selected = dao.managedContent(actor, contentId);
+            if (!type.equals(selected.type()) || (selected.departmentId() != null
+                    && !Objects.equals(department, selected.departmentId()))) {
+                throw new TestException(400, "Bộ đề phải cùng loại với đợt giao bài.");
+            }
+        }
+        int id = dao.insertId("INSERT INTO Test_Templates(title,description,type,department_id,created_by,start_time,end_time,default_content_id) "
+                + "OUTPUT INSERTED.id VALUES (?,?,?,?,?,?,?,?)", title, description, type,
+                department, actor.id(), start, end, contentId);
+        dao.audit(actor, "create", id, null);
+        return id;
     }
 
     /**
@@ -160,6 +209,10 @@ public final class TestService {
             TestActor actor = dao.actor(userId);
             TestTemplate t = dao.template(actor, id);
             manage(actor, t);
+            if ("published".equals(to) && t.defaultContentId() != null
+                    && !"ready".equals(dao.managedContent(actor, t.defaultContentId()).status())) {
+                throw new TestException(409, "Hãy hoàn tất và chốt bộ trắc nghiệm trước khi công bố đợt giao bài.");
+            }
             if ("published".equals(to) && !clock.instant().isBefore(t.endTime())) {
                 throw new TestException(409, "Đề đã hết hạn, không thể công bố.");
             }
@@ -272,8 +325,7 @@ public final class TestService {
     }
 
     /**
-     * Chọn nội dung ready cùng phòng/loại và gắn cố định cho toàn bộ người nhận
-     * trong lần giao.
+     * Chọn nội dung ready cùng loại/phạm vi quản lý cho toàn bộ người nhận.
      */
     public void assignTest(int userId, int templateId, List<Integer> assigneeIds, Integer contentId) throws SQLException {
         if (assigneeIds == null || assigneeIds.isEmpty() || assigneeIds.size() > 500) {
@@ -289,25 +341,26 @@ public final class TestService {
         transaction(dao -> {
             TestActor actor = dao.actor(userId);
             TestTemplate t = dao.template(actor, templateId);
+            Integer selectedContentId = contentId == null ? t.defaultContentId() : contentId;
             if (!policy.canAssign(actor, t, clock.instant())) {
                 throw new TestException(403, "Không có quyền giao bài hoặc đề đã hết hạn.");
             }
-            if (contentId != null) {
-                TestContent selected = dao.managedContent(actor, contentId);
+            if (selectedContentId != null) {
+                TestContent selected = dao.managedContent(actor, selectedContentId);
                 if (!"ready".equals(selected.status())) {
                     throw new TestException(409, "Bộ đề/câu hỏi chưa sẵn sàng để giao.");
                 }
-                if (!selected.type().equals(t.type()) || !Objects.equals(selected.departmentId(), t.departmentId())) {
+                if (!selected.type().equals(t.type()) || (selected.departmentId() != null && !Objects.equals(selected.departmentId(), t.departmentId()))) {
                     throw new TestException(403, "Bộ đề/câu hỏi phải cùng phạm vi với đợt giao bài.");
                 }
             }
             for (int id : ids) {
                 TestActor recipient = dao.actor(id);
-                if ("department".equals(t.type()) && !Objects.equals(t.departmentId(), recipient.departmentId())) {
-                    throw new TestException(403, "Mọi người nhận phải thuộc phòng ban của đề.");
+                if ("ADMIN".equals(recipient.role())) {
+                    throw new TestException(403, "Không thể giao bài đánh giá cho tài khoản ADMIN.");
                 }
                 int assignment = dao.insertId("INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id) "
-                        + "OUTPUT INSERTED.id VALUES (?,?,?,?)", templateId, id, actor.id(), contentId);
+                        + "OUTPUT INSERTED.id VALUES (?,?,?,?)", templateId, id, actor.id(), selectedContentId);
                 dao.audit(actor, "assign", templateId, assignment);
             }
             return null;
@@ -332,7 +385,13 @@ public final class TestService {
      */
     public List<TestAssignment> getMyAssignments(int userId, int page, int size) throws SQLException {
         int start = offset(page, size);
-        return transaction(dao -> dao.assignments(dao.actor(userId), null, null, true, start, size));
+        return transaction(dao -> {
+            TestActor actor = dao.actor(userId);
+            if ("ADMIN".equals(actor.role())) {
+                throw new TestException(403, "ADMIN không thuộc đối tượng thực hiện bài đánh giá.");
+            }
+            return dao.assignments(actor, null, null, true, start, size);
+        });
     }
 
     /**
@@ -504,7 +563,7 @@ public final class TestService {
     }
 
     /**
-     * Kho nội dung chỉ mở cho ADMIN/HR hoặc MANAGER đang quản lý đúng phòng.
+     * Kho nội dung chỉ mở cho ADMIN/HR hoặc MANAGER đang quản lý một phòng.
      */
     private void bankManager(TestActor actor) {
         if (!actor.cultureManager() && !actor.departmentManager()) {
@@ -517,6 +576,10 @@ public final class TestService {
      * form.
      */
     public int createContent(int userId, String kind, String title, String prompt) throws SQLException {
+        return createContent(userId, kind, title, prompt, null);
+    }
+
+    public int createContent(int userId, String kind, String title, String prompt, String requestedType) throws SQLException {
         if (!"quiz".equals(kind) && !"question".equals(kind)) {
             throw new TestException(400, "Hình thức không hợp lệ.");
         }
@@ -524,9 +587,18 @@ public final class TestService {
         return transaction(dao -> {
             TestActor actor = dao.actor(userId);
             bankManager(actor);
+            String scopeType = requestedType == null
+                    ? (actor.cultureManager() ? "culture" : "department") : requestedType;
+            if (!"culture".equals(scopeType) && !"department".equals(scopeType)) {
+                throw new TestException(400, "Loại ngân hàng không hợp lệ.");
+            }
+            if ("culture".equals(scopeType) && !actor.cultureManager()) {
+                throw new TestException(403, "Không có quyền tạo ngân hàng văn hóa.");
+            }
+            Integer department = "department".equals(scopeType) && !actor.cultureManager()
+                    ? actor.managedDepartmentId() : null;
             return dao.insertId("INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by) OUTPUT INSERTED.id VALUES (?,?,?,?,?,?)",
-                    name, body, kind, actor.cultureManager() ? "culture" : "department",
-                    actor.cultureManager() ? null : actor.managedDepartmentId(), actor.id());
+                    name, body, kind, scopeType, department, actor.id());
         });
     }
 
@@ -539,6 +611,28 @@ public final class TestService {
             TestActor actor = dao.actor(userId);
             bankManager(actor);
             return dao.contents(actor, null, start, size);
+        });
+    }
+
+    /**
+     * Xóa mềm các bộ đề được chọn; bài đã giao vẫn giữ nguyên nội dung lịch sử.
+     */
+    public void deleteContents(int userId, List<Integer> contentIds) throws SQLException {
+        if (contentIds == null || contentIds.isEmpty() || contentIds.size() > 100) {
+            throw new TestException(400, "Hãy chọn từ 1 đến 100 bộ đề để xóa.");
+        }
+        Set<Integer> ids = new LinkedHashSet<>(contentIds);
+        transaction(dao -> {
+            TestActor actor = dao.actor(userId);
+            bankManager(actor);
+            for (Integer id : ids) {
+                if (id == null || id <= 0) {
+                    throw new TestException(400, "Bộ đề không hợp lệ.");
+                }
+                dao.managedContent(actor, id);
+                changed(dao.execute("UPDATE Test_Content SET is_deleted=1 WHERE id=? AND is_deleted=0", id));
+            }
+            return null;
         });
     }
 
@@ -564,16 +658,7 @@ public final class TestService {
      */
     public void addQuestion(int userId, int id, String prompt, List<String> options, int correct) throws SQLException {
         String body = text(prompt, 4000, true);
-        if (options == null || options.size() != 4 || correct < 0 || correct > 3) {
-            throw new TestException(400, "Cần 4 lựa chọn và 1 đáp án đúng.");
-        }
-        List<String> choices = new ArrayList<>();
-        for (String value : options) {
-            choices.add(text(value, 1000, true));
-        }
-        if (new HashSet<>(choices).size() != 4) {
-            throw new TestException(400, "Các lựa chọn phải khác nhau.");
-        }
+        List<String> choices = questionOptions(options, correct);
         transaction(dao -> {
             TestContent content = dao.managedContent(dao.actor(userId), id);
             if (!"draft".equals(content.status()) || !"quiz".equals(content.kind())) {
@@ -601,6 +686,41 @@ public final class TestService {
             changed(dao.execute("DELETE FROM Test_Questions WHERE id=? AND content_id=?", questionId, id));
             return null;
         });
+    }
+
+    /**
+     * Sửa câu nhập sai khi bộ đề vẫn còn là bản nháp.
+     */
+    public void updateQuestion(int userId, int id, int questionId, String prompt,
+            List<String> options, int correct) throws SQLException {
+        String body = text(prompt, 4000, true);
+        List<String> choices = questionOptions(options, correct);
+        transaction(dao -> {
+            TestContent content = dao.managedContent(dao.actor(userId), id);
+            if (!"draft".equals(content.status()) || !"quiz".equals(content.kind())) {
+                throw new TestException(409, "Chỉ sửa câu trong bộ trắc nghiệm nháp.");
+            }
+            changed(dao.execute("UPDATE Test_Questions SET prompt=?,option_a=?,option_b=?,option_c=?,option_d=?,correct_option=? WHERE id=? AND content_id=?",
+                    body, choices.get(0), choices.get(1), choices.get(2), choices.get(3), correct, questionId, id));
+            return null;
+        });
+    }
+
+    private List<String> questionOptions(List<String> options, int correct) {
+        if (options == null || options.size() != 4 || correct < 0 || correct > 3) {
+            throw new TestException(400, "Cần 4 lựa chọn và 1 đáp án đúng.");
+        }
+        List<String> choices = new ArrayList<>();
+        Set<String> normalized = new HashSet<>();
+        for (String value : options) {
+            String choice = text(value, 1000, true);
+            choices.add(choice);
+            normalized.add(choice.toLowerCase(Locale.ROOT));
+        }
+        if (normalized.size() != 4) {
+            throw new TestException(400, "Bốn lựa chọn A, B, C và D phải khác nhau.");
+        }
+        return choices;
     }
 
     /**

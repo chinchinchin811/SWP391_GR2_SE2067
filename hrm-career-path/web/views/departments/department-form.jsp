@@ -16,7 +16,7 @@
         <h1><%= isEdit ? "Cap Nhat Phong Ban" : "Tao Phong Ban Moi" %></h1>
         <div>
             <a href="<%= request.getContextPath() %>/departments" class="btn btn-secondary">
-                Quay lai danh sach
+                Quay lại danh sách
             </a>
         </div>
     </div>
@@ -28,7 +28,7 @@
 
         <div class="card" style="max-width: 600px; margin: 0 auto;">
             <div class="card-header">
-                <h2>Thong Tin Phong Ban</h2>
+                <h2>Thông Tin Phòng Ban</h2>
             </div>
             <div class="card-body">
                 <form action="<%= request.getContextPath() %>/departments" method="POST">
@@ -38,15 +38,15 @@
                     <% } %>
 
                     <div class="form-group">
-                        <label for="departmentName">Ten Phong Ban (*):</label>
+                        <label for="departmentName">Tên Phòng Ban (*):</label>
                         <input type="text" id="departmentName" name="departmentName" class="form-control" 
                                value="<%= dept != null && dept.getDepartmentName() != null ? dept.getDepartmentName() : "" %>" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="managerId">Truong Phong (Manager):</label>
+                        <label for="managerId">Trưởng Phòng (Manager):</label>
                         <select id="managerId" name="managerId" class="form-control">
-                            <option value="0">-- Chua bo nhiem --</option>
+                            <option value="0">-- Chưa bổ nhiệm --</option>
                             <%
                                 if (managerCandidates != null) {
                                     for (User u : managerCandidates) {
@@ -63,22 +63,22 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="description">Mo Ta Chuc Nang:</label>
+                        <label for="description">Mô Tả Chức Năng:</label>
                         <textarea id="description" name="description" class="form-control" rows="3"><%= dept != null && dept.getDescription() != null ? dept.getDescription() : "" %></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="status">Trang Thai:</label>
+                        <label for="status">Trạng Thái:</label>
                         <select id="status" name="status" class="form-control">
-                            <option value="1" <%= (dept == null || dept.isStatus()) ? "selected" : "" %>>Dang hoat dong</option>
-                            <option value="0" <%= (dept != null && !dept.isStatus()) ? "selected" : "" %>>Tam ngung</option>
+                            <option value="1" <%= (dept == null || dept.isStatus()) ? "selected" : "" %>>Đang hoạt động</option>
+                            <option value="0" <%= (dept != null && !dept.isStatus()) ? "selected" : "" %>>Tạm ngưng</option>
                         </select>
                     </div>
 
                     <div class="form-actions">
-                        <a href="<%= request.getContextPath() %>/departments" class="btn btn-secondary">Huy</a>
+                        <a href="<%= request.getContextPath() %>/departments" class="btn btn-secondary">Hủy</a>
                         <button type="submit" class="btn btn-primary">
-                            <%= isEdit ? "Luu Thay Doi" : "Tao Phong Ban" %>
+                            <%= isEdit ? "Lưu Thay Đổi" : "Tạo Phòng Ban" %>
                         </button>
                     </div>
                 </form>

@@ -20,10 +20,10 @@
              1. GIAO DIEN DASHBOARD DANG NHAP BANG HR / ADMIN
              ========================================================= -->
         <div class="topbar">
-            <h1>Bao Cao Tong Quan He Thong (HR / Admin)</h1>
+            <h1>Báo Cáo Tổng Quan Hệ Thống (HR / Admin)</h1>
             <div>
                 <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
-                    + Khai bao Nhan vien
+                    + Khai báo Nhân vien
                 </a>
             </div>
         </div>
@@ -33,23 +33,23 @@
             <div class="stats-grid">
                 <div class="stat-box">
                     <h3><%= request.getAttribute("totalDepartments") %></h3>
-                    <p>Phong ban hoat dong</p>
+                    <p>Phòng ban hoạt động</p>
                 </div>
                 <div class="stat-box">
                     <h3><%= request.getAttribute("totalPositions") %></h3>
-                    <p>Vi tri chuyen mon</p>
+                    <p>Vị trí chuyên môn</p>
                 </div>
                 <div class="stat-box">
                     <h3><%= request.getAttribute("totalEmployees") %></h3>
-                    <p>Tong so nhan su</p>
+                    <p>Tổng số nhân sự</p>
                 </div>
                 <div class="stat-box">
                     <h3><%= request.getAttribute("totalNewHires") %></h3>
-                    <p>Nhan su moi vao cong ty</p>
+                    <p>Nhân sự mới vào công ty</p>
                 </div>
                 <div class="stat-box">
                     <h3><%= request.getAttribute("totalRoleChanges") %></h3>
-                    <p>Moi doi chuyen mon/ngach</p>
+                    <p>Mới đổi chuyên môn/ngach</p>
                 </div>
             </div>
 
@@ -57,16 +57,16 @@
                 <!-- Co cau phong ban -->
                 <div class="card" style="flex: 1;">
                     <div class="card-header">
-                        <h2>Co Cau Phong Ban</h2>
-                        <a href="<%= request.getContextPath() %>/departments" class="btn btn-sm btn-secondary">Quan ly</a>
+                        <h2>Cơ Cấu Phòng Ban</h2>
+                        <a href="<%= request.getContextPath() %>/departments" class="btn btn-sm btn-secondary">Quản lý</a>
                     </div>
                     <div class="card-body">
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Phong Ban</th>
-                                    <th>Truong Phong</th>
-                                    <th>So Nhan Su</th>
+                                    <th>Phòng Ban</th>
+                                    <th>Trưởng Phòng</th>
+                                    <th>Số Nhân Sự</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -78,14 +78,14 @@
                                 <tr>
                                     <td><b><%= d.getDepartmentName() %></b></td>
                                     <td><%= d.getManagerName() != null ? d.getManagerName() : "Chua bo nhiem" %></td>
-                                    <td><span class="badge"><%= d.getEmployeeCount() %> nguoi</span></td>
+                                    <td><span class="badge"><%= d.getEmployeeCount() %> người</span></td>
                                 </tr>
                                 <%
                                         }
                                     } else {
                                 %>
                                 <tr>
-                                    <td colspan="3" style="text-align: center;">Chua co phong ban nao</td>
+                                    <td colspan="3" style="text-align: center;">Chưa có phòng ban nào</td>
                                 </tr>
                                 <% } %>
                             </tbody>
@@ -96,16 +96,16 @@
                 <!-- Nhan su moi cap nhat -->
                 <div class="card" style="flex: 1;">
                     <div class="card-header">
-                        <h2>Nhan Su Cap Nhat Gan Day</h2>
-                        <a href="<%= request.getContextPath() %>/employees" class="btn btn-sm btn-secondary">Tat ca</a>
+                        <h2>Nhân Sự Cập Nhật Gần Đây</h2>
+                        <a href="<%= request.getContextPath() %>/employees" class="btn btn-sm btn-secondary">Tất cả</a>
                     </div>
                     <div class="card-body">
                         <table class="data-table">
                             <thead>
                                 <tr>
-                                    <th>Ho Ten</th>
-                                    <th>Phong Ban</th>
-                                    <th>Vi Tri</th>
+                                    <th>Họ Tên</th>
+                                    <th>Phòng Ban</th>
+                                    <th>Vị Trí</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -128,7 +128,7 @@
                                     } else {
                                 %>
                                 <tr>
-                                    <td colspan="3" style="text-align: center;">Chua co nhan su nao</td>
+                                    <td colspan="3" style="text-align: center;">Chưa có nhân sự nào</td>
                                 </tr>
                                 <% } %>
                             </tbody>
@@ -147,7 +147,7 @@
             List<User> deptEmployees = (List<User>) request.getAttribute("deptEmployees");
         %>
         <div class="topbar">
-            <h1>Phong Ban Phu Trach: <%= myDept != null ? myDept.getDepartmentName() : "Chua duoc phan bo" %></h1>
+            <h1>Phòng Ban Phụ Trách: <%= myDept != null ? myDept.getDepartmentName() : "Chưa được phân bổ" %></h1>
         </div>
 
         <div class="content-body">
@@ -155,28 +155,28 @@
                 <div class="stats-grid">
                     <div class="stat-box">
                         <h3><%= deptEmployees != null ? deptEmployees.size() : 0 %></h3>
-                        <p>Nhan su thuoc phong ban cua ban</p>
+                        <p>Nhân sự thuộc phòng ban của ban</p>
                     </div>
                     <div class="stat-box">
                         <h3><%= myDept.getDepartmentName() %></h3>
-                        <p>Truong phong: <%= currentUser.getFullName() %></p>
+                        <p>Trưởng phòng: <%= currentUser.getFullName() %></p>
                     </div>
                 </div>
 
                 <div class="card">
                     <div class="card-header">
-                        <h2>Danh Sach Nhan Su Truc Thuoc Phong Ban</h2>
+                        <h2>Danh Sach Nhân Sự Trực Thuộc Phòng Ban</h2>
                     </div>
                     <div class="card-body">
                         <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>Ho va Ten</th>
+                                    <th>Họ và Tên</th>
                                     <th>Email / SDT</th>
-                                    <th>Vi Tri Chuyen Mon</th>
-                                    <th>Cap Bac</th>
-                                    <th>Thao Tac</th>
+                                    <th>Vị Trí Chuyên Môn</th>
+                                    <th>Cấp Bậc</th>
+                                    <th>Thao Tác</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -192,7 +192,7 @@
                                     <td><%= emp.getLevelName() != null ? emp.getLevelName() : "Chua phan" %></td>
                                     <td>
                                         <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-secondary">
-                                            Xem ho so
+                                            Xem hồ sơ
                                         </a>
                                     </td>
                                 </tr>
@@ -201,7 +201,7 @@
                                     } else {
                                 %>
                                 <tr>
-                                    <td colspan="6" style="text-align: center; padding: 15px;">Chua co nhan su nao trong phong ban cua ban.</td>
+                                    <td colspan="6" style="text-align: center; padding: 15px;">Chưa có nhân sự nào trong phòng ban của bạn.</td>
                                 </tr>
                                 <% } %>
                             </tbody>
@@ -210,7 +210,7 @@
                 </div>
             <% } else { %>
                 <div class="alert alert-danger">
-                    Tai khoan nay chua duoc HR gan lam Truong phong cua bat ky phong ban nao.
+                    Tài khoản này chưa được HR gắn làm Trưởng phòng của bất kỳ phòng ban nào.
                 </div>
             <% } %>
         </div>
@@ -224,7 +224,7 @@
             List<EmployeeHistory> myHistory = (List<EmployeeHistory>) request.getAttribute("myHistory");
         %>
         <div class="topbar">
-            <h1>Ho So & Lo Trinh Ca Nhan: <%= myProfile != null ? myProfile.getFullName() : currentUser.getFullName() %></h1>
+            <h1>Hồ Sơ & Lộ Trình Cá Nhân: <%= myProfile != null ? myProfile.getFullName() : currentUser.getFullName() %></h1>
         </div>
 
         <div class="content-body">
@@ -232,35 +232,35 @@
                 <!-- Thong tin hien tai -->
                 <div class="card" style="flex: 1;">
                     <div class="card-header">
-                        <h2>Thong Tin Cong Viec Hien Tai</h2>
+                        <h2>Thông Tin Công Việc Hiện Tại</h2>
                     </div>
                     <div class="card-body">
-                        <p style="margin-bottom: 8px;"><b>Ho va ten:</b> <%= myProfile.getFullName() %></p>
+                        <p style="margin-bottom: 8px;"><b>Họ và tên:</b> <%= myProfile.getFullName() %></p>
                         <p style="margin-bottom: 8px;"><b>Username:</b> <%= myProfile.getUsername() %></p>
                         <p style="margin-bottom: 8px;"><b>Email:</b> <%= myProfile.getEmail() %></p>
-                        <p style="margin-bottom: 8px;"><b>So dien thoai:</b> <%= myProfile.getPhone() != null ? myProfile.getPhone() : "-" %></p>
-                        <p style="margin-bottom: 8px;"><b>Ngay vao cong ty:</b> <%= myProfile.getHireDate() != null ? sdfDate.format(myProfile.getHireDate()) : "-" %></p>
+                        <p style="margin-bottom: 8px;"><b>Số điện thoại:</b> <%= myProfile.getPhone() != null ? myProfile.getPhone() : "-" %></p>
+                        <p style="margin-bottom: 8px;"><b>Ngày vào công ty:</b> <%= myProfile.getHireDate() != null ? sdfDate.format(myProfile.getHireDate()) : "-" %></p>
                         <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc;">
-                        <p style="margin-bottom: 8px;"><b>Phong ban:</b> <%= myProfile.getDepartmentName() != null ? myProfile.getDepartmentName() : "Chua xep phong" %></p>
-                        <p style="margin-bottom: 8px;"><b>Vi tri chuyen mon:</b> <%= myProfile.getPositionName() != null ? myProfile.getPositionName() : "Chua xep vi tri" %></p>
-                        <p style="margin-bottom: 8px;"><b>Cap bac:</b> <%= myProfile.getLevelName() != null ? myProfile.getLevelName() : "Chua xep cap bac" %></p>
+                        <p style="margin-bottom: 8px;"><b>Phòng ban:</b> <%= myProfile.getDepartmentName() != null ? myProfile.getDepartmentName() : "Chua xep phong" %></p>
+                        <p style="margin-bottom: 8px;"><b>Vị trí chuyên môn:</b> <%= myProfile.getPositionName() != null ? myProfile.getPositionName() : "Chua xep vi tri" %></p>
+                        <p style="margin-bottom: 8px;"><b>Cấp bậc:</b> <%= myProfile.getLevelName() != null ? myProfile.getLevelName() : "Chua xep cap bac" %></p>
                     </div>
                 </div>
 
                 <!-- Lich su nghe nghiep cua ban -->
                 <div class="card" style="flex: 2;">
                     <div class="card-header">
-                        <h2>Lich Su Bien Dong & Phat Trien Nghe Nghiep Cua Ban</h2>
+                        <h2>Lịch Sử Biến Động & Phát Triển Nghề Nghiệp Của Ban</h2>
                     </div>
                     <div class="card-body">
                         <% if (myHistory != null && !myHistory.isEmpty()) { %>
                             <table class="data-table">
                                 <thead>
                                     <tr>
-                                        <th>Thoi Gian</th>
-                                        <th>Loai Thay Doi</th>
-                                        <th>Noi Dung Thay Doi</th>
-                                        <th>Ghi Chu</th>
+                                        <th>Thời Gian</th>
+                                        <th>Loại Thay Doi</th>
+                                        <th>Nội Dung Thay Đổi</th>
+                                        <th>Ghi Chú</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -280,10 +280,10 @@
                                         <td><b><%= typeLabel %></b></td>
                                         <td>
                                             <% if (h.getNewPositionName() != null) { %>
-                                                Vi tri: <%= h.getOldPositionName() != null ? h.getOldPositionName() : "(Chua co)" %> -> <b><%= h.getNewPositionName() %></b> <%= h.getNewLevelName() != null ? "(" + h.getNewLevelName() + ")" : "" %><br>
+                                                Vị trí: <%= h.getOldPositionName() != null ? h.getOldPositionName() : "(Chua co)" %> -> <b><%= h.getNewPositionName() %></b> <%= h.getNewLevelName() != null ? "(" + h.getNewLevelName() + ")" : "" %><br>
                                             <% } %>
                                             <% if (h.getNewDepartmentName() != null) { %>
-                                                Phong ban: <%= h.getOldDepartmentName() != null ? h.getOldDepartmentName() : "(Chua co)" %> -> <b><%= h.getNewDepartmentName() %></b>
+                                                Phòng ban: <%= h.getOldDepartmentName() != null ? h.getOldDepartmentName() : "(Chua co)" %> -> <b><%= h.getNewDepartmentName() %></b>
                                             <% } %>
                                         </td>
                                         <td><%= h.getNotes() != null ? h.getNotes() : "-" %></td>
@@ -293,7 +293,7 @@
                             </table>
                         <% } else { %>
                             <div style="text-align: center; padding: 20px; color: #7f8c8d;">
-                                Chua co ghi nhan bien dong lich su chuc vu nao cho ban.
+                                Chưa có ghi nhận biến động lịch sử chức vụ nào cho bạn.
                             </div>
                         <% } %>
                     </div>

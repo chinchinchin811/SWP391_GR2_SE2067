@@ -147,6 +147,48 @@ CREATE TABLE dbo.Employee_History (
 );
 GO
 
+-- =======================================================
+-- 7. BANG FlashCard & Mentor
+-- =======================================================
+CREATE TABLE dbo.FlashcardDecks (
+    deck_id INT IDENTITY(1,1) PRIMARY KEY,
+    title NVARCHAR(150) NOT NULL,
+    description NVARCHAR(MAX),
+    created_at DATETIME DEFAULT GETDATE()
+);
+
+CREATE TABLE dbo.Flashcards (
+    card_id INT IDENTITY(1,1) PRIMARY KEY,
+    deck_id INT NOT NULL,
+    question NVARCHAR(MAX) NOT NULL,
+    answer NVARCHAR(MAX) NOT NULL,
+    FOREIGN KEY (deck_id) REFERENCES dbo.FlashcardDecks(deck_id) ON DELETE CASCADE
+);
+
+CREATE TABLE dbo.MentorAssignments (
+    assignment_id INT IDENTITY(1,1) PRIMARY KEY,
+    mentee_id INT NOT NULL,
+    mentor_id INT NOT NULL,
+    position_id INT NULL,
+    status VARCHAR(20) DEFAULT 'ACTIVE',
+    assigned_by INT NULL,
+    created_at DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (mentee_id) REFERENCES dbo.Users(user_id),
+    FOREIGN KEY (mentor_id) REFERENCES dbo.Users(user_id),
+    FOREIGN KEY (position_id) REFERENCES dbo.Positions(position_id)
+);
+
+CREATE TABLE dbo.MentorEvaluations (
+    evaluation_id INT IDENTITY(1,1) PRIMARY KEY,
+    assignment_id INT NOT NULL,
+    evaluator_id INT NOT NULL,
+    performance_score INT,
+    feedback NVARCHAR(MAX),
+    approval_status VARCHAR(20) DEFAULT 'PENDING',
+    evaluation_date DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (assignment_id) REFERENCES dbo.MentorAssignments(assignment_id)
+);
+GO
 -- BEGIN TEST MODULE
 -- Migration bổ sung, chạy trên database HRM hiện có; không xóa dữ liệu.
 -- Thời gian trong module luôn lưu UTC. Có thể chạy lại migration này.
@@ -168,8 +210,7 @@ BEGIN
         created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
         updated_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
         is_deleted BIT NOT NULL DEFAULT 0,
-        CONSTRAINT CK_Test_Type CHECK ((type='culture' AND department_id IS NULL)
-            OR (type='department' AND department_id IS NOT NULL)),
+        CONSTRAINT CK_Test_Type CHECK (type IN ('culture','department')),
         CONSTRAINT CK_Test_Status CHECK (status IN ('draft','published','closed')),
         CONSTRAINT CK_Test_Time CHECK (start_time < end_time)
     );
@@ -263,9 +304,9 @@ BEGIN
         department_id INT NULL REFERENCES dbo.Departments(department_id),
         created_by INT NOT NULL REFERENCES dbo.Users(user_id),
         status VARCHAR(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','ready')),
+        is_deleted BIT NOT NULL DEFAULT 0,
         created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        CONSTRAINT CK_Content_Scope CHECK ((type='culture' AND department_id IS NULL)
-            OR (type='department' AND department_id IS NOT NULL))
+        CONSTRAINT CK_Content_Scope CHECK (type IN ('culture','department'))
     );
 END;
 IF OBJECT_ID('dbo.Test_Questions', 'U') IS NULL
@@ -284,6 +325,18 @@ BEGIN
 END;
 IF COL_LENGTH('dbo.Test_Assignments','content_id') IS NULL
     ALTER TABLE dbo.Test_Assignments ADD content_id INT NULL REFERENCES dbo.Test_Content(id);
+IF COL_LENGTH('dbo.Test_Templates','default_content_id') IS NULL
+    ALTER TABLE dbo.Test_Templates ADD default_content_id INT NULL;
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Test_Templates_DefaultContent')
+    ALTER TABLE dbo.Test_Templates ADD CONSTRAINT FK_Test_Templates_DefaultContent FOREIGN KEY(default_content_id) REFERENCES dbo.Test_Content(id);
+IF COL_LENGTH('dbo.Test_Content','is_deleted') IS NULL
+    ALTER TABLE dbo.Test_Content ADD is_deleted BIT NOT NULL CONSTRAINT DF_Test_Content_IsDeleted DEFAULT 0;
+IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name='CK_Test_Type')
+    ALTER TABLE dbo.Test_Templates DROP CONSTRAINT CK_Test_Type;
+ALTER TABLE dbo.Test_Templates ADD CONSTRAINT CK_Test_Type CHECK (type IN ('culture','department'));
+IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name='CK_Content_Scope')
+    ALTER TABLE dbo.Test_Content DROP CONSTRAINT CK_Content_Scope;
+ALTER TABLE dbo.Test_Content ADD CONSTRAINT CK_Content_Scope CHECK (type IN ('culture','department'));
 IF COL_LENGTH('dbo.Test_Assignments','quiz_score') IS NULL
     ALTER TABLE dbo.Test_Assignments ADD quiz_score DECIMAL(4,2) NULL CHECK (quiz_score BETWEEN 0 AND 10);
 IF OBJECT_ID('dbo.Test_Answers','U') IS NULL

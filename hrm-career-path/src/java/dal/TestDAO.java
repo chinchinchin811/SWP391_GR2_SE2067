@@ -93,18 +93,12 @@ public final class TestDAO {
     private String management(TestActor actor, List<Object> args) {
         args.add(actor.departmentManager() ? actor.managedDepartmentId() : null);
         return "((t.type='culture' AND " + (actor.cultureManager() ? "1=1" : "1=0")
-                + ") OR (t.type='department' AND t.department_id=?))";
+                + ") OR (t.type='department' AND (" + (actor.cultureManager() ? "1=1" : "1=0") + " OR t.department_id=?)))";
     }
 
-    /**
-     * Lọc quyền ngay trong SQL, kể cả đề draft và phòng đã ngừng hoạt động/xóa
-     * mềm.
-     */
+    /** Lọc xóa mềm và giữ đề nháp trong phạm vi quản lý ngay tại SQL. */
     private String visible(TestActor actor, List<Object> args) {
-        args.add(actor.departmentId());
-        return "t.is_deleted=0 AND (t.type='culture' OR (t.department_id=? AND EXISTS "
-                + "(SELECT 1 FROM Departments d WHERE d.department_id=t.department_id AND d.status=1 AND d.is_deleted=0))) "
-                + "AND (t.status<>'draft' OR " + management(actor, args) + ")";
+        return "t.is_deleted=0 AND (t.status<>'draft' OR " + management(actor, args) + ")";
     }
 
     /**
@@ -122,7 +116,8 @@ public final class TestDAO {
     private TestTemplate template(ResultSet rs) throws SQLException {
         return new TestTemplate(rs.getInt("id"), rs.getString("title"), rs.getString("description"),
                 rs.getString("type"), (Integer) rs.getObject("department_id"), rs.getInt("created_by"),
-                rs.getString("status"), instant(rs, "start_time"), instant(rs, "end_time"));
+                rs.getString("status"), instant(rs, "start_time"), instant(rs, "end_time"),
+                (Integer) rs.getObject("default_content_id"));
     }
 
     /**
@@ -170,14 +165,11 @@ public final class TestDAO {
         return result;
     }
 
-    /**
-     * Phạm vi assignment: assignee còn hoạt động/cùng phòng đề, chủ bài hoặc
-     * người quản lý.
-     */
+    /** Phạm vi assignment: assignee còn hoạt động, chủ bài hoặc người quản lý. */
     private String assignmentScope(TestActor actor, List<Object> args) {
         String result = visible(actor, args)
                 + " AND a.is_deleted=0 AND u.is_deleted=0 AND u.status=1 "
-                + "AND (t.type='culture' OR u.department_id=t.department_id) AND (a.assignee_id=? OR ";
+                + "AND (a.assignee_id=? OR ";
         args.add(actor.id());
         return result + management(actor, args) + ")";
     }
@@ -240,7 +232,7 @@ public final class TestDAO {
         List<Object> args = new ArrayList<>();
         String scope = management(actor, args);
         args.add(id);
-        try (PreparedStatement ps = prepare("SELECT t.* FROM Test_Content t WHERE " + scope + " AND t.id=?", args.toArray()); ResultSet rs = ps.executeQuery()) {
+        try (PreparedStatement ps = prepare("SELECT t.* FROM Test_Content t WHERE t.is_deleted=0 AND " + scope + " AND t.id=?", args.toArray()); ResultSet rs = ps.executeQuery()) {
             if (!rs.next()) throw new TestException(404, "Không tìm thấy bộ đề/câu hỏi trong phạm vi quản lý.");
             return content(rs);
         }
@@ -249,9 +241,9 @@ public final class TestDAO {
     /** Danh sách kho có phân trang; selector chỉ trả nội dung ready cùng phạm vi của đợt giao. */
     public List<TestContent> contents(TestActor actor, TestTemplate target, int offset, int size) throws SQLException {
         List<Object> args = new ArrayList<>();
-        String sql = "SELECT t.id,t.title,CAST('' AS NVARCHAR(MAX)) AS prompt,t.kind,t.type,t.department_id,t.status FROM Test_Content t WHERE " + management(actor, args);
+        String sql = "SELECT t.id,t.title,CAST('' AS NVARCHAR(MAX)) AS prompt,t.kind,t.type,t.department_id,t.status FROM Test_Content t WHERE t.is_deleted=0 AND " + management(actor, args);
         if (target != null) {
-            sql += " AND t.status='ready' AND t.type=? AND (t.type='culture' OR t.department_id=?)";
+            sql += " AND t.status='ready' AND t.type=? AND (t.department_id IS NULL OR t.department_id=?)";
             args.add(target.type()); args.add(target.departmentId());
         }
         sql += " ORDER BY t.id DESC";
@@ -327,9 +319,9 @@ public final class TestDAO {
         List<Object> args = new ArrayList<>();
         String filter = visible(actor, args) + " AND " + management(actor, args);
         args.add(t.id());
-        String sql = "SELECT u.user_id,u.full_name,u.department_id FROM Users u CROSS JOIN Test_Templates t WHERE "
+        String sql = "SELECT u.user_id,u.full_name,u.department_id FROM Users u JOIN Roles r ON r.role_id=u.role_id CROSS JOIN Test_Templates t WHERE "
                 + filter + " AND t.id=? AND u.is_deleted=0 AND u.status=1 "
-                + "AND (t.type='culture' OR u.department_id=t.department_id) "
+                + "AND r.role_name<>'ADMIN' "
                 + "AND NOT EXISTS (SELECT 1 FROM Test_Assignments a WHERE a.test_template_id=t.id AND a.assignee_id=u.user_id) "
                 + "ORDER BY u.full_name,u.user_id";
         List<TestActor> result = new ArrayList<>();
@@ -378,8 +370,7 @@ public final class TestDAO {
         execute("INSERT INTO Test_Reminder_Outbox(assignment_id,scheduled_start) "
                 + "SELECT a.id,t.start_time" + ASSIGNMENT_FROM
                 + "WHERE a.status='pending' AND a.is_deleted=0 AND t.is_deleted=0 AND t.status='published' "
-                + "AND u.status=1 AND u.is_deleted=0 AND (t.type='culture' OR (u.department_id=t.department_id "
-                + "AND EXISTS (SELECT 1 FROM Departments d WHERE d.department_id=t.department_id AND d.status=1 AND d.is_deleted=0))) "
+                + "AND u.status=1 AND u.is_deleted=0 "
                 + "AND t.start_time>? AND t.start_time<=? AND NOT EXISTS "
                 + "(SELECT 1 FROM Test_Reminder_Outbox o WITH (UPDLOCK,HOLDLOCK) WHERE o.assignment_id=a.id AND o.scheduled_start=t.start_time)",
                 now, now.plus(Duration.ofHours(24)));
@@ -390,13 +381,14 @@ public final class TestDAO {
      * lỗi sẽ retry lần sau.
      */
     public void deliverReminders(Instant now) throws SQLException {
+        execute("UPDATE Test_Templates SET status='closed',updated_at=? WHERE status='published' AND end_time<=?", now, now);
+        execute("UPDATE Test_Assignments SET is_deleted=1 WHERE status='pending' AND is_deleted=0 AND test_template_id IN (SELECT id FROM Test_Templates WHERE status='closed' AND end_time<=?)", now);
         execute("INSERT INTO Test_Notifications(outbox_id,user_id,assignment_id,message) "
                 + "SELECT o.id,a.assignee_id,a.id,N'Bài test sắp bắt đầu: '+t.title FROM Test_Reminder_Outbox o "
                 + "JOIN Test_Assignments a ON a.id=o.assignment_id JOIN Test_Templates t ON t.id=a.test_template_id "
                 + "JOIN Users u ON u.user_id=a.assignee_id WHERE o.delivered_at IS NULL "
                 + "AND a.status='pending' AND a.is_deleted=0 AND t.is_deleted=0 AND t.status='published' "
-                + "AND u.status=1 AND u.is_deleted=0 AND (t.type='culture' OR (u.department_id=t.department_id "
-                + "AND EXISTS (SELECT 1 FROM Departments d WHERE d.department_id=t.department_id AND d.status=1 AND d.is_deleted=0))) "
+                + "AND u.status=1 AND u.is_deleted=0 "
                 + "AND t.start_time>? AND o.scheduled_start=t.start_time "
                 + "AND NOT EXISTS (SELECT 1 FROM Test_Notifications n WITH (UPDLOCK,HOLDLOCK) WHERE n.outbox_id=o.id)", now);
         execute("UPDATE o SET delivered_at=? FROM Test_Reminder_Outbox o "

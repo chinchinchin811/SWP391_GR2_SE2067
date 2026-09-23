@@ -1,19 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
-         version="6.0">
-
+<web-app version="6.0" xmlns="https://jakarta.ee/xml/ns/jakartaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd">
     <!-- Login Servlet -->
     <servlet>
         <servlet-name>LoginServlet</servlet-name>
         <servlet-class>controller.LoginServlet</servlet-class>
     </servlet>
+    <servlet>
+        <servlet-name>FlashcardServlet</servlet-name>
+        <servlet-class>controller.FlashcardServlet</servlet-class>
+    </servlet>
+    <servlet>
+        <servlet-name>MentorServlet</servlet-name>
+        <servlet-class>controller.MentorServlet</servlet-class>
+    </servlet>
     <servlet-mapping>
         <servlet-name>LoginServlet</servlet-name>
         <url-pattern>/login</url-pattern>
     </servlet-mapping>
-
     <!-- Logout Servlet -->
     <servlet>
         <servlet-name>LogoutServlet</servlet-name>
@@ -23,7 +26,6 @@
         <servlet-name>LogoutServlet</servlet-name>
         <url-pattern>/logout</url-pattern>
     </servlet-mapping>
-
     <!-- Dashboard Servlet -->
     <servlet>
         <servlet-name>DashboardServlet</servlet-name>
@@ -33,7 +35,6 @@
         <servlet-name>DashboardServlet</servlet-name>
         <url-pattern>/dashboard</url-pattern>
     </servlet-mapping>
-
     <!-- Department Management Servlet -->
     <servlet>
         <servlet-name>DepartmentServlet</servlet-name>
@@ -43,7 +44,6 @@
         <servlet-name>DepartmentServlet</servlet-name>
         <url-pattern>/departments</url-pattern>
     </servlet-mapping>
-
     <!-- Position & Job Level Management Servlet -->
     <servlet>
         <servlet-name>PositionServlet</servlet-name>
@@ -53,7 +53,6 @@
         <servlet-name>PositionServlet</servlet-name>
         <url-pattern>/positions</url-pattern>
     </servlet-mapping>
-
     <!-- Employee Onboarding & Assignment Servlet -->
     <servlet>
         <servlet-name>EmployeeServlet</servlet-name>
@@ -67,13 +66,19 @@
     <servlet-mapping><servlet-name>MaterialServlet</servlet-name><url-pattern>/materials</url-pattern></servlet-mapping>
 
     <!-- Session Configuration -->
+    <servlet-mapping>
+        <servlet-name>FlashcardServlet</servlet-name>
+        <url-pattern>/flashcards</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>MentorServlet</servlet-name>
+        <url-pattern>/mentors</url-pattern>
+    </servlet-mapping>
     <session-config>
         <session-timeout>60</session-timeout>
     </session-config>
-
     <!-- Welcome Page -->
     <welcome-file-list>
         <welcome-file>login</welcome-file>
     </welcome-file-list>
-
 </web-app>

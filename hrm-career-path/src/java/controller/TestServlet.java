@@ -52,10 +52,14 @@ public class TestServlet extends HttpServlet {
         } catch (NumberFormatException e) { throw new TestException(400, "ID hoặc số trang không hợp lệ."); }
     }
 
-    /** Đổi giờ người dùng nhập tại Việt Nam thành Instant UTC để lưu trong DB. */
-    private Instant inputTime(String value) {
-        try { return LocalDateTime.parse(value == null ? "" : value).atZone(ZONE).toInstant(); }
-        catch (DateTimeParseException e) { throw new TestException(400, "Ngày giờ không hợp lệ."); }
+    /** Ghép ngày và giờ Việt Nam thành Instant UTC để lưu trong DB. */
+    private Instant inputTime(String date, String time) {
+        try {
+            return LocalDateTime.of(LocalDate.parse(date == null ? "" : date),
+                    LocalTime.parse(time == null ? "" : time)).atZone(ZONE).toInstant();
+        } catch (DateTimeParseException e) {
+            throw new TestException(400, "Ngày hoặc giờ hẹn không hợp lệ.");
+        }
     }
 
     /** Các trang đọc đều gọi service có scope, JSP nằm trong WEB-INF để không truy cập trực tiếp. */
@@ -79,6 +83,7 @@ public class TestServlet extends HttpServlet {
                     break;
                 case "new":
                     if (!actor.cultureManager() && !actor.departmentManager()) throw new TestException(403, "Bạn không có quyền tạo bài test.");
+                    req.setAttribute("contentChoices", service.listContent(userId, 1, 100));
                     break;
                 case "bank":
                     req.setAttribute("bankItems", service.listContent(userId,page,20));
@@ -119,9 +124,6 @@ public class TestServlet extends HttpServlet {
                     req.setAttribute("templates", service.getCalendar(userId, from.atStartOfDay(ZONE).toInstant(), to.atStartOfDay(ZONE).toInstant(), page, 20));
                     break;
                 }
-                case "notifications":
-                    req.setAttribute("notifications", service.getNotifications(userId));
-                    break;
                 case "download": {
                     TestService.Download file = service.download(userId, integer(req.getParameter("id")));
                     res.setContentType("application/octet-stream");
@@ -156,10 +158,29 @@ public class TestServlet extends HttpServlet {
             if ("createContent".equals(action)) {
                 int id=service.createContent(userId,req.getParameter("kind"),req.getParameter("title"),req.getParameter("prompt"));
                 next="bankDetail&id="+id;
+            } else if ("deleteContents".equals(action)) {
+                String[] selected = req.getParameterValues("contentId");
+                List<Integer> ids = new ArrayList<>();
+                if (selected != null) {
+                    for (String value : selected) ids.add(integer(value));
+                }
+                service.deleteContents(userId, ids);
+                next = "bank";
             } else if ("create".equals(action)) {
-                int id = service.createTemplate(userId, req.getParameter("title"), req.getParameter("description"),
-                        req.getParameter("type"), inputTime(req.getParameter("start")), inputTime(req.getParameter("end")));
-                next = "detail&id=" + id;
+                String selected = req.getParameter("contentId");
+                Instant start = inputTime(req.getParameter("startDate"), req.getParameter("startTime"));
+                Instant end = inputTime(req.getParameter("endDate"), req.getParameter("endTime"));
+                if ("newQuiz".equals(selected)) {
+                    TestService.CreatedTemplate created = service.createTemplateWithNewQuiz(userId,
+                            req.getParameter("title"), req.getParameter("description"), req.getParameter("type"),
+                            start, end, req.getParameter("quizTitle"), req.getParameter("quizPrompt"));
+                    next = "bankDetail&id=" + created.contentId();
+                } else {
+                    Integer contentId = selected == null || selected.isBlank() ? null : integer(selected);
+                    int id = service.createTemplate(userId, req.getParameter("title"), req.getParameter("description"),
+                            req.getParameter("type"), start, end, contentId);
+                    next = "detail&id=" + id;
+                }
             } else {
                 int id = integer(req.getParameter("id"));
                 next = "detail&id=" + id;
@@ -173,6 +194,16 @@ public class TestServlet extends HttpServlet {
                         next="bankDetail&id="+id; break;
                     }
                     case "removeQuestion": service.removeQuestion(userId,id,integer(req.getParameter("questionId"))); next="bankDetail&id="+id; break;
+                    case "updateQuestion": {
+                        int correct;
+                        try { correct = Integer.parseInt(req.getParameter("correct")); }
+                        catch (NumberFormatException e) { throw new TestException(400, "Đáp án đúng không hợp lệ."); }
+                        service.updateQuestion(userId, id, integer(req.getParameter("questionId")),
+                                req.getParameter("prompt"), Arrays.asList(req.getParameter("optionA"),
+                                req.getParameter("optionB"), req.getParameter("optionC"), req.getParameter("optionD")), correct);
+                        next = "bankDetail&id=" + id;
+                        break;
+                    }
                     case "publishContent": service.publishContent(userId,id); next="bankDetail&id="+id; break;
                     case "publish": service.publishTemplate(userId, id); break;
                     case "close": service.closeTemplate(userId, id); break;
@@ -222,7 +253,6 @@ public class TestServlet extends HttpServlet {
                         break;
                     }
                     case "revoke": service.archiveAssignment(userId, id); next = "list"; break;
-                    case "read": service.readNotification(userId, id); next = "notifications"; break;
                     default: throw new TestException(400, "Thao tác không hợp lệ.");
                 }
             }

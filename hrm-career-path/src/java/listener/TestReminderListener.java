@@ -7,9 +7,7 @@ import java.time.Instant;
 import java.util.concurrent.*;
 import service.TestService;
 
-/**
- * Job nhắc lịch trong Tomcat: outbox chống trùng khi nhiều instance cùng chạy.
- */
+/** Job nền đóng đề hết hạn, thu hồi bài pending và xử lý outbox nhắc lịch. */
 @WebListener
 public class TestReminderListener implements ServletContextListener {
 
@@ -30,7 +28,7 @@ public class TestReminderListener implements ServletContextListener {
             try {
                 new TestService().sendUpcomingReminders(Instant.now());
             } catch (Exception e) {
-                event.getServletContext().log("Không thể tạo nhắc lịch bài test; sẽ thử lại sau.", e);
+                event.getServletContext().log("Không thể cập nhật lịch bài test; sẽ thử lại sau.", e);
             }
         }, 30, 60, TimeUnit.SECONDS);
     }

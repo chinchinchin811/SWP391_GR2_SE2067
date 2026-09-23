@@ -24,6 +24,11 @@ body {
 /* Menu ben trai */
 .sidebar {
     width: 220px;
+    flex: 0 0 220px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
     background-color: #f5f5f5;
     border-right: 1px solid #000000;
     display: flex;
@@ -456,8 +461,11 @@ table.data-table .col-actions {
     white-space: nowrap;
 }
 
-@media(max-width:700px){
+@media(max-width:760px){
     .sidebar { width: 180px; }
     .topbar { flex-wrap: wrap; gap: 8px; }
+    .app-container { display: block; }
+    .sidebar { width: 100%; height: auto; position: static; overflow: visible; }
     table.data-table th, table.data-table td { padding: 7px 8px; font-size: 12px; }
 }
+
