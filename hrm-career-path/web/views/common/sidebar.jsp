@@ -117,6 +117,20 @@
         <% } %>
         <!-- ======================================================================== -->
 
+        <div class="sidebar-menu-category">Đào tạo & Phát triển</div>
+
+        <li class="<%= currentURI.contains("/materials") && (request.getParameter("action") == null || "list".equals(request.getParameter("action")) || "view".equals(request.getParameter("action")) || "create".equals(request.getParameter("action")) || "edit".equals(request.getParameter("action"))) ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/materials">
+                Học liệu & Đào tạo
+            </a>
+        </li>
+
+        <li class="<%= currentURI.contains("/materials") && ("classList".equals(request.getParameter("action")) || "classDetail".equals(request.getParameter("action")) || "classAssign".equals(request.getParameter("action")) || "classCreate".equals(request.getParameter("action"))) ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/materials?action=classList">
+                Lớp Đào Tạo
+            </a>
+        </li>
+
         <div class="sidebar-menu-category">Bài test & Đánh giá</div>
 
         <li class="<%= currentURI.contains("/tests") && (request.getParameter("action") == null || "list".equals(request.getParameter("action"))) ? "active" : "" %>">
