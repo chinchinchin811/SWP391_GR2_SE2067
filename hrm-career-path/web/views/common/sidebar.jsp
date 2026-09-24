@@ -125,6 +125,12 @@
             </a>
         </li>
 
+        <li class="<%= currentURI.contains("/materials") ? "active" : "" %>">
+            <a href="<%= request.getContextPath() %>/materials">
+                Học liệu & Đào tạo
+            </a>
+        </li>
+
         <li class="<%= currentURI.contains("/tests") && "calendar".equals(request.getParameter("action"))? "active" : "" %>">
             <a href="<%= request.getContextPath() %>/tests?action=calendar">
                 Lịch bài test
