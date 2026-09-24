@@ -64,7 +64,7 @@ public class FlashcardServlet extends HttpServlet {
         try {
             decks = dao.getAllDecks();
         } catch (IllegalStateException e) {
-            throw new ServletException("Khong the tai du lieu Flashcard. Hay chay database/schema/flashcards_sqlserver.sql.", e);
+            throw new ServletException("Khong the tai du lieu Flashcard. Hay tao bang bang create_tables_sqlserver.sql va nap du lieu bang seed_data_sqlserver.sql.", e);
         }
 
         int currentDeckId = -1;

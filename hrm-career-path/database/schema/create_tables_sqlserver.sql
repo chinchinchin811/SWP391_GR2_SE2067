@@ -154,17 +154,20 @@ GO
 CREATE TABLE dbo.FlashcardDecks (
     deck_id INT IDENTITY(1,1) PRIMARY KEY,
     title NVARCHAR(150) NOT NULL,
-    description NVARCHAR(MAX),
-    created_at DATETIME DEFAULT GETDATE()
+    description NVARCHAR(MAX) NULL,
+    created_at DATETIME NOT NULL CONSTRAINT DF_FlashcardDecks_CreatedAt DEFAULT GETDATE()
 );
+GO
 
 CREATE TABLE dbo.Flashcards (
     card_id INT IDENTITY(1,1) PRIMARY KEY,
     deck_id INT NOT NULL,
     question NVARCHAR(MAX) NOT NULL,
     answer NVARCHAR(MAX) NOT NULL,
-    FOREIGN KEY (deck_id) REFERENCES dbo.FlashcardDecks(deck_id) ON DELETE CASCADE
+    CONSTRAINT FK_Flashcards_Deck
+        FOREIGN KEY (deck_id) REFERENCES dbo.FlashcardDecks(deck_id) ON DELETE CASCADE
 );
+GO
 
 CREATE TABLE dbo.MentorAssignments (
     assignment_id INT IDENTITY(1,1) PRIMARY KEY,

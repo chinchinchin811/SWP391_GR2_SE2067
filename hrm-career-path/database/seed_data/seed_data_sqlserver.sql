@@ -76,30 +76,9 @@ GO
 -- FLASHCARD DATA
 -- =======================================================
 
-INSERT INTO dbo.FlashcardDecks (title, description) VALUES 
-(N'Quy trình Onboarding', N'Kien thuc nhap môn công ty'),
-(N'Java Core', N'Kien thuc chuyen mon Java');
-
-SELECT *
-FROM dbo.FlashcardDecks
-WHERE title IN (N'Quy trình Onboarding', N'Java Core', N'Kien thuc nhap môn công ty' );
-
-
-UPDATE dbo.FlashcardDecks
-SET title = N'Văn hóa công ty'
-WHERE deck_id = 1;
-
-UPDATE dbo.FlashcardDecks
-SET title = N'Chuyên môn'
-WHERE deck_id = 2;
-
-
-INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES 
-(1, N'Gio lam viec bat dau luc may gio', N'8:30 Sang'),
-(2, N'OOP có may tinh chat co ban?', N'4 tinh chat: Dong goi, Ke thua, Da hinh, Truu tuong');
-GO
-
-DELETE FROM dbo.Flashcards WHERE deck_id = 1;
+INSERT INTO dbo.FlashcardDecks (title, description) VALUES
+(N'Văn hóa công ty', N'Kiến thức nhập môn và văn hóa công ty'),
+(N'Chuyên môn', N'Kiến thức chuyên môn Java');
 GO
 
 INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
@@ -113,10 +92,6 @@ INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
 (1, N'Khi đến muộn, nhân viên nên làm gì?', N'Thông báo cho quản lý hoặc người phụ trách và tuân thủ quy định chấm công của công ty.'),
 (1, N'Tại sao cần tham gia các buổi training của công ty?', N'Để cập nhật kiến thức, quy trình, kỹ năng và các quy định cần thiết cho công việc.'),
 (1, N'Nhân viên mới có thể hỏi ai khi không hiểu công việc?', N'Có thể hỏi Mentor, Team Leader, Manager hoặc đồng nghiệp phù hợp.');
-GO
-
-
-DELETE FROM dbo.Flashcards WHERE deck_id = 2;
 GO
 
 INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
@@ -137,7 +112,6 @@ INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
 (2, N'API là gì?', N'API là giao diện cho phép các ứng dụng hoặc hệ thống giao tiếp và trao đổi dữ liệu với nhau.');
 GO
 
-use HRM_Project_DB
 -- =======================================================
 -- KIEM TRA DU LIEU: SELECT * FROM TAT CA BANG
 -- =======================================================
@@ -147,6 +121,6 @@ SELECT * FROM dbo.Departments;
 SELECT * FROM dbo.Positions;
 SELECT * FROM dbo.Users;
 SELECT * FROM dbo.Employee_History;
-select * from Flashcards
-select * from FlashcardDecks
+SELECT * FROM dbo.Flashcards;
+SELECT * FROM dbo.FlashcardDecks;
 GO
