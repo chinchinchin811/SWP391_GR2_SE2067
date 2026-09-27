@@ -16,7 +16,6 @@ body {
 
 /* Bo cuc tong the */
 .app-container {
-    display: flex;
     min-height: 100vh;
     border: 1px solid #000000;
 }
@@ -24,11 +23,12 @@ body {
 /* Menu ben trai */
 .sidebar {
     width: 220px;
-    flex: 0 0 220px;
     height: 100vh;
-    position: sticky;
+    position: fixed;
     top: 0;
-    overflow-y: auto;
+    left: 0;
+    z-index: 100;
+    overflow: hidden;
     background-color: #f5f5f5;
     border-right: 1px solid #000000;
     display: flex;
@@ -52,19 +52,59 @@ body {
 }
 
 .sidebar-menu {
-    list-style: none;
     padding: 10px 0;
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
+.sidebar-menu-list,
+.sidebar-submenu {
+    list-style: none;
+}
+
+.sidebar-section {
+    margin: 5px 0;
 }
 
 .sidebar-menu-category {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     font-size: 11px;
     font-weight: bold;
     color: #333333;
-    padding: 10px 10px 4px;
+    padding: 10px;
     text-transform: uppercase;
     border-bottom: 1px dashed #cccccc;
-    margin: 5px 0;
+    cursor: pointer;
+    text-align: left;
+}
+
+.sidebar-menu-category:hover,
+.sidebar-menu-category:focus-visible {
+    background-color: #e7e7e7;
+    outline: 1px solid #000000;
+    outline-offset: -1px;
+}
+
+.sidebar-menu-category-icon {
+    font-size: 16px;
+    line-height: 1;
+    transition: transform 0.2s ease;
+}
+
+.sidebar-section.is-collapsed .sidebar-menu-category-icon {
+    transform: rotate(-90deg);
+}
+
+.sidebar-section.is-collapsed .sidebar-submenu {
+    display: none;
 }
 
 .sidebar-menu li a {
@@ -108,7 +148,10 @@ body {
 
 /* Phan noi dung chinh */
 .main-content {
-    flex: 1;
+    width: calc(100% - 220px);
+    min-width: 0;
+    min-height: 100vh;
+    margin-left: 220px;
     display: flex;
     flex-direction: column;
     background-color: #ffffff;
@@ -209,7 +252,11 @@ table.data-table tr:hover {
 
 /* Nut bam (Buttons) */
 .btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 30px;
     padding: 4px 10px;
     font-size: 12px;
     border: 1px solid #000000;
@@ -217,7 +264,9 @@ table.data-table tr:hover {
     color: #000000;
     cursor: pointer;
     text-decoration: none;
-    border-radius: 0;
+    border-radius: 4px;
+    line-height: 1.2;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .btn:hover {
@@ -245,18 +294,49 @@ table.data-table tr:hover {
 }
 
 .btn-danger {
-    background-color: #ffffff;
-    color: #000000;
-    border-color: #000000;
+    background-color: #fff7f7;
+    color: #b42318;
+    border-color: #b42318;
 }
 .btn-danger:hover {
-    background-color: #000000;
+    background-color: #b42318;
     color: #ffffff;
 }
 
 .btn-sm {
-    padding: 2px 6px;
+    min-height: 26px;
+    padding: 3px 8px;
     font-size: 11px;
+}
+
+.btn-edit {
+    background-color: #ffffff;
+    color: #1f2937;
+    border-color: #64748b;
+}
+
+.btn-edit:hover {
+    background-color: #1f2937;
+    border-color: #1f2937;
+    color: #ffffff;
+}
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.table-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.btn:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
 }
 
 /* Nhan trang thai */
@@ -373,6 +453,18 @@ table.data-table tr:hover {
 }
 
 @media (max-width: 760px) {
-    .app-container { display: block; }
-    .sidebar { width: 100%; height: auto; position: static; overflow: visible; }
+    .sidebar {
+        width: 100%;
+        height: auto;
+        max-height: none;
+        position: static;
+        overflow: visible;
+    }
+    .sidebar-menu {
+        overflow: visible;
+    }
+    .main-content {
+        width: 100%;
+        margin-left: 0;
+    }
 }
