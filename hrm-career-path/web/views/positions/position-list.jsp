@@ -109,13 +109,15 @@
                                     <% } %>
                                 </td>
                                 <% if (roleId == 1 || roleId == 2) { %>
-                                    <td style="text-align: center;">
-                                        <a href="<%= request.getContextPath() %>/positions?action=edit&id=<%= p.getPositionId() %>" class="btn btn-sm btn-secondary">Sua</a>
-                                        <form action="<%= request.getContextPath() %>/positions" method="POST" style="display: inline-block;" onsubmit="return confirm('Ban co chac muon xoa vi tri nay?');">
+                                    <td>
+                                        <div class="table-actions">
+                                        <a href="<%= request.getContextPath() %>/positions?action=edit&amp;id=<%= p.getPositionId() %>" class="btn btn-sm btn-edit" aria-label="Sửa vị trí <%= p.getPositionName() %>">Sửa</a>
+                                        <form action="<%= request.getContextPath() %>/positions" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vị trí này?');">
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="id" value="<%= p.getPositionId() %>">
-                                            <button type="submit" class="btn btn-sm btn-danger">Xoa</button>
+                                            <button type="submit" class="btn btn-sm btn-danger" aria-label="Xóa vị trí <%= p.getPositionName() %>">Xóa</button>
                                         </form>
+                                        </div>
                                     </td>
                                 <% } %>
                             </tr>

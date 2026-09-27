@@ -171,7 +171,7 @@
                                     <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-secondary">
                                         Xem
                                     </a>
-                                    <a href="<%= request.getContextPath() %>/employees?action=edit&id=<%= emp.getUserId() %>" class="btn btn-sm btn-secondary">
+                                    <a href="<%= request.getContextPath() %>/employees?action=edit&amp;id=<%= emp.getUserId() %>" class="btn btn-sm btn-edit">
                                         Sua
                                     </a>
                                 <% } else { %>
