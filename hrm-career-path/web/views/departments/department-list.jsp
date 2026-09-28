@@ -103,15 +103,17 @@
                                 <% } %>
                             </td>
                             <% if (roleId == 1 || roleId == 2) { %>
-                                <td style="text-align: center;">
-                                    <a href="<%= request.getContextPath() %>/departments?action=edit&id=<%= d.getDepartmentId() %>" class="btn btn-sm btn-secondary">
+                                <td>
+                                    <div class="table-actions">
+                                    <a href="<%= request.getContextPath() %>/departments?action=edit&amp;id=<%= d.getDepartmentId() %>" class="btn btn-sm btn-edit" aria-label="Sửa phòng ban <%= d.getDepartmentName() %>">
                                         Sửa
                                     </a>
-                                    <form action="<%= request.getContextPath() %>/departments" method="POST" style="display: inline-block;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phòng ban này?');">
+                                    <form action="<%= request.getContextPath() %>/departments" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phòng ban này?');">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<%= d.getDepartmentId() %>">
-                                        <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
+                                        <button type="submit" class="btn btn-sm btn-danger" aria-label="Xóa phòng ban <%= d.getDepartmentName() %>">Xóa</button>
                                     </form>
+                                    </div>
                                 </td>
                             <% } %>
                         </tr>

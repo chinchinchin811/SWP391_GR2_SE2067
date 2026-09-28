@@ -3,60 +3,79 @@
 <%
     LearningMaterial material = (LearningMaterial) request.getAttribute("material");
     List<VideoCheckpoint> checkpoints = (List<VideoCheckpoint>) request.getAttribute("checkpoints");
-    request.setAttribute("pageTitle", material.getTitle() + " | HRM");
+    request.setAttribute("pageTitle", (material != null ? material.getTitle() : "Học liệu") + " | HRM");
 %>
 <jsp:include page="/views/common/header.jsp" />
 <jsp:include page="/views/common/sidebar.jsp" />
 <main class="main-content">
     <div class="topbar">
-        <h1><%= material.getTitle() %></h1>
-        <div>
+        <h1><%= material != null ? material.getTitle() : "" %></h1>
+        <div class="topbar-actions">
             <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials">Quay lại kho học liệu</a>
+            <% if (material != null) { %>
             <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=download&id=<%= material.getMaterialId() %>">Tải xuống</a>
+            <% } %>
         </div>
     </div>
     <div class="content-body">
+        <% if (material != null) { %>
         <div class="card">
             <div class="card-header">
                 <h2>Thông Tin Học Liệu</h2>
                 <span class="badge"><%= material.getMaterialType() %></span>
             </div>
             <div class="card-body">
-                <p><%= material.getDescription() != null ? material.getDescription() : "Chưa có mô tả." %></p>
-                <p style="margin-top:8px"><b>Thời lượng:</b> <%= material.getDurationMinutes() %> phút</p>
+                <p style="font-size:13px;color:#333;line-height:1.6">
+                    <%= material.getDescription() != null ? material.getDescription() : "<em style='color:#999'>Chưa có mô tả.</em>" %>
+                </p>
+                <p style="margin-top:10px;font-size:13px">
+                    <strong>Thời lượng:</strong> <%= material.getDurationMinutes() %> phút
+                </p>
             </div>
         </div>
+
         <div class="card">
             <div class="card-header">
                 <h2>Nội Dung Học Liệu</h2>
             </div>
-            <div class="card-body">
+            <div class="card-body" style="padding:0">
                 <% if ("VIDEO".equals(material.getMaterialType()) && material.getYoutubeEmbedId() != null) { %>
-                    <div id="youtubePlayer" style="width:100%;min-height:480px;background:#000"></div>
+                <div id="youtubePlayer" style="width:100%;min-height:480px;background:#000"></div>
                 <% } else if ("VIDEO".equals(material.getMaterialType()) && material.getVideoUrl() != null && !material.getVideoUrl().trim().isEmpty()) { %>
-                    <video id="learningVideo" controls style="width:100%;max-height:600px">
-                        <source src="<%= material.getVideoUrl() %>">
-                    </video>
+                <video id="learningVideo" controls style="width:100%;max-height:600px;display:block">
+                    <source src="<%= material.getVideoUrl() %>">
+                </video>
                 <% } else if ("PDF".equals(material.getMaterialType())) { %>
-                    <iframe title="<%= material.getTitle() %>" src="<%= request.getContextPath() %>/materials?action=preview&id=<%= material.getMaterialId() %>" style="width:100%;height:650px;border:1px solid #000"></iframe>
+                <iframe title="<%= material.getTitle() %>"
+                        src="<%= request.getContextPath() %>/materials?action=preview&id=<%= material.getMaterialId() %>"
+                        style="width:100%;height:650px;border:none"></iframe>
                 <% } else if ("SLIDE".equals(material.getMaterialType()) && material.getSlideEmbedUrl() != null) { %>
-                    <iframe title="<%= material.getTitle() %>" src="<%= material.getSlideEmbedUrl() %>" allowfullscreen style="width:100%;height:650px;border:1px solid #000"></iframe>
+                <iframe title="<%= material.getTitle() %>"
+                        src="<%= material.getSlideEmbedUrl() %>"
+                        allowfullscreen
+                        style="width:100%;height:650px;border:none"></iframe>
                 <% } else { %>
-                    <p>Slide tải lên từ máy không thể xem trực tiếp trên trình duyệt. Hãy cập nhật liên kết công khai Google Slides, Google Drive hoặc Office Online để trình chiếu tại đây.</p>
+                <div style="padding:32px;text-align:center;color:#666;font-size:13px;line-height:1.7">
+                    Slide tải lên từ máy không thể xem trực tiếp trên trình duyệt.<br>
+                    Hãy cập nhật liên kết công khai Google Slides, Google Drive hoặc Office Online để trình chiếu tại đây.
+                </div>
                 <% } %>
             </div>
         </div>
+        <% } %>
     </div>
 </main>
+
 <div id="questionModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center">
-    <div style="width:500px;max-width:90%;background:#fff;border:1px solid #000;padding:20px">
-        <h3>Kiểm tra kiến thức</h3>
-        <p id="questionText"></p>
-        <div id="options"></div>
-        <p id="feedback"></p>
-        <button id="submitAnswer" class="btn btn-primary">Gửi câu trả lời</button>
+    <div style="width:500px;max-width:90%;background:#fff;border:1px solid #000;padding:24px">
+        <h3 style="font-size:15px;margin-bottom:12px;border-bottom:1px solid #000;padding-bottom:10px">Kiểm tra kiến thức</h3>
+        <p id="questionText" style="font-size:13.5px;font-weight:600;margin-bottom:10px"></p>
+        <div id="options" style="margin-bottom:12px"></div>
+        <p id="feedback" style="font-size:12.5px;color:#555;margin-bottom:12px;min-height:18px"></p>
+        <button id="submitAnswer" class="btn btn-primary" style="width:100%">Gửi câu trả lời</button>
     </div>
 </div>
+
 <script>
     const checkpoints = [
         <% if (checkpoints != null) {
@@ -78,7 +97,7 @@
         if (youtubePlayer) youtubePlayer.pauseVideo();
         questionText.textContent = checkpoint.question;
         feedback.textContent = '';
-        options.innerHTML = checkpoint.options.map((option, index) => option ? '<label style="display:block;margin:8px 0"><input type="radio" name="answer" value="' + index + '"> ' + option + '</label>' : '').join('');
+        options.innerHTML = checkpoint.options.map((option, index) => option ? '<label style="display:block;padding:8px;margin:5px 0;border:1px solid #ddd;cursor:pointer"><input type="radio" name="answer" value="' + index + '"> ' + option + '</label>' : '').join('');
         modal.style.display = 'flex';
     }
 
@@ -114,7 +133,7 @@
         }
     });
 
-    <% if ("VIDEO".equals(material.getMaterialType()) && material.getYoutubeEmbedId() != null) { %>
+    <% if (material != null && "VIDEO".equals(material.getMaterialType()) && material.getYoutubeEmbedId() != null) { %>
         function onYouTubeIframeAPIReady() {
             youtubePlayer = new YT.Player('youtubePlayer', {
                 videoId: '<%= material.getYoutubeEmbedId() %>',

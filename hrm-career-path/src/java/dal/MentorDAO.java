@@ -4,11 +4,12 @@
  */
 package dal;
 
-import model.MentorEvaluation;
+import model.Mentor.MentorEvaluation;
 import model.User;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import model.Mentor.MentorAssignment;
 
 /**
  *
@@ -45,9 +46,8 @@ public class MentorDAO {
         return list;
     }
 
-    
     public List<User> getAllMentorsWithSpecialty() {
-        List<User> list = new ArrayList<>();       
+        List<User> list = new ArrayList<>();
         String sql = "SELECT u.user_id, u.full_name, u.position_id, p.position_name, d.department_name, jl.level_name "
                 + "FROM Users u "
                 + "LEFT JOIN Positions p ON u.position_id = p.position_id "
@@ -61,8 +61,8 @@ public class MentorDAO {
             while (rs.next()) {
                 User u = new User();
                 u.setUserId(rs.getInt("user_id"));
-                u.setFullName(rs.getString("full_name"));                
-                u.setPositionId(rs.getInt("position_id")); 
+                u.setFullName(rs.getString("full_name"));
+                u.setPositionId(rs.getInt("position_id"));
                 u.setPositionName(rs.getString("position_name"));
                 u.setDepartmentName(rs.getString("department_name"));
                 u.setLevelName(rs.getString("level_name"));
@@ -112,6 +112,64 @@ public class MentorDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return list;
+    }
+    
+    public List<MentorAssignment> getActiveAssignments() {
+        List<MentorAssignment> list = new ArrayList<>();
+        String sql = "SELECT a.assignment_id, a.status, "
+                + "m.user_id as mentee_id, m.full_name as mentee_name, jl.level_name, "
+                + "mt.user_id as mentor_id, mt.full_name as mentor_name, "
+                + "p.position_name, d.department_name "
+                + "FROM MentorAssignments a "
+                + "INNER JOIN Users m ON a.mentee_id = m.user_id "
+                + "INNER JOIN Users mt ON a.mentor_id = mt.user_id "
+                + "LEFT JOIN Positions p ON a.position_id = p.position_id "
+                + "LEFT JOIN Departments d ON m.department_id = d.department_id "
+                + "WHERE a.status = 'ACTIVE'";
+
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                MentorAssignment ma = new MentorAssignment();
+                ma.setAssignmentId(rs.getInt("assignment_id"));
+                ma.setMenteeId(rs.getInt("mentee_id"));
+                ma.setMenteeName(rs.getString("mentee_name"));
+                ma.setMenteeLevel(rs.getString("level_name"));
+                ma.setMentorId(rs.getInt("mentor_id"));
+                ma.setMentorName(rs.getString("mentor_name"));
+                ma.setPositionName(rs.getString("position_name"));
+                ma.setDepartmentName(rs.getString("department_name"));
+                ma.setStatus(rs.getString("status"));
+                list.add(ma);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+    
+    public List<model.Mentor.MentorAssignment> getAssignmentsByMentor(int mentorId) {
+        List<model.Mentor.MentorAssignment> list = new ArrayList<>();
+        String sql = "SELECT ma.assignment_id, ma.mentee_id, u.full_name AS mentee_name, jl.level_name AS mentee_level, p.position_name "
+                   + "FROM MentorAssignments ma "
+                   + "JOIN Users u ON ma.mentee_id = u.user_id "
+                   + "LEFT JOIN Job_Levels jl ON u.level_id = jl.level_id "
+                   + "LEFT JOIN Positions p ON ma.position_id = p.position_id "
+                   + "WHERE ma.status = 'ACTIVE' AND ma.mentor_id = ?";
+        try (Connection conn = new DBContext().getConnection(); 
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, mentorId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                model.Mentor.MentorAssignment a = new model.Mentor.MentorAssignment();
+                a.setAssignmentId(rs.getInt("assignment_id"));
+                a.setMenteeId(rs.getInt("mentee_id"));
+                a.setMenteeName(rs.getString("mentee_name"));
+                a.setMenteeLevel(rs.getString("mentee_level"));
+                a.setPositionName(rs.getString("position_name"));
+                list.add(a);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
         return list;
     }
 }
