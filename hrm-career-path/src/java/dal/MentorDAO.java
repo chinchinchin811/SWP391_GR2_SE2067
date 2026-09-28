@@ -114,8 +114,7 @@ public class MentorDAO {
         }
         return list;
     }
-
-    // Thêm hàm này vào MentorDAO.java
+    
     public List<MentorAssignment> getActiveAssignments() {
         List<MentorAssignment> list = new ArrayList<>();
         String sql = "SELECT a.assignment_id, a.status, "
@@ -146,6 +145,31 @@ public class MentorDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return list;
+    }
+    
+    public List<model.Mentor.MentorAssignment> getAssignmentsByMentor(int mentorId) {
+        List<model.Mentor.MentorAssignment> list = new ArrayList<>();
+        String sql = "SELECT ma.assignment_id, ma.mentee_id, u.full_name AS mentee_name, jl.level_name AS mentee_level, p.position_name "
+                   + "FROM MentorAssignments ma "
+                   + "JOIN Users u ON ma.mentee_id = u.user_id "
+                   + "LEFT JOIN Job_Levels jl ON u.level_id = jl.level_id "
+                   + "LEFT JOIN Positions p ON ma.position_id = p.position_id "
+                   + "WHERE ma.status = 'ACTIVE' AND ma.mentor_id = ?";
+        try (Connection conn = new DBContext().getConnection(); 
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, mentorId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                model.Mentor.MentorAssignment a = new model.Mentor.MentorAssignment();
+                a.setAssignmentId(rs.getInt("assignment_id"));
+                a.setMenteeId(rs.getInt("mentee_id"));
+                a.setMenteeName(rs.getString("mentee_name"));
+                a.setMenteeLevel(rs.getString("mentee_level"));
+                a.setPositionName(rs.getString("position_name"));
+                list.add(a);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
         return list;
     }
 }

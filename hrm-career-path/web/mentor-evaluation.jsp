@@ -1,7 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="java.util.List" %>
 <%@ page import="model.User" %>
-<%@ page import="model.MentorEvaluation" %>
+<%@ page import="model.Mentor.MentorEvaluation" %>
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
@@ -26,7 +26,7 @@
         <div class="card" style="border: 1px solid #000; background: #fff; padding: 20px;">
             <div class="card-header" style="border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                 <h2 style="margin: 0; font-size: 18px;">Danh Sach Danh Gia Tu Mentor</h2>
-                <span style="font-size: 12px; font-style: italic; color: #555;">(Chi hien thi cho HR, Manager, Admin & Mentor)</span>
+<!--                <span style="font-size: 12px; font-style: italic; color: #555;">(Chi hien thi cho HR, Manager, Admin & Mentor)</span>-->
             </div>
             <div class="card-body">
                 <table class="data-table" style="width: 100%; border-collapse: collapse; border: 1px solid #000;">

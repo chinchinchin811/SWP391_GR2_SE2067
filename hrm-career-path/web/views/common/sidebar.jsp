@@ -13,6 +13,8 @@
     boolean mentorWorkspaceActive = currentURI.contains("/mentors") && "evaluations".equals(action);
     boolean trainingActive = currentURI.contains("/materials");
     boolean testActive = currentURI.contains("/tests");
+    
+    User loggedInUser = (User) session.getAttribute("currentUser");
 %>
 <aside class="sidebar">
     <div class="sidebar-brand">
@@ -27,9 +29,22 @@
             </li>
 
             <li class="<%= currentURI.contains("/flashcards") || currentURI.contains("/flashcard-list.jsp") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/flashcards">Flashcards (Học tập)</a>
+                <a href="<%= request.getContextPath() %>/flashcards">Flashcards</a>                
             </li>
 
+            <% 
+    // Giả sử Role ID của Mentor trong database của bạn là 5
+    if (loggedInUser != null && loggedInUser.getRoleId() == 6) { 
+            %>
+            <li class="nav-item">
+                <a class="nav-link" href="<%= request.getContextPath() %>/mentors?action=myMentees">
+                    Danh sách Mentee
+                </a>
+            </li>
+            <% 
+                } 
+            %>
+            
             <% if (roleId == 1 || roleId == 2) { %>
             <li class="sidebar-section <%= organizationActive ? "has-active" : "" %>" data-sidebar-section="organization">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-organization">
@@ -200,4 +215,5 @@
             });
         });
     }());
+
 </script>

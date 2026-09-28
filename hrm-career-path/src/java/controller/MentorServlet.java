@@ -89,8 +89,7 @@ public class MentorServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }
-
-                // Thuộc tính được đẩy lên JSP
+                
                 request.setAttribute("newEmployees", mentorDAO.getUnassignedNewEmployees());
                 request.setAttribute("mentors", mentorDAO.getAllMentorsWithSpecialty());
                 request.setAttribute("assignments", mentorDAO.getActiveAssignments()); // Thêm dòng này
@@ -101,6 +100,18 @@ public class MentorServlet extends HttpServlet {
             case "evaluations":
                 request.setAttribute("evaluations", mentorDAO.getAllEvaluations());
                 request.getRequestDispatcher("mentor-evaluation.jsp").forward(request, response);
+                break;
+                
+                case "myMentees":
+                // Lấy ds Mentee của riêng Mentor này và đẩy ra giao diện
+                request.setAttribute("myAssignments", mentorDAO.getAssignmentsByMentor(currentUser.getUserId()));
+                request.getRequestDispatcher("my-mentees.jsp").forward(request, response);
+                break;
+
+            case "evaluateForm":
+                // Mở Form đánh giá
+                request.setAttribute("assignmentId", request.getParameter("assignmentId"));
+                request.getRequestDispatcher("mentor-evaluate-form.jsp").forward(request, response);
                 break;
         }
     }
