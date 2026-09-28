@@ -160,27 +160,27 @@ END;
 COMMIT;
 
 -- Nạp seed data mẫu
-IF NOT EXISTS (SELECT 1 FROM dbo.Learning_Materials WHERE title = N'So Tay Van Hoa & Quy Dinh Cong Ty')
+IF NOT EXISTS (SELECT 1 FROM dbo.Learning_Materials WHERE title = N'Sổ Tay Văn Hóa & Quy Định Công Ty')
 BEGIN
     INSERT INTO dbo.Learning_Materials 
     (title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, video_url, duration_minutes, status, created_by)
     VALUES 
-    (N'So Tay Van Hoa & Quy Dinh Cong Ty', 
-     N'Tai lieu dinh huong nhan su moi ve tam nhin, su menh, gia tri cot loi va noi quy lao dong cong ty.', 
+    (N'Sổ Tay Văn Hóa & Quy Định Công Ty', 
+     N'Tài liệu định hướng nhân sự mới về tầm nhìn, sứ mệnh, giá trị cốt lõi và nội quy lao động công ty.', 
      'PDF', 'CULTURE', NULL, NULL, NULL, 'So_Tay_Van_Hoa_Doanh_Nghiep.pdf', 'application/pdf', NULL, 30, 1, 2);
 
     INSERT INTO dbo.Learning_Materials 
     (title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, video_url, duration_minutes, status, created_by)
     VALUES 
-    (N'Slide Gioi Thieu Quy Trinh Phat Trien Phan Mem Scrum/Agile', 
-     N'Trinh chieu tong quan ve quy trinh phoi hop Agile/Scrum, cac buoi le Sprint va trach nhiem vi tri.', 
+    (N'Slide Giới Thiệu Quy Trình Phát Triển Phần Mềm Scrum/Agile', 
+     N'Trình chiếu tổng quan về quy trình phối hợp Agile/Scrum, các buổi lễ Sprint và trách nhiệm vị trí.', 
      'SLIDE', 'DEPARTMENT', 1, 1, 2, 'Agile_Scrum_Onboarding.pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', NULL, 45, 1, 3);
 
     INSERT INTO dbo.Learning_Materials 
     (title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, video_url, duration_minutes, status, created_by)
     VALUES 
-    (N'Video Bai Giang: Kien Truc Java Backend & Servlet Jakarta EE', 
-     N'Video huong dan chuan kien truc MVC, vong doi Servlet va tuong tac co so du lieu qua JDBC trong du an doanh nghiep.', 
+    (N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE', 
+     N'Video hướng dẫn chuẩn kiến trúc MVC, vòng đời Servlet và tương tác cơ sở dữ liệu qua JDBC trong dự án doanh nghiệp.', 
      'VIDEO', 'DEPARTMENT', 1, 1, 2, NULL, 'video/mp4', 'https://www.youtube.com/watch?v=kYJzphqI3qA', 25, 1, 3);
 
     DECLARE @video_id INT = SCOPE_IDENTITY();
@@ -189,40 +189,40 @@ BEGIN
     (material_id, stop_time_seconds, question_prompt, option_a, option_b, option_c, option_d, correct_option, explanation)
     VALUES 
     (@video_id, 45, 
-     N'Theo kien truc MVC trong Jakarta EE, tang nao truc tiep nhan va dieu phoi HTTP Request tu nguoi dung?',
+     N'Theo kiến trúc MVC trong Jakarta EE, tầng nào trực tiếp nhận và điều phối HTTP Request từ người dùng?',
      N'Model (Java Bean)',
      N'Controller (Servlet)',
      N'View (JSP/HTML)',
      N'DAL (Data Access Layer)',
      1, 
-     N'Chinh xac! Servlet dong vai tro Controller, tiep nhan request, kiem tra xac thuc va dieu huong toi Service/JSP.');
+     N'Chính xác! Servlet đóng vai trò Controller, tiếp nhận request, kiểm tra xác thực và điều hướng tới Service/JSP.');
 
     INSERT INTO dbo.Video_Checkpoints 
     (material_id, stop_time_seconds, question_prompt, option_a, option_b, option_c, option_d, correct_option, explanation)
     VALUES 
     (@video_id, 120, 
-     N'De bao ve an toan toan ven du lieu khi thuc hien nhieu thao tac INSERT/UPDATE lien quan, ky thuat nao duoc ap dung?',
-     N'Bat AutoCommit = true',
-     N'Su dung Statement thay vi PreparedStatement',
-     N'Su dung Database Transaction (setAutoCommit(false), commit, rollback)',
-     N'Bo qua viec bat SQLException',
+     N'Để bảo vệ an toàn toàn vẹn dữ liệu khi thực hiện nhiều thao tác INSERT/UPDATE liên quan, kỹ thuật nào được áp dụng?',
+     N'Bật AutoCommit = true',
+     N'Sử dụng Statement thay vì PreparedStatement',
+     N'Sử dụng Database Transaction (setAutoCommit(false), commit, rollback)',
+     N'Bỏ qua việc bắt SQLException',
      2, 
-     N'Chinh xac! Database Transaction dam bao tinh toan ven (ACID) khi cap nhat nhieu bang cung luc.');
+     N'Chính xác! Database Transaction đảm bảo tính toàn vẹn (ACID) khi cập nhật nhiều bảng cùng lúc.');
 
     INSERT INTO dbo.Training_Classes 
     (class_code, class_name, description, department_id, target_position_id, target_level_id, mentor_id, start_date, end_date, status, created_by)
     VALUES 
     ('CLS-IT-FRESHER-2026', 
-     N'Khoa Dao Tao Onboarding Ky Thuat Cho Fresher 2026', 
-     N'Lop dao tao nen tang kien thuc cong nghe, van hoa lam viec va quy trinh ky thuat danh cho cac ban Fresher/Junior moi gia nhap phong IT.', 
+     N'Khóa Đào Tạo Onboarding Kỹ Thuật Cho Fresher 2026', 
+     N'Lớp đào tạo nền tảng kiến thức công nghệ, văn hóa làm việc và quy trình kỹ thuật dành cho các bạn Fresher/Junior mới gia nhập phòng IT.', 
      1, 1, 2, 3, CAST(GETDATE() AS DATE), DATEADD(DAY, 30, CAST(GETDATE() AS DATE)), 'OPEN', 2);
 
     DECLARE @class_id INT = SCOPE_IDENTITY();
 
     -- Do not assume identity values start at 1: the migration can be run on
     -- a database that already contains materials.
-    DECLARE @culture_id INT = (SELECT material_id FROM dbo.Learning_Materials WHERE title = N'So Tay Van Hoa & Quy Dinh Cong Ty');
-    DECLARE @slide_id INT = (SELECT material_id FROM dbo.Learning_Materials WHERE title = N'Slide Gioi Thieu Quy Trinh Phat Trien Phan Mem Scrum/Agile');
+    DECLARE @culture_id INT = (SELECT material_id FROM dbo.Learning_Materials WHERE title = N'Sổ Tay Văn Hóa & Quy Định Công Ty');
+    DECLARE @slide_id INT = (SELECT material_id FROM dbo.Learning_Materials WHERE title = N'Slide Giới Thiệu Quy Trình Phát Triển Phần Mềm Scrum/Agile');
     INSERT INTO dbo.Class_Materials (class_id, material_id, order_index, is_mandatory) VALUES
     (@class_id, @culture_id, 1, 1),
     (@class_id, @slide_id, 2, 1),

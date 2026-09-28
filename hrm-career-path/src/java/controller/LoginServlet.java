@@ -34,7 +34,7 @@ public class LoginServlet extends HttpServlet {
         String password = request.getParameter("password");
 
         if (username == null || username.trim().isEmpty() || password == null || password.trim().isEmpty()) {
-            request.setAttribute("error", "Vui long nhap day du ten dang nhap va mat khau!");
+            request.setAttribute("error", "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!");
             request.getRequestDispatcher("/login.jsp").forward(request, response);
             return;
         }
@@ -46,7 +46,7 @@ public class LoginServlet extends HttpServlet {
             session.setAttribute("userRole", user.getRoleName());
             response.sendRedirect(request.getContextPath() + "/dashboard");
         } else {
-            request.setAttribute("error", "Ten dang nhap hoac mat khau khong chinh xac, hoac tai khoan da bi khoa!");
+            request.setAttribute("error", "Tên đăng nhập hoặc mật khẩu không chính xác, hoặc tài khoản đã bị khóa!");
             request.setAttribute("enteredUsername", username);
             request.getRequestDispatcher("/login.jsp").forward(request, response);
         }

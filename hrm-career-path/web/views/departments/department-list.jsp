@@ -5,7 +5,7 @@
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-    request.setAttribute("pageTitle", "Quan ly Phong Ban | HRM");
+    request.setAttribute("pageTitle", "Quản lý Phòng Ban | HRM");
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<User> managerCandidates = (List<User>) request.getAttribute("managerCandidates");
     String successMessage = (String) session.getAttribute("successMessage");
@@ -39,7 +39,7 @@
         <div class="card">
             <div class="card-header">
                 <h2><%= (roleId == 3) ? "Phòng Ban Của Bạn" : "Danh Sách Phòng Ban & Trưởng Phòng Quản Lý" %></h2>
-                <span style="font-size: 12px; color: #555555;">Tong so: <%= departments != null ? departments.size() : 0 %> phòng ban</span>
+                <span style="font-size: 12px; color: #555555;">Tổng số: <%= departments != null ? departments.size() : 0 %> phòng ban</span>
             </div>
             <div class="card-body">
                 <table class="data-table">

@@ -12,26 +12,26 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1>Ghep Noi Mentor & Mentee</h1>
+        <h1>Ghép Nối Mentor & Mentee</h1>
     </div>
 
     <div class="content-body">
         <% if (successMsg != null) { %>
         <div style="padding: 10px; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; margin-bottom: 15px; font-weight: bold;">
-            [THONG BAO] <%= successMsg %>
+            [THÔNG BÁO] <%= successMsg %>
         </div>
         <% } %>
 
         <div class="card" style="max-width: 650px; margin: 0 auto; border: 1px solid #000; padding: 20px;">
             <div style="border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
-                <h2 style="margin: 0; font-size: 18px;">Form Ghep Noi</h2>
+                <h2 style="margin: 0; font-size: 18px;">Biểu Mẫu Ghép Nối</h2>
             </div>
 
             <form action="<%= request.getContextPath() %>/mentors" method="POST">
                 <input type="hidden" name="action" value="assign">
                 
                 <div style="margin-bottom: 15px;">
-                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">1. Chon Nhan vien moi (*):</label>
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">1. Chọn Nhân viên mới (*):</label>
                     <select id="menteeSelect" name="menteeId" onchange="filterMentorsByPosition()" required style="width: 100%; padding: 8px;">
                         <option value="">-- Chọn Nhân viên --</option>
                         <% if (newEmployees != null) {
@@ -50,7 +50,7 @@
 
                
                 <div style="margin-bottom: 15px;">
-                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">2. Chon Mentor huong dan (*):</label>
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">2. Chọn Mentor hướng dẫn (*):</label>
                     <select id="mentorSelect" name="mentorId" required style="width: 100%; padding: 8px;">
                         <option value="">-- Vui lòng chọn Nhân viên trước --</option>
                     </select>
@@ -58,7 +58,7 @@
 
                 <div style="text-align: right; margin-top: 20px;">
                     <button type="submit" style="padding: 10px 20px; background: #000; color: #fff; border: 1px solid #000; cursor: pointer; font-weight: bold;">
-                        XAC NHAN
+                        XÁC NHẬN
                     </button>
                 </div>
             </form>

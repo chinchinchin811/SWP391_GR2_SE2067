@@ -148,7 +148,7 @@
 
 
     <div class="sidebar-user">
-        <div class="user-name"><%= user != null ? user.getFullName() : "Nguoi dung" %></div>
+        <div class="user-name"><%= user != null ? user.getFullName() : "Người dùng" %></div>
         <div class="user-role">Vai trò: [<%= user != null ? user.getRoleName() : "EMPLOYEE" %>]</div>
         <a href="<%= request.getContextPath() %>/logout" class="logout-link">[Đăng xuất]</a>
     </div>

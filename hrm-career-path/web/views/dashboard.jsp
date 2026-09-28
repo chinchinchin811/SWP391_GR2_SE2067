@@ -7,7 +7,7 @@
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-    request.setAttribute("pageTitle", "Tong quan he thong | HRM");
+    request.setAttribute("pageTitle", "Tổng quan hệ thống | HRM");
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
     SimpleDateFormat sdfDate = new SimpleDateFormat("dd/MM/yyyy");
 %>
@@ -23,7 +23,7 @@
             <h1>Báo Cáo Tổng Quan Hệ Thống (HR / Admin)</h1>
             <div>
                 <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
-                    + Khai báo Nhân vien
+                    + Khai Báo Nhân Viên Mới
                 </a>
             </div>
         </div>
@@ -49,7 +49,7 @@
                 </div>
                 <div class="stat-box">
                     <h3><%= request.getAttribute("totalRoleChanges") %></h3>
-                    <p>Mới đổi chuyên môn/ngach</p>
+                    <p>Mới đổi chuyên môn/ngạch</p>
                 </div>
             </div>
 
@@ -77,7 +77,7 @@
                                 %>
                                 <tr>
                                     <td><b><%= d.getDepartmentName() %></b></td>
-                                    <td><%= d.getManagerName() != null ? d.getManagerName() : "Chua bo nhiem" %></td>
+                                    <td><%= d.getManagerName() != null ? d.getManagerName() : "Chưa bổ nhiệm" %></td>
                                     <td><span class="badge"><%= d.getEmployeeCount() %> người</span></td>
                                 </tr>
                                 <%
@@ -155,7 +155,7 @@
                 <div class="stats-grid">
                     <div class="stat-box">
                         <h3><%= deptEmployees != null ? deptEmployees.size() : 0 %></h3>
-                        <p>Nhân sự thuộc phòng ban của ban</p>
+                        <p>Nhân sự thuộc phòng ban của bạn</p>
                     </div>
                     <div class="stat-box">
                         <h3><%= myDept.getDepartmentName() %></h3>
@@ -165,7 +165,7 @@
 
                 <div class="card">
                     <div class="card-header">
-                        <h2>Danh Sach Nhân Sự Trực Thuộc Phòng Ban</h2>
+                        <h2>Danh Sách Nhân Sự Trực Thuộc Phòng Ban</h2>
                     </div>
                     <div class="card-body">
                         <table class="data-table">
@@ -173,7 +173,7 @@
                                 <tr>
                                     <th>ID</th>
                                     <th>Họ và Tên</th>
-                                    <th>Email / SDT</th>
+                                    <th>Email / SĐT</th>
                                     <th>Vị Trí Chuyên Môn</th>
                                     <th>Cấp Bậc</th>
                                     <th>Thao Tác</th>
@@ -188,8 +188,8 @@
                                     <td><%= emp.getUserId() %></td>
                                     <td><b><%= emp.getFullName() %></b> (@<%= emp.getUsername() %>)</td>
                                     <td><%= emp.getEmail() %> / <%= emp.getPhone() != null ? emp.getPhone() : "-" %></td>
-                                    <td><%= emp.getPositionName() != null ? emp.getPositionName() : "Chua phan" %></td>
-                                    <td><%= emp.getLevelName() != null ? emp.getLevelName() : "Chua phan" %></td>
+                                    <td><%= emp.getPositionName() != null ? emp.getPositionName() : "Chưa phân" %></td>
+                                    <td><%= emp.getLevelName() != null ? emp.getLevelName() : "Chưa phân" %></td>
                                     <td>
                                         <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-secondary">
                                             Xem hồ sơ
@@ -229,7 +229,7 @@
 
         <div class="content-body">
             <div style="display: flex; gap: 15px;">
-                <!-- Thong tin hien tai -->
+                <!-- Thông tin hiện tại -->
                 <div class="card" style="flex: 1;">
                     <div class="card-header">
                         <h2>Thông Tin Công Việc Hiện Tại</h2>
@@ -241,16 +241,16 @@
                         <p style="margin-bottom: 8px;"><b>Số điện thoại:</b> <%= myProfile.getPhone() != null ? myProfile.getPhone() : "-" %></p>
                         <p style="margin-bottom: 8px;"><b>Ngày vào công ty:</b> <%= myProfile.getHireDate() != null ? sdfDate.format(myProfile.getHireDate()) : "-" %></p>
                         <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc;">
-                        <p style="margin-bottom: 8px;"><b>Phòng ban:</b> <%= myProfile.getDepartmentName() != null ? myProfile.getDepartmentName() : "Chua xep phong" %></p>
-                        <p style="margin-bottom: 8px;"><b>Vị trí chuyên môn:</b> <%= myProfile.getPositionName() != null ? myProfile.getPositionName() : "Chua xep vi tri" %></p>
-                        <p style="margin-bottom: 8px;"><b>Cấp bậc:</b> <%= myProfile.getLevelName() != null ? myProfile.getLevelName() : "Chua xep cap bac" %></p>
+                        <p style="margin-bottom: 8px;"><b>Phòng ban:</b> <%= myProfile.getDepartmentName() != null ? myProfile.getDepartmentName() : "Chưa xếp phòng" %></p>
+                        <p style="margin-bottom: 8px;"><b>Vị trí chuyên môn:</b> <%= myProfile.getPositionName() != null ? myProfile.getPositionName() : "Chưa xếp vị trí" %></p>
+                        <p style="margin-bottom: 8px;"><b>Cấp bậc:</b> <%= myProfile.getLevelName() != null ? myProfile.getLevelName() : "Chưa xếp cấp bậc" %></p>
                     </div>
                 </div>
 
-                <!-- Lich su nghe nghiep cua ban -->
+                <!-- Lịch sử nghề nghiệp của bạn -->
                 <div class="card" style="flex: 2;">
                     <div class="card-header">
-                        <h2>Lịch Sử Biến Động & Phát Triển Nghề Nghiệp Của Ban</h2>
+                        <h2>Lịch Sử Biến Động & Phát Triển Nghề Nghiệp Của Bạn</h2>
                     </div>
                     <div class="card-body">
                         <% if (myHistory != null && !myHistory.isEmpty()) { %>
@@ -258,7 +258,7 @@
                                 <thead>
                                     <tr>
                                         <th>Thời Gian</th>
-                                        <th>Loại Thay Doi</th>
+                                        <th>Loại Thay Đổi</th>
                                         <th>Nội Dung Thay Đổi</th>
                                         <th>Ghi Chú</th>
                                     </tr>
@@ -266,13 +266,13 @@
                                 <tbody>
                                     <%
                                         for (EmployeeHistory h : myHistory) {
-                                            String typeLabel = "Luan chuyen phong ban";
+                                            String typeLabel = "Luân chuyển phòng ban";
                                             if ("NEW_HIRE".equalsIgnoreCase(h.getChangeType())) {
-                                                typeLabel = "Tuyen dung moi";
+                                                typeLabel = "Tuyển dụng mới";
                                             } else if ("ROLE_CHANGE".equalsIgnoreCase(h.getChangeType())) {
-                                                typeLabel = "Chuyen doi chuyen mon/vi tri";
+                                                typeLabel = "Chuyển đổi chuyên môn/vị trí";
                                             } else if ("PROMOTION".equalsIgnoreCase(h.getChangeType())) {
-                                                typeLabel = "Thang cap bac";
+                                                typeLabel = "Thăng cấp bậc";
                                             }
                                     %>
                                     <tr>
@@ -280,10 +280,10 @@
                                         <td><b><%= typeLabel %></b></td>
                                         <td>
                                             <% if (h.getNewPositionName() != null) { %>
-                                                Vị trí: <%= h.getOldPositionName() != null ? h.getOldPositionName() : "(Chua co)" %> -> <b><%= h.getNewPositionName() %></b> <%= h.getNewLevelName() != null ? "(" + h.getNewLevelName() + ")" : "" %><br>
+                                                Vị trí: <%= h.getOldPositionName() != null ? h.getOldPositionName() : "(Chưa có)" %> -> <b><%= h.getNewPositionName() %></b> <%= h.getNewLevelName() != null ? "(" + h.getNewLevelName() + ")" : "" %><br>
                                             <% } %>
                                             <% if (h.getNewDepartmentName() != null) { %>
-                                                Phòng ban: <%= h.getOldDepartmentName() != null ? h.getOldDepartmentName() : "(Chua co)" %> -> <b><%= h.getNewDepartmentName() %></b>
+                                                Phòng ban: <%= h.getOldDepartmentName() != null ? h.getOldDepartmentName() : "(Chưa có)" %> -> <b><%= h.getNewDepartmentName() %></b>
                                             <% } %>
                                         </td>
                                         <td><%= h.getNotes() != null ? h.getNotes() : "-" %></td>

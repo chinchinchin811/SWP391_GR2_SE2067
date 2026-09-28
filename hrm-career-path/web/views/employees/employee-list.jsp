@@ -7,7 +7,7 @@
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-    request.setAttribute("pageTitle", "Danh sach Nhan vien | HRM");
+    request.setAttribute("pageTitle", "Danh Sách Nhân Viên | HRM");
     List<User> employees = (List<User>) request.getAttribute("employees");
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<Position> positions = (List<Position>) request.getAttribute("positions");
@@ -28,11 +28,11 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1><%= (roleId == 3) ? "Nhan Su Truc Thuoc Phong Ban" : "Quan Ly Danh Sach Nhan Su" %></h1>
+        <h1><%= (roleId == 3) ? "Nhân Sự Trực Thuộc Phòng Ban" : "Quản Lý Danh Sách Nhân Sự" %></h1>
         <div>
             <% if (roleId == 1 || roleId == 2) { %>
                 <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
-                    + Khai Bao Nhan Vien Moi
+                    + Khai Báo Nhân Viên Mới
                 </a>
             <% } %>
         </div>
@@ -48,16 +48,16 @@
 
         <form action="<%= request.getContextPath() %>/employees" method="GET" class="filter-box">
             <div class="form-group" style="flex: 2;">
-                <label>Tim kiem:</label>
-                <input type="text" name="search" class="form-control" placeholder="Ten, Email, SDT, Username..." 
+                <label>Tìm kiếm:</label>
+                <input type="text" name="search" class="form-control" placeholder="Tên, Email, SĐT, Username..." 
                        value="<%= search != null ? search : "" %>">
             </div>
 
             <% if (roleId == 1 || roleId == 2) { %>
                 <div class="form-group">
-                    <label>Phong Ban:</label>
+                    <label>Phòng Ban:</label>
                     <select name="departmentId" class="form-control" onchange="this.form.submit()">
-                        <option value="0">-- Tat ca Phong Ban --</option>
+                        <option value="0">-- Tất cả Phòng Ban --</option>
                         <%
                             if (departments != null) {
                                 for (Department d : departments) {
@@ -73,9 +73,9 @@
             <% } %>
 
             <div class="form-group">
-                <label>Vi Tri:</label>
+                <label>Vị Trí:</label>
                 <select name="positionId" class="form-control" onchange="this.form.submit()">
-                    <option value="0">-- Tat ca Vi Tri --</option>
+                    <option value="0">-- Tất cả Vị Trí --</option>
                     <%
                         if (positions != null) {
                             for (Position p : positions) {
@@ -91,9 +91,9 @@
 
             <% if (roleId == 1 || roleId == 2) { %>
                 <div class="form-group">
-                    <label>Vai Tro:</label>
+                    <label>Vai Trò:</label>
                     <select name="roleId" class="form-control" onchange="this.form.submit()">
-                        <option value="0">-- Tat ca Vai Tro --</option>
+                        <option value="0">-- Tất cả Vai Trò --</option>
                         <%
                             if (roles != null) {
                                 for (Role r : roles) {
@@ -109,28 +109,28 @@
             <% } %>
 
             <div style="display: flex; gap: 5px;">
-                <button type="submit" class="btn btn-primary">Loc</button>
-                <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">Lam moi</a>
+                <button type="submit" class="btn btn-primary">Lọc</button>
+                <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">Làm mới</a>
             </div>
         </form>
 
         <div class="card">
             <div class="card-header">
-                <h2><%= (roleId == 3) ? "Danh Sach Nhan Vien Trong Phong" : "Danh Sach Nhan Vien Toan Cong Ty" %></h2>
-                <span style="font-size: 12px; color: #555555;">Tong: <%= employees != null ? employees.size() : 0 %> nhan su</span>
+                <h2><%= (roleId == 3) ? "Danh Sách Nhân Viên Trong Phòng" : "Danh Sách Nhân Viên Toàn Công Ty" %></h2>
+                <span style="font-size: 12px; color: #555555;">Tổng: <%= employees != null ? employees.size() : 0 %> nhân sự</span>
             </div>
             <div class="card-body">
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th style="width: 40px;">ID</th>
-                            <th>Nhan Vien</th>
-                            <th>Lien He</th>
-                            <th>Phong Ban</th>
-                            <th>Vi Tri & Cap Bac</th>
-                            <th>Vai Tro</th>
-                            <th>Trang Thai</th>
-                            <th style="text-align: center; width: <%= (roleId == 1 || roleId == 2) ? "200px" : "80px" %>;">Thao Tac</th>
+                            <th>Nhân Viên</th>
+                            <th>Liên Hệ</th>
+                            <th>Phòng Ban</th>
+                            <th>Vị Trí & Cấp Bậc</th>
+                            <th>Vai Trò</th>
+                            <th>Trạng Thái</th>
+                            <th style="text-align: center; width: <%= (roleId == 1 || roleId == 2) ? "200px" : "80px" %>;">Thao Tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -158,21 +158,21 @@
                             <td><span class="badge"><%= emp.getRoleName() %></span></td>
                             <td>
                                 <% if (emp.isStatus()) { %>
-                                    <span class="badge">Dang lam viec</span>
+                                    <span class="badge">Đang làm việc</span>
                                 <% } else { %>
-                                    <span class="badge">Da nghi viec</span>
+                                    <span class="badge">Đã nghỉ việc</span>
                                 <% } %>
                             </td>
                             <td style="text-align: center;">
                                 <% if (roleId == 1 || roleId == 2) { %>
                                     <a href="<%= request.getContextPath() %>/employees?action=assign&id=<%= emp.getUserId() %>" class="btn btn-sm btn-primary">
-                                        Doi vi tri
+                                        Đổi vị trí
                                     </a>
                                     <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-secondary">
                                         Xem
                                     </a>
                                     <a href="<%= request.getContextPath() %>/employees?action=edit&id=<%= emp.getUserId() %>" class="btn btn-sm btn-secondary">
-                                        Sua
+                                        Sửa
                                     </a>
                                 <% } else { %>
                                     <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-secondary">
@@ -186,7 +186,7 @@
                             } else {
                         %>
                         <tr>
-                            <td colspan="8" style="text-align: center; padding: 15px;">Khong tim thay nhan vien nao.</td>
+                            <td colspan="8" style="text-align: center; padding: 15px;">Không tìm thấy nhân viên nào.</td>
                         </tr>
                         <% } %>
                     </tbody>

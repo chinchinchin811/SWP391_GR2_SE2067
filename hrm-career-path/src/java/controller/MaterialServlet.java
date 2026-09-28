@@ -139,19 +139,19 @@ public class MaterialServlet extends HttpServlet {
                 String end = q.getParameter("endDate");
                 Date endDate = end == null || end.trim().isEmpty() ? null : Date.valueOf(end);
                 if (startDate.toLocalDate().isBefore(LocalDate.now())) {
-                    error(q, "Ngay bat dau khong duoc nam trong qua khu.");
+                    error(q, "Ngày bắt đầu không được nằm trong quá khứ.");
                     s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
                     return;
                 }
                 if (endDate != null && endDate.before(startDate)) {
-                    error(q, "Ngay ket thuc phai sau hoac bang ngay bat dau.");
+                    error(q, "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.");
                     s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
                     return;
                 }
                 c.setStartDate(startDate);
                 c.setEndDate(endDate);
             } catch (IllegalArgumentException ex) {
-                error(q, "Ngay bat dau va ngay ket thuc khong hop le.");
+                error(q, "Ngày bắt đầu và ngày kết thúc không hợp lệ.");
                 s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
                 return;
             }
