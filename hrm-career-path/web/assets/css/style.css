@@ -4,19 +4,18 @@
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 body {
     background-color: #ffffff;
-    color: #000000;
+    color: #111111;
     font-size: 13px;
-    line-height: 1.4;
+    line-height: 1.55;
 }
 
 /* Bo cuc tong the */
 .app-container {
-    display: flex;
     min-height: 100vh;
     border: 1px solid #000000;
 }
@@ -24,11 +23,12 @@ body {
 /* Menu ben trai */
 .sidebar {
     width: 220px;
-    flex: 0 0 220px;
     height: 100vh;
-    position: sticky;
+    position: fixed;
     top: 0;
-    overflow-y: auto;
+    left: 0;
+    z-index: 100;
+    overflow: hidden;
     background-color: #f5f5f5;
     border-right: 1px solid #000000;
     display: flex;
@@ -52,19 +52,59 @@ body {
 }
 
 .sidebar-menu {
-    list-style: none;
     padding: 10px 0;
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
+.sidebar-menu-list,
+.sidebar-submenu {
+    list-style: none;
+}
+
+.sidebar-section {
+    margin: 5px 0;
 }
 
 .sidebar-menu-category {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
     font-size: 11px;
     font-weight: bold;
     color: #333333;
-    padding: 10px 10px 4px;
+    padding: 10px;
     text-transform: uppercase;
     border-bottom: 1px dashed #cccccc;
-    margin: 5px 0;
+    cursor: pointer;
+    text-align: left;
+}
+
+.sidebar-menu-category:hover,
+.sidebar-menu-category:focus-visible {
+    background-color: #e7e7e7;
+    outline: 1px solid #000000;
+    outline-offset: -1px;
+}
+
+.sidebar-menu-category-icon {
+    font-size: 16px;
+    line-height: 1;
+    transition: transform 0.2s ease;
+}
+
+.sidebar-section.is-collapsed .sidebar-menu-category-icon {
+    transform: rotate(-90deg);
+}
+
+.sidebar-section.is-collapsed .sidebar-submenu {
+    display: none;
 }
 
 .sidebar-menu li a {
@@ -108,28 +148,42 @@ body {
 
 /* Phan noi dung chinh */
 .main-content {
-    flex: 1;
+    width: calc(100% - 220px);
+    min-width: 0;
+    min-height: 100vh;
+    margin-left: 220px;
     display: flex;
     flex-direction: column;
     background-color: #ffffff;
 }
 
 .topbar {
-    padding: 10px 15px;
+    padding: 11px 18px;
     border-bottom: 1px solid #000000;
     display: flex;
     justify-content: space-between;
     align-items: center;
     background-color: #fafafa;
+    gap: 12px;
 }
 
 .topbar h1 {
     font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
     color: #000000;
+    flex-shrink: 0;
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
 }
 
 .content-body {
-    padding: 15px;
+    padding: 18px;
     flex: 1;
 }
 
@@ -162,27 +216,29 @@ body {
 /* Khung chua bang / form */
 .card {
     border: 1px solid #000000;
-    margin-bottom: 15px;
+    margin-bottom: 18px;
     background-color: #ffffff;
 }
 
 .card-header {
-    padding: 8px 12px;
+    padding: 9px 14px;
     border-bottom: 1px solid #000000;
-    background-color: #eeeeee;
+    background-color: #f0f0f0;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
 }
 
 .card-header h2 {
     font-size: 13px;
-    font-weight: bold;
+    font-weight: 700;
     color: #000000;
+    letter-spacing: 0.1px;
 }
 
 .card-body {
-    padding: 12px;
+    padding: 14px;
 }
 
 /* Bang du lieu */
@@ -191,25 +247,35 @@ table.data-table {
     border-collapse: collapse;
 }
 
-table.data-table th, table.data-table td {
+table.data-table th,
+table.data-table td {
     border: 1px solid #000000;
-    padding: 6px 8px;
+    padding: 9px 12px;
     text-align: left;
-    font-size: 12px;
+    font-size: 12.5px;
+    vertical-align: middle;
+    line-height: 1.45;
 }
 
 table.data-table th {
-    background-color: #e5e5e5;
-    font-weight: bold;
+    background-color: #e8e8e8;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.15px;
+    white-space: nowrap;
 }
 
-table.data-table tr:hover {
-    background-color: #f9f9f9;
+table.data-table tbody tr:hover {
+    background-color: #f8f8f8;
 }
 
 /* Nut bam (Buttons) */
 .btn {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 30px;
     padding: 4px 10px;
     font-size: 12px;
     border: 1px solid #000000;
@@ -217,7 +283,10 @@ table.data-table tr:hover {
     color: #000000;
     cursor: pointer;
     text-decoration: none;
-    border-radius: 0;
+    border-radius: 4px;
+    white-space: nowrap;
+    line-height: 1.2;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .btn:hover {
@@ -231,7 +300,8 @@ table.data-table tr:hover {
     border-color: #000000;
 }
 .btn-primary:hover {
-    background-color: #333333;
+    background-color: #2a2a2a;
+    color: #ffffff;
 }
 
 .btn-secondary {
@@ -240,76 +310,133 @@ table.data-table tr:hover {
     border-color: #000000;
 }
 .btn-secondary:hover {
-    background-color: #e0e0e0;
+    background-color: #ebebeb;
     color: #000000;
 }
 
 .btn-danger {
-    background-color: #ffffff;
-    color: #000000;
-    border-color: #000000;
+    background-color: #fff7f7;
+    color: #b42318;
+    border-color: #b42318;
 }
 .btn-danger:hover {
-    background-color: #000000;
+    background-color: #b42318;
     color: #ffffff;
 }
 
 .btn-sm {
-    padding: 2px 6px;
+    min-height: 26px;
+    padding: 3px 8px;
     font-size: 11px;
+    font-weight: 500;
+}
+
+/* Nhom nut hanh dong trong bang */
+.action-btn-group {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.btn-edit {
+    background-color: #ffffff;
+    color: #1f2937;
+    border-color: #64748b;
+}
+
+.btn-edit:hover {
+    background-color: #1f2937;
+    border-color: #1f2937;
+    color: #ffffff;
+}
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.table-actions form {
+    display: inline-flex;
+    margin: 0;
+}
+
+.btn:focus-visible {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
 }
 
 /* Nhan trang thai */
 .badge {
     display: inline-block;
-    padding: 1px 5px;
+    padding: 2px 7px;
     font-size: 11px;
+    font-weight: 700;
     border: 1px solid #000000;
     background-color: #ffffff;
     color: #000000;
+    letter-spacing: 0.3px;
+    line-height: 1.35;
+}
+
+/* Nhan dem so luong */
+.badge-count {
+    font-size: 12px;
+    color: #444444;
+    font-weight: 400;
+    flex-shrink: 0;
 }
 
 /* Form */
 .form-group {
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 4px;
-    font-weight: bold;
-    font-size: 12px;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 12.5px;
+    color: #111111;
 }
 
 .form-control {
     width: 100%;
-    padding: 6px 8px;
-    font-size: 12px;
+    padding: 7px 9px;
+    font-size: 13px;
     border: 1px solid #000000;
     border-radius: 0;
     background-color: #ffffff;
     color: #000000;
+    line-height: 1.45;
 }
 
 .form-control:focus {
     outline: 2px solid #000000;
+    outline-offset: -1px;
 }
 
 .form-row {
     display: flex;
-    gap: 12px;
+    gap: 14px;
+    flex-wrap: wrap;
 }
 
 .form-row .form-group {
     flex: 1;
+    min-width: 160px;
 }
 
 .form-actions {
-    margin-top: 15px;
-    padding-top: 10px;
+    margin-top: 18px;
+    padding-top: 14px;
     border-top: 1px solid #cccccc;
     display: flex;
     gap: 8px;
+    align-items: center;
 }
 
 /* Thong bao */
@@ -372,7 +499,68 @@ table.data-table tr:hover {
     background-color: #fafafa;
 }
 
-@media (max-width: 760px) {
-    .app-container { display: block; }
-    .sidebar { width: 100%; height: auto; position: static; overflow: visible; }
+/* Tien ich bo sung */
+table.data-table td,
+table.data-table th {
+    color: #111111;
 }
+
+table.data-table .col-code {
+    font-size: 12px;
+    color: #333;
+    white-space: nowrap;
+}
+
+table.data-table .col-center {
+    text-align: center;
+    color: #111111;
+}
+
+table.data-table .col-count {
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: #111111;
+}
+
+table.data-table .col-date {
+    text-align: center;
+    font-size: 12.5px;
+    color: #111111;
+    white-space: nowrap;
+}
+
+table.data-table .col-actions {
+    text-align: center;
+    white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+    .app-container {
+        display: block;
+    }
+    .topbar {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .sidebar {
+        width: 100%;
+        height: auto;
+        max-height: none;
+        position: static;
+        overflow: visible;
+    }
+    .sidebar-menu {
+        overflow: visible;
+    }
+    .main-content {
+        width: 100%;
+        margin-left: 0;
+    }
+    table.data-table th,
+    table.data-table td {
+        padding: 7px 8px;
+        font-size: 12px;
+    }
+}
+
