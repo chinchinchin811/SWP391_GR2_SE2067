@@ -108,6 +108,7 @@
                                         <span class="badge">Tạm khóa</span>
                                     <% } %>
                                 </td>
+                                <% if (roleId == 1 || roleId == 2) { %>
                                     <td>
                                         <div class="table-actions">
                                             <a href="<%= request.getContextPath() %>/positions?action=edit&amp;id=<%= p.getPositionId() %>" class="btn btn-sm btn-edit" aria-label="Sửa vị trí <%= p.getPositionName() %>">Sửa</a>
