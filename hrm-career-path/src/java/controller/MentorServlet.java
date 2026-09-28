@@ -15,7 +15,7 @@ import dal.PositionDAO;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
-import model.MentorEvaluation;
+import model.Mentor.MentorEvaluation;
 import model.User;
 
 /**
@@ -93,6 +93,7 @@ public class MentorServlet extends HttpServlet {
                 // Thuộc tính được đẩy lên JSP
                 request.setAttribute("newEmployees", mentorDAO.getUnassignedNewEmployees());
                 request.setAttribute("mentors", mentorDAO.getAllMentorsWithSpecialty());
+                request.setAttribute("assignments", mentorDAO.getActiveAssignments()); // Thêm dòng này
 
                 request.getRequestDispatcher("mentor-pairing.jsp").forward(request, response);
                 break;
