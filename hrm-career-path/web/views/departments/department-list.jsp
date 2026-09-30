@@ -65,54 +65,48 @@
                             <td><%= d.getDepartmentId() %></td>
                             <td><b><%= d.getDepartmentName() %></b></td>
                             <td>
-                                <% if (roleId == 1 || roleId == 2) { %>
-                                    <form action="<%= request.getContextPath() %>/departments" method="POST" style="display: flex; gap: 5px; align-items: center;">
-                                        <input type="hidden" name="action" value="assign-manager">
-                                        <input type="hidden" name="departmentId" value="<%= d.getDepartmentId() %>">
-                                        <select name="managerId" class="form-control" style="padding: 2px 4px; font-size: 11px;" onchange="this.form.submit()">
-                                            <option value="0">-- Chưa bổ nhiệm --</option>
-                                            <%
-                                                if (managerCandidates != null) {
-                                                    for (User u : managerCandidates) {
-                                                        boolean isSelected = (d.getManagerId() != null && d.getManagerId().equals(u.getUserId()));
-                                            %>
-                                                <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>>
-                                                    <%= u.getFullName() %> (<%= u.getRoleName() %>)
-                                                </option>
-                                            <%
-                                                    }
-                                                }
-                                            %>
-                                        </select>
-                                    </form>
+                                <% if (d.getManagerName() != null && !d.getManagerName().trim().isEmpty() && !"Chưa bổ nhiệm".equalsIgnoreCase(d.getManagerName().trim())) { %>
+                                    <div class="user-cell">
+                                        <div class="avatar-sm">
+                                            <%= d.getManagerName().substring(0, 1).toUpperCase() %>
+                                        </div>
+                                        <div>
+                                            <div class="user-fullname"><%= d.getManagerName() %></div>
+                                            <div class="user-sub"><span class="badge badge-manager" style="font-size: 10px; padding: 1px 6px;">Trưởng phòng</span></div>
+                                        </div>
+                                    </div>
                                 <% } else { %>
-                                    <%= d.getManagerName() != null ? d.getManagerName() : "Chưa bổ nhiệm" %>
+                                    <span class="badge" style="background: #f1f5f9; color: #64748b; border-color: #e2e8f0;">
+                                        <i class="fa-regular fa-clock" style="font-size: 10px;"></i> Chưa bổ nhiệm
+                                    </span>
                                 <% } %>
                             </td>
                             <td><%= d.getDescription() != null ? d.getDescription() : "-" %></td>
                             <td>
-                                <a href="<%= request.getContextPath() %>/employees?departmentId=<%= d.getDepartmentId() %>">
-                                    <%= d.getEmployeeCount() %> nhân viên
+                                <a href="<%= request.getContextPath() %>/employees?departmentId=<%= d.getDepartmentId() %>" style="color: var(--primary); font-weight: 600; text-decoration: none;">
+                                    <i class="fa-solid fa-users" style="font-size: 11px; margin-right: 4px;"></i> <%= d.getEmployeeCount() %> nhân sự
                                 </a>
                             </td>
                             <td>
                                 <% if (d.isStatus()) { %>
-                                    <span class="badge">Hoạt động</span>
+                                    <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Hoạt động</span>
                                 <% } else { %>
-                                    <span class="badge">Tạm ngưng</span>
+                                    <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Tạm ngưng</span>
                                 <% } %>
                             </td>
                             <% if (roleId == 1 || roleId == 2) { %>
                                 <td>
                                     <div class="table-actions">
-                                    <a href="<%= request.getContextPath() %>/departments?action=edit&amp;id=<%= d.getDepartmentId() %>" class="btn btn-sm btn-edit" aria-label="Sửa phòng ban <%= d.getDepartmentName() %>">
-                                        Sửa
-                                    </a>
-                                    <form action="<%= request.getContextPath() %>/departments" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phòng ban này?');">
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="id" value="<%= d.getDepartmentId() %>">
-                                        <button type="submit" class="btn btn-sm btn-danger" aria-label="Xóa phòng ban <%= d.getDepartmentName() %>">Xóa</button>
-                                    </form>
+                                        <a href="<%= request.getContextPath() %>/departments?action=edit&amp;id=<%= d.getDepartmentId() %>" class="btn btn-sm btn-action-edit" aria-label="Sửa phòng ban <%= d.getDepartmentName() %>">
+                                            <i class="fa-regular fa-pen-to-square"></i> <span>Sửa</span>
+                                        </a>
+                                        <form action="<%= request.getContextPath() %>/departments" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phòng ban này?');" style="margin: 0; display: inline-flex;">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="id" value="<%= d.getDepartmentId() %>">
+                                            <button type="submit" class="btn btn-sm btn-danger" aria-label="Xóa phòng ban <%= d.getDepartmentName() %>">
+                                                <i class="fa-regular fa-trash-can"></i> <span>Xóa</span>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             <% } %>

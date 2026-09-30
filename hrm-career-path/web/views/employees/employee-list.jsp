@@ -130,35 +130,50 @@
                             <tr>
                                 <td><%= emp.getUserId() %></td>
                                 <td>
-                                    <b><%= emp.getFullName() %></b>
-                                    <div style="font-size: 11px; color: #555555;">@<%= emp.getUsername() %></div>
+                                    <div class="user-cell">
+                                        <div class="avatar-sm">
+                                            <%= emp.getFullName() != null && !emp.getFullName().trim().isEmpty() ? emp.getFullName().trim().substring(0, 1).toUpperCase() : "U" %>
+                                        </div>
+                                        <div>
+                                            <div class="user-fullname"><%= emp.getFullName() %></div>
+                                            <div class="user-sub">@<%= emp.getUsername() %></div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <div><%= emp.getEmail() %></div>
-                                    <div style="font-size: 11px; color: #555555;"><%= emp.getPhone() != null ? emp.getPhone() : "" %></div>
+                                    <div class="user-sub"><%= emp.getPhone() != null ? emp.getPhone() : "" %></div>
                                 </td>
-                                <td><%= emp.getDepartmentName() != null ? emp.getDepartmentName() : "-" %></td>
+                                <td><b><%= emp.getDepartmentName() != null ? emp.getDepartmentName() : "-" %></b></td>
                                 <td>
                                     <%= emp.getPositionName() != null ? emp.getPositionName() : "-" %>
                                     <% if (emp.getLevelName() != null) { %>
-                                        (<%= emp.getLevelName() %>)
+                                        <span class="level-tag"><%= emp.getLevelName() %></span>
                                     <% } %>
                                 </td>
-                                <td><span class="badge"><%= emp.getRoleName() %></span></td>
+                                <td><span class="badge badge-<%= emp.getRoleName() != null ? emp.getRoleName().toLowerCase() : "default" %>"><%= emp.getRoleName() %></span></td>
                                 <td>
                                     <% if (emp.isStatus()) { %>
-                                        <span class="badge">Đang làm việc</span>
+                                        <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Đang làm việc</span>
                                     <% } else { %>
-                                        <span class="badge">Đã nghỉ việc</span>
+                                        <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Đã nghỉ việc</span>
                                     <% } %>
                                 </td>
                                 <td style="text-align: center;">
                                     <% if (roleId == 1 || roleId == 2) { %>
-                                        <a href="<%= request.getContextPath() %>/employees?action=assign&id=<%= emp.getUserId() %>" class="btn btn-sm btn-primary">Đổi vị trí</a>
-                                        <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-secondary">Xem</a>
-                                        <a href="<%= request.getContextPath() %>/employees?action=edit&id=<%= emp.getUserId() %>" class="btn btn-sm btn-secondary">Sửa</a>
+                                        <a href="<%= request.getContextPath() %>/employees?action=assign&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-assign" title="Điều chuyển / Thăng chức">
+                                            <i class="fa-solid fa-arrows-rotate"></i> <span>Đổi vị trí</span>
+                                        </a>
+                                        <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-view" title="Xem chi tiết">
+                                            <i class="fa-regular fa-eye"></i> <span>Xem</span>
+                                        </a>
+                                        <a href="<%= request.getContextPath() %>/employees?action=edit&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-edit" title="Chỉnh sửa">
+                                            <i class="fa-regular fa-pen-to-square"></i> <span>Sửa</span>
+                                        </a>
                                     <% } else { %>
-                                        <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-secondary">Xem</a>
+                                        <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-view">
+                                            <i class="fa-regular fa-eye"></i> <span>Xem</span>
+                                        </a>
                                     <% } %>
                                 </td>
                             </tr>
