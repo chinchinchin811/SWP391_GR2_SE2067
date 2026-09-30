@@ -15,6 +15,7 @@ import dal.PositionDAO;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
+import model.Mentor.MentorAssignment;
 import model.Mentor.MentorEvaluation;
 import model.User;
 
@@ -59,7 +60,7 @@ public class MentorServlet extends HttpServlet {
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
-    @Override
+    @Override    
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession();
@@ -70,15 +71,16 @@ public class MentorServlet extends HttpServlet {
             return;
         }
 
-        // Chặn Employee (Role 4) truy cập
-        if (currentUser.getRoleId() == 4) {
-            response.sendRedirect(request.getContextPath() + "/dashboard");
-            return;
-        }
-
         String action = request.getParameter("action");
         if (action == null) {
-            action = "evaluations";
+            // Tự động chọn action mặc định theo Role
+            if (currentUser.getRoleId() == 4) {
+                action = "myMentor";
+            } else if (currentUser.getRoleId() == 5) {
+                action = "myMentees";
+            } else {
+                action = "evaluations";
+            }
         }
 
         MentorDAO mentorDAO = new MentorDAO();
@@ -89,27 +91,46 @@ public class MentorServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }
-                
                 request.setAttribute("newEmployees", mentorDAO.getUnassignedNewEmployees());
                 request.setAttribute("mentors", mentorDAO.getAllMentorsWithSpecialty());
-                request.setAttribute("assignments", mentorDAO.getActiveAssignments()); // Thêm dòng này
-
+                request.setAttribute("assignments", mentorDAO.getActiveAssignments());
                 request.getRequestDispatcher("mentor-pairing.jsp").forward(request, response);
                 break;
 
             case "evaluations":
+                if (currentUser.getRoleId() == 4) {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
                 request.setAttribute("evaluations", mentorDAO.getAllEvaluations());
                 request.getRequestDispatcher("mentor-evaluation.jsp").forward(request, response);
                 break;
-                
-                case "myMentees":
-                // Lấy ds Mentee của riêng Mentor này và đẩy ra giao diện
+
+            case "myMentees":
+                // Lấy danh sách Mentee của Mentor này
                 request.setAttribute("myAssignments", mentorDAO.getAssignmentsByMentor(currentUser.getUserId()));
                 request.getRequestDispatcher("my-mentees.jsp").forward(request, response);
                 break;
 
+            case "menteeDetail":
+                // Xử lý nút "Hồ sơ"
+                String menteeIdStr = request.getParameter("id");
+                if (menteeIdStr != null && !menteeIdStr.isEmpty()) {
+                    int menteeId = Integer.parseInt(menteeIdStr);
+                    User mentee = mentorDAO.getMenteeDetail(menteeId);
+                    request.setAttribute("mentee", mentee);
+                }
+                request.getRequestDispatcher("mentee-detail.jsp").forward(request, response);
+                break;
+
+            case "myMentor":
+                // Dành riêng cho Employee (Mentee) xem Mentor phụ trách mình
+                MentorAssignment myMentor = mentorDAO.getMentorByMentee(currentUser.getUserId());
+                request.setAttribute("myMentor", myMentor);
+                request.getRequestDispatcher("my-mentor.jsp").forward(request, response);
+                break;
+
             case "evaluateForm":
-                // Mở Form đánh giá
                 request.setAttribute("assignmentId", request.getParameter("assignmentId"));
                 request.getRequestDispatcher("mentor-evaluate-form.jsp").forward(request, response);
                 break;
@@ -158,6 +179,22 @@ public class MentorServlet extends HttpServlet {
                 }
             }
             response.sendRedirect(request.getContextPath() + "/mentors?action=pair");
+        }else if ("saveEvaluation".equals(action)) {
+            String assignmentIdStr = request.getParameter("assignmentId");
+            String feedback = request.getParameter("feedback");
+            
+            if (assignmentIdStr != null && !assignmentIdStr.isEmpty()) {
+                int assignmentId = Integer.parseInt(assignmentIdStr);
+                
+                // Gọi DAO để lưu vào Database (mặc định cho điểm 8, trạng thái PENDING)
+                boolean success = new MentorDAO().saveEvaluation(assignmentId, currentUser.getUserId(), 8, feedback);
+                
+                if (success) {
+                    session.setAttribute("successMessage", "Lưu đánh giá thành công!");
+                }
+            }
+            // LƯU Ý QUAN TRỌNG: Phải có lệnh sendRedirect để tránh màn hình trắng
+            response.sendRedirect(request.getContextPath() + "/mentors?action=evaluations");
         }
 
     }

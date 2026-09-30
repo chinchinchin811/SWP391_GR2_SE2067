@@ -71,7 +71,7 @@
 
                 <form action="<%= request.getContextPath() %>/mentors" method="POST">
                     <input type="hidden" name="action" value="assign">
-                    
+                    <input type="hidden" id="positionIdInput" name="positionId" value="">
                     <div style="margin-bottom: 15px;">
                         <label style="font-weight: bold; display: block; margin-bottom: 5px;">1. Chon Nhan vien moi (*):</label>
                         <select id="menteeSelect" name="menteeId" onchange="filterMentorsByPosition()" required style="width: 100%; padding: 8px;">
@@ -126,6 +126,8 @@
         var selectedOption = menteeSelect.options[menteeSelect.selectedIndex];
         var menteePosId = selectedOption.getAttribute("data-position-id");
         var menteePosName = selectedOption.getAttribute("data-position-name");
+
+        document.getElementById("positionIdInput").value = menteePosId || "";
 
         mentorSelect.innerHTML = "";
 

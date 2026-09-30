@@ -32,6 +32,14 @@
                 <a href="<%= request.getContextPath() %>/flashcards">Flashcards</a>                
             </li>
 
+            <% if (loggedInUser != null && loggedInUser.getRoleId() == 4) { %>
+            <li class="nav-item">
+                <a class="nav-link" href="<%= request.getContextPath() %>/mentors?action=myMentor">
+                    Mentor Hướng Dẫn Của Tôi
+                </a>
+            </li>
+
+            <% } %>
             <% 
     // Giả sử Role ID của Mentor trong database của bạn là 5
     if (loggedInUser != null && loggedInUser.getRoleId() == 6) { 
@@ -44,7 +52,7 @@
             <% 
                 } 
             %>
-            
+
             <% if (roleId == 1 || roleId == 2) { %>
             <li class="sidebar-section <%= organizationActive ? "has-active" : "" %>" data-sidebar-section="organization">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-organization">
@@ -126,6 +134,7 @@
             <li class="sidebar-section <%= mentorWorkspaceActive ? "has-active" : "" %>" data-sidebar-section="mentor-workspace">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-mentor-workspace">
                     <span>Mentor Workspace</span>
+
                     <span class="sidebar-menu-category-icon" aria-hidden="true">⌄</span>
                 </button>
                 <ul class="sidebar-submenu" id="sidebar-mentor-workspace">
@@ -134,6 +143,18 @@
                     </li>
                 </ul>
             </li>
+            <% 
+    // Kiểm tra nếu là Mentor (Giả sử Role ID của Mentor trong DB của bạn là 5, nếu khác hãy sửa lại số này)
+    if (loggedInUser != null && loggedInUser.getRoleId() == 5) { 
+            %>
+            <li class="nav-item">
+                <a class="nav-link" href="<%= request.getContextPath() %>/mentors?action=myMentees">
+                    Danh sách Mentee của tôi
+                </a>
+            </li>
+            <% 
+                } 
+            %>
             <% } %>
 
             <li class="sidebar-section <%= trainingActive ? "has-active" : "" %>" data-sidebar-section="training">

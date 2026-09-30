@@ -9,14 +9,17 @@
     </div>
 
     <div class="content-body">
-        <form action="" method="POST" class="card" style="border: 1px solid #000; padding: 20px; max-width: 900px; margin: 0 auto;">
+        <form action="<%= request.getContextPath() %>/mentors" method="POST" class="card" style="border: 1px solid #000; padding: 20px; max-width: 900px; margin: 0 auto;">
+
+            <input type="hidden" name="action" value="saveEvaluation">
+            <input type="hidden" name="assignmentId" value="<%= request.getAttribute("assignmentId") %>">
             
             <!-- PHẦN 1: PUBLIC (Mentee xem được) -->
             <div style="margin-bottom: 30px;">
                 <h2 style="background: #e3f2fd; padding: 10px; border: 1px solid #000; font-size: 16px; margin-bottom: 15px;">
                     PHẦN 1: KẾT QUẢ CÔNG KHAI (Mentee có thể xem)
                 </h2>
-                
+
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label style="font-weight: bold;">1. Năng lực chuyên môn & Chất lượng công việc:</label>
                     <p style="font-size: 12px; color: #555;">Khả năng nắm bắt, tốc độ hoàn thành, độ chính xác của task.</p>
@@ -37,7 +40,7 @@
                     <label style="font-weight: bold;">4. Bảng KPI / OKR - Kết quả Task (Đạt/Chưa đạt):</label>
                     <textarea class="form-control" rows="2" style="width: 100%;"></textarea>
                 </div>
-                
+
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label style="font-weight: bold;">5. Feedback trực diện (1-on-1):</label>
                     <textarea class="form-control" rows="2" style="width: 100%;"></textarea>

@@ -114,17 +114,20 @@ public class MentorDAO {
         }
         return list;
     }
-    
+
     public List<MentorAssignment> getActiveAssignments() {
         List<MentorAssignment> list = new ArrayList<>();
+        // Đã sửa: Bổ sung LEFT JOIN Job_Levels jl và linh hoạt lấy position_name của Mentee nếu a.position_id null
         String sql = "SELECT a.assignment_id, a.status, "
                 + "m.user_id as mentee_id, m.full_name as mentee_name, jl.level_name, "
                 + "mt.user_id as mentor_id, mt.full_name as mentor_name, "
-                + "p.position_name, d.department_name "
+                + "COALESCE(p.position_name, pm.position_name) AS position_name, d.department_name "
                 + "FROM MentorAssignments a "
                 + "INNER JOIN Users m ON a.mentee_id = m.user_id "
                 + "INNER JOIN Users mt ON a.mentor_id = mt.user_id "
+                + "LEFT JOIN Job_Levels jl ON m.level_id = jl.level_id "
                 + "LEFT JOIN Positions p ON a.position_id = p.position_id "
+                + "LEFT JOIN Positions pm ON m.position_id = pm.position_id "
                 + "LEFT JOIN Departments d ON m.department_id = d.department_id "
                 + "WHERE a.status = 'ACTIVE'";
 
@@ -147,29 +150,110 @@ public class MentorDAO {
         }
         return list;
     }
-    
-    public List<model.Mentor.MentorAssignment> getAssignmentsByMentor(int mentorId) {
-        List<model.Mentor.MentorAssignment> list = new ArrayList<>();
-        String sql = "SELECT ma.assignment_id, ma.mentee_id, u.full_name AS mentee_name, jl.level_name AS mentee_level, p.position_name "
-                   + "FROM MentorAssignments ma "
-                   + "JOIN Users u ON ma.mentee_id = u.user_id "
-                   + "LEFT JOIN Job_Levels jl ON u.level_id = jl.level_id "
-                   + "LEFT JOIN Positions p ON ma.position_id = p.position_id "
-                   + "WHERE ma.status = 'ACTIVE' AND ma.mentor_id = ?";
-        try (Connection conn = new DBContext().getConnection(); 
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+    // 1. Sửa hàm lấy danh sách Mentee của Mentor (Hiển thị cả Đang ghép & Đã từng ghép)
+    public List<MentorAssignment> getAssignmentsByMentor(int mentorId) {
+        List<MentorAssignment> list = new ArrayList<>();
+        String sql = "SELECT ma.assignment_id, ma.mentee_id, ma.status, u.full_name AS mentee_name, jl.level_name AS mentee_level, "
+                + "COALESCE(p.position_name, pm.position_name) AS position_name, d.department_name "
+                + "FROM MentorAssignments ma "
+                + "JOIN Users u ON ma.mentee_id = u.user_id "
+                + "LEFT JOIN Job_Levels jl ON u.level_id = jl.level_id "
+                + "LEFT JOIN Positions p ON ma.position_id = p.position_id "
+                + "LEFT JOIN Positions pm ON u.position_id = pm.position_id "
+                + "LEFT JOIN Departments d ON u.department_id = d.department_id "
+                + "WHERE ma.mentor_id = ? "
+                + "ORDER BY ma.status DESC, ma.assignment_id DESC";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, mentorId);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                model.Mentor.MentorAssignment a = new model.Mentor.MentorAssignment();
+                MentorAssignment a = new MentorAssignment();
                 a.setAssignmentId(rs.getInt("assignment_id"));
                 a.setMenteeId(rs.getInt("mentee_id"));
                 a.setMenteeName(rs.getString("mentee_name"));
                 a.setMenteeLevel(rs.getString("mentee_level"));
                 a.setPositionName(rs.getString("position_name"));
+                a.setDepartmentName(rs.getString("department_name"));
+                a.setStatus(rs.getString("status"));
                 list.add(a);
             }
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return list;
+    }
+
+    // 2. Thêm hàm lấy hồ sơ chi tiết Mentee theo ID (cho nút "Hồ sơ")
+    public User getMenteeDetail(int menteeId) {
+        String sql = "SELECT u.user_id, u.full_name, u.email, u.phone, p.position_name, d.department_name, jl.level_name "
+                + "FROM Users u "
+                + "LEFT JOIN Positions p ON u.position_id = p.position_id "
+                + "LEFT JOIN Departments d ON u.department_id = d.department_id "
+                + "LEFT JOIN Job_Levels jl ON u.level_id = jl.level_id "
+                + "WHERE u.user_id = ?";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, menteeId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                User u = new User();
+                u.setUserId(rs.getInt("user_id"));
+                u.setFullName(rs.getString("full_name"));
+                u.setEmail(rs.getString("email"));
+                u.setPhone(rs.getString("phone"));
+                u.setPositionName(rs.getString("position_name"));
+                u.setDepartmentName(rs.getString("department_name"));
+                u.setLevelName(rs.getString("level_name"));
+                return u;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // 3. Thêm hàm lấy thông tin Mentor của một Mentee (cho account Employee xem)
+    public MentorAssignment getMentorByMentee(int menteeId) {
+        String sql = "SELECT a.assignment_id, a.status, "
+                + "mt.user_id as mentor_id, mt.full_name as mentor_name, "
+                + "COALESCE(p.position_name, pm.position_name) AS position_name, d.department_name "
+                + "FROM MentorAssignments a "
+                + "INNER JOIN Users mt ON a.mentor_id = mt.user_id "
+                + "LEFT JOIN Positions p ON a.position_id = p.position_id "
+                + "LEFT JOIN Positions pm ON mt.position_id = pm.position_id "
+                + "LEFT JOIN Departments d ON mt.department_id = d.department_id "
+                + "WHERE a.mentee_id = ? AND a.status = 'ACTIVE'";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, menteeId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                MentorAssignment ma = new MentorAssignment();
+                ma.setAssignmentId(rs.getInt("assignment_id"));
+                ma.setMentorId(rs.getInt("mentor_id"));
+                ma.setMentorName(rs.getString("mentor_name"));
+                ma.setPositionName(rs.getString("position_name"));
+                ma.setDepartmentName(rs.getString("department_name"));
+                ma.setStatus(rs.getString("status"));
+                return ma;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean saveEvaluation(int assignmentId, int evaluatorId, int score, String feedback) {
+        String sql = "INSERT INTO MentorEvaluations (assignment_id, evaluator_id, performance_score, feedback, approval_status) "
+                + "VALUES (?, ?, ?, ?, 'PENDING')";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, assignmentId);
+            ps.setInt(2, evaluatorId);
+            ps.setInt(3, score);
+            ps.setString(4, feedback);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }
