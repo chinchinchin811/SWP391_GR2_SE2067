@@ -250,7 +250,7 @@ public class EmployeeServlet extends HttpServlet {
         String hireDateStr = request.getParameter("hireDate");
 
         if (username == null || username.trim().isEmpty() || fullName == null || fullName.trim().isEmpty() || email == null || email.trim().isEmpty()) {
-            request.setAttribute("error", "Vui long dien day du Ten tai khoan, Ho ten va Email!");
+            request.setAttribute("error", "Vui lòng điền đầy đủ Tên tài khoản, Họ tên và Email!");
             loadFormData(request);
             request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
             return;
@@ -291,10 +291,10 @@ public class EmployeeServlet extends HttpServlet {
 
         boolean success = userDAO.addEmployee(user, creatorId);
         if (success) {
-            request.getSession().setAttribute("successMessage", "Khai bao nhan su moi thanh cong!");
+            request.getSession().setAttribute("successMessage", "Khai báo nhân sự mới thành công!");
             response.sendRedirect(request.getContextPath() + "/employees");
         } else {
-            request.setAttribute("error", "Khai bao that bai! Co the Username hoac Email da ton tai.");
+            request.setAttribute("error", "Khai báo thất bại! Có thể Tên tài khoản hoặc Email đã tồn tại.");
             request.setAttribute("employee", user);
             loadFormData(request);
             request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
@@ -313,7 +313,7 @@ public class EmployeeServlet extends HttpServlet {
         String statusStr = request.getParameter("status");
 
         if (idStr == null || fullName == null || fullName.trim().isEmpty() || email == null || email.trim().isEmpty()) {
-            request.setAttribute("error", "Du lieu khong hop le!");
+            request.setAttribute("error", "Dữ liệu không hợp lệ!");
             response.sendRedirect(request.getContextPath() + "/employees");
             return;
         }
@@ -337,10 +337,10 @@ public class EmployeeServlet extends HttpServlet {
 
             boolean success = userDAO.updateEmployee(user);
             if (success) {
-                request.getSession().setAttribute("successMessage", "Cap nhat thong tin thanh cong!");
+                request.getSession().setAttribute("successMessage", "Cập nhật thông tin thành công!");
                 response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + id);
             } else {
-                request.setAttribute("error", "Cap nhat that bai!");
+                request.setAttribute("error", "Cập nhật thất bại!");
                 response.sendRedirect(request.getContextPath() + "/employees");
             }
         } catch (NumberFormatException e) {
@@ -372,10 +372,10 @@ public class EmployeeServlet extends HttpServlet {
 
             boolean success = userDAO.updateEmployeeAssignment(userId, newDeptId, newPosId, newLevelId, changeType, notes, creatorId);
             if (success) {
-                request.getSession().setAttribute("successMessage", "Phan bo / Chuyen vi tri thanh cong! Lich su da duoc luu.");
+                request.getSession().setAttribute("successMessage", "Phân bổ / Chuyển vị trí thành công! Lịch sử biến động đã được lưu.");
                 response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + userId);
             } else {
-                request.setAttribute("error", "Phan bo that bai!");
+                request.setAttribute("error", "Phân bổ thất bại!");
                 response.sendRedirect(request.getContextPath() + "/employees");
             }
         } catch (NumberFormatException e) {

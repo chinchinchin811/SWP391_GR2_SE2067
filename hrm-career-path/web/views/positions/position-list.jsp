@@ -7,7 +7,7 @@
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-    request.setAttribute("pageTitle", "Vi tri & Cap bac | HRM");
+    request.setAttribute("pageTitle", "Vị trí & Cấp bậc | HRM");
     List<Position> positions = (List<Position>) request.getAttribute("positions");
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<JobLevel> jobLevels = (List<JobLevel>) request.getAttribute("jobLevels");
@@ -22,11 +22,11 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1>To Chuc Vi Tri Cong Viec & Cap Bac</h1>
+        <h1>Tổ Chức Vị Trí Công Việc & Cấp Bậc</h1>
         <div>
             <% if (roleId == 1 || roleId == 2) { %>
                 <a href="<%= request.getContextPath() %>/positions?action=create" class="btn btn-primary">
-                    + Tao Vi Tri Moi
+                    + Tạo Vị Trí Mới
                 </a>
             <% } %>
         </div>
@@ -42,9 +42,9 @@
 
         <form action="<%= request.getContextPath() %>/positions" method="GET" class="filter-box">
             <div class="form-group">
-                <label>Loc theo Phong Ban:</label>
+                <label>Lọc theo Phòng Ban:</label>
                 <select name="departmentId" class="form-control" onchange="this.form.submit()">
-                    <option value="0">-- Tat ca Phong Ban --</option>
+                    <option value="0">-- Tất cả Phòng Ban --</option>
                     <%
                         if (departments != null) {
                             for (Department d : departments) {
@@ -58,27 +58,27 @@
                 </select>
             </div>
             <% if (selectedDeptId != null && selectedDeptId > 0) { %>
-                <a href="<%= request.getContextPath() %>/positions" class="btn btn-secondary">Bo loc</a>
+                <a href="<%= request.getContextPath() %>/positions" class="btn btn-secondary">Bỏ lọc</a>
             <% } %>
         </form>
 
         <div style="display: flex; gap: 15px;">
             <div class="card" style="flex: 2;">
                 <div class="card-header">
-                    <h2>Danh Muc Vi Tri Chuyen Mon</h2>
-                    <span style="font-size: 12px; color: #555555;">Tong: <%= positions != null ? positions.size() : 0 %> vi tri</span>
+                    <h2>Danh Mục Vị Trí Chuyên Môn</h2>
+                    <span style="font-size: 12px; color: #555555;">Tổng: <%= positions != null ? positions.size() : 0 %> vị trí</span>
                 </div>
                 <div class="card-body">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th style="width: 50px;">ID</th>
-                                <th>Ten Vi Tri</th>
-                                <th>Phong Ban</th>
-                                <th>So Nhan Su</th>
-                                <th>Trang Thai</th>
+                                <th>Tên Vị Trí</th>
+                                <th>Phòng Ban</th>
+                                <th>Số Nhân Sự</th>
+                                <th>Trạng Thái</th>
                                 <% if (roleId == 1 || roleId == 2) { %>
-                                    <th style="text-align: center; width: 110px;">Thao Tac</th>
+                                    <th style="text-align: center; width: 110px;">Thao Tác</th>
                                 <% } %>
                             </tr>
                         </thead>
@@ -95,28 +95,28 @@
                                         <div style="font-size: 11px; color: #555555;"><%= p.getDescription() %></div>
                                     <% } %>
                                 </td>
-                                <td><%= p.getDepartmentName() != null ? p.getDepartmentName() : "Dung chung" %></td>
+                                <td><%= p.getDepartmentName() != null ? p.getDepartmentName() : "Dùng chung" %></td>
                                 <td>
                                     <a href="<%= request.getContextPath() %>/employees?positionId=<%= p.getPositionId() %>">
-                                        <%= p.getEmployeeCount() %> nguoi
+                                        <%= p.getEmployeeCount() %> người
                                     </a>
                                 </td>
                                 <td>
                                     <% if (p.isStatus()) { %>
-                                        <span class="badge">Ap dung</span>
+                                        <span class="badge">Áp dụng</span>
                                     <% } else { %>
-                                        <span class="badge">Tam khoa</span>
+                                        <span class="badge">Tạm khóa</span>
                                     <% } %>
                                 </td>
                                 <% if (roleId == 1 || roleId == 2) { %>
                                     <td>
                                         <div class="table-actions">
-                                        <a href="<%= request.getContextPath() %>/positions?action=edit&amp;id=<%= p.getPositionId() %>" class="btn btn-sm btn-edit" aria-label="Sửa vị trí <%= p.getPositionName() %>">Sửa</a>
-                                        <form action="<%= request.getContextPath() %>/positions" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vị trí này?');">
-                                            <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="id" value="<%= p.getPositionId() %>">
-                                            <button type="submit" class="btn btn-sm btn-danger" aria-label="Xóa vị trí <%= p.getPositionName() %>">Xóa</button>
-                                        </form>
+                                            <a href="<%= request.getContextPath() %>/positions?action=edit&amp;id=<%= p.getPositionId() %>" class="btn btn-sm btn-edit" aria-label="Sửa vị trí <%= p.getPositionName() %>">Sửa</a>
+                                            <form action="<%= request.getContextPath() %>/positions" method="POST" style="display: inline-block;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vị trí này?');">
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="id" value="<%= p.getPositionId() %>">
+                                                <button type="submit" class="btn btn-sm btn-danger" aria-label="Xóa vị trí <%= p.getPositionName() %>">Xóa</button>
+                                            </form>
                                         </div>
                                     </td>
                                 <% } %>
@@ -126,7 +126,7 @@
                                 } else {
                             %>
                             <tr>
-                                <td colspan="<%= (roleId == 1 || roleId == 2) ? "6" : "5" %>" style="text-align: center; padding: 15px;">Khong co vi tri nao.</td>
+                                <td colspan="<%= (roleId == 1 || roleId == 2) ? "6" : "5" %>" style="text-align: center; padding: 15px;">Không có vị trí nào.</td>
                             </tr>
                             <% } %>
                         </tbody>
@@ -136,15 +136,15 @@
 
             <div class="card" style="flex: 1;">
                 <div class="card-header">
-                    <h2>Barem Cap Bac (Job Levels)</h2>
+                    <h2>Barem Cấp Bậc (Job Levels)</h2>
                 </div>
                 <div class="card-body">
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th>Bac</th>
-                                <th>Ten Cap Bac</th>
-                                <th>Mo Ta</th>
+                                <th>Bậc</th>
+                                <th>Tên Cấp Bậc</th>
+                                <th>Mô Tả</th>
                             </tr>
                         </thead>
                         <tbody>

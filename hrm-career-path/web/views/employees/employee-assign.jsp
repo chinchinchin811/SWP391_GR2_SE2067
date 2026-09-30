@@ -6,7 +6,7 @@
 <%@ page import="model.User" %>
 <%
     User emp = (User) request.getAttribute("employee");
-    request.setAttribute("pageTitle", "Dieu chuyen vi tri | HRM");
+    request.setAttribute("pageTitle", "Điều chuyển vị trí | HRM");
 
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<Position> positions = (List<Position>) request.getAttribute("positions");
@@ -20,7 +20,7 @@
         <h1>Điều Chuyển Vị Trí & Thăng Cấp</h1>
         <div>
             <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">
-                Quay lại danh sach
+                Quay lại danh sách
             </a>
         </div>
     </div>
@@ -32,16 +32,16 @@
 
         <div class="card" style="max-width: 700px; margin: 0 auto;">
             <div class="card-header">
-                <h2>Điều Chuyển Phòng Ban / ĐỔi Chuyên Môn / Thăng Chức</h2>
+                <h2>Điều Chuyển Phòng Ban / Đổi Chuyên Môn / Thăng Chức</h2>
             </div>
             <div class="card-body">
-                <!-- Thong tin hien tai -->
+                <!-- Thông tin hiện tại -->
                 <div style="background-color: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; margin-bottom: 20px; font-size: 13px;">
-                    <div><b>Nhan vien:</b> <%= emp.getFullName() %> (Username: <%= emp.getUsername() %>)</div>
+                    <div><b>Nhân viên:</b> <%= emp.getFullName() %> (Username: <%= emp.getUsername() %>)</div>
                     <div style="margin-top: 5px;">
-                        Phòng ban hiện tại: <b><%= emp.getDepartmentName() != null ? emp.getDepartmentName() : "Chua co" %></b> | 
-                        Vị trí hiện tại: <b><%= emp.getPositionName() != null ? emp.getPositionName() : "Chua co" %></b> | 
-                        Cấp bậc: <b><%= emp.getLevelName() != null ? emp.getLevelName() : "Chua co" %></b>
+                        Phòng ban hiện tại: <b><%= emp.getDepartmentName() != null ? emp.getDepartmentName() : "Chưa có" %></b> | 
+                        Vị trí hiện tại: <b><%= emp.getPositionName() != null ? emp.getPositionName() : "Chưa có" %></b> | 
+                        Cấp bậc: <b><%= emp.getLevelName() != null ? emp.getLevelName() : "Chưa có" %></b>
                     </div>
                 </div>
 

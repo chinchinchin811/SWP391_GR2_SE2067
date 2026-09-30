@@ -5,7 +5,7 @@
 <%
     Department dept = (Department) request.getAttribute("department");
     boolean isEdit = (dept != null && dept.getDepartmentId() > 0);
-    request.setAttribute("pageTitle", (isEdit ? "Chinh sua Phong Ban" : "Tao Phong Ban Moi") + " | HRM");
+    request.setAttribute("pageTitle", (isEdit ? "Chỉnh sửa Phòng Ban" : "Tạo Phòng Ban Mới") + " | HRM");
     List<User> managerCandidates = (List<User>) request.getAttribute("managerCandidates");
 %>
 <jsp:include page="/views/common/header.jsp" />
@@ -13,7 +13,7 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1><%= isEdit ? "Cap Nhat Phong Ban" : "Tao Phong Ban Moi" %></h1>
+        <h1><%= isEdit ? "Cập Nhật Phòng Ban" : "Tạo Phòng Ban Mới" %></h1>
         <div>
             <a href="<%= request.getContextPath() %>/departments" class="btn btn-secondary">
                 Quay lại danh sách

@@ -8,28 +8,28 @@
     List<MentorAssignment> assignments = (List<MentorAssignment>) request.getAttribute("assignments");
     String successMsg = (String) session.getAttribute("successMessage");
     session.removeAttribute("successMessage");
+    request.setAttribute("pageTitle", "Ghép Nối Mentor & Mentee | HRM");
 %>
 <jsp:include page="/views/common/header.jsp" />
 <jsp:include page="/views/common/sidebar.jsp" />
 
 <main class="main-content">
     <div class="topbar">
-        <h1>Quan Ly & Ghep Noi Mentor - Mentee</h1>
+        <h1>Ghép Nối Mentor & Mentee</h1>
     </div>
 
     <div class="content-body">
         <% if (successMsg != null) { %>
-        <div style="padding: 10px; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; margin-bottom: 15px; font-weight: bold;">
-            [THONG BAO] <%= successMsg %>
-        </div>
+            <div style="padding: 10px; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; margin-bottom: 15px; font-weight: bold;">
+                [THÔNG BÁO] <%= successMsg %>
+            </div>
         <% } %>
 
         <div style="display: flex; gap: 20px; align-items: flex-start;">
-            
             <!-- CỘT TRÁI: DANH SÁCH GHÉP NỐI -->
             <div class="card" style="flex: 2; border: 1px solid #000; padding: 20px;">
                 <div style="border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 15px;">
-                    <h2 style="margin: 0; font-size: 18px;">Danh Sach Dang Ghep Noi</h2>
+                    <h2 style="margin: 0; font-size: 18px;">Danh Sách Đang Ghép Nối</h2>
                 </div>
                 <table class="data-table" style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
                     <thead>
@@ -37,61 +37,71 @@
                             <th style="padding: 8px; border: 1px solid #000;">Mentee</th>
                             <th style="padding: 8px; border: 1px solid #000;">Mentor</th>
                             <th style="padding: 8px; border: 1px solid #000;">Chuyên môn</th>
-                            <th style="padding: 8px; border: 1px solid #000;">Thao tác</th>
+                            <th style="padding: 8px; border: 1px solid #000; text-align: center;">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <% if (assignments != null && !assignments.isEmpty()) { 
+                        <% if (assignments != null && !assignments.isEmpty()) {
                             for (MentorAssignment a : assignments) { %>
                             <tr>
                                 <td style="padding: 8px; border: 1px solid #000;">
                                     <b><%= a.getMenteeName() %></b><br>
-                                    <span style="font-size: 11px; color: #555;"><%= a.getMenteeLevel() != null ? a.getMenteeLevel() : "" %></span>
+                                    <span style="font-size: 11px; color: #555;">
+                                        <%= a.getMenteeLevel() != null ? a.getMenteeLevel() : "" %>
+                                    </span>
                                 </td>
-                                <td style="padding: 8px; border: 1px solid #000;"><%= a.getMentorName() %></td>
-                                <td style="padding: 8px; border: 1px solid #000;"><%= a.getPositionName() != null ? a.getPositionName() : "" %></td>
+                                <td style="padding: 8px; border: 1px solid #000;">
+                                    <%= a.getMentorName() %>
+                                </td>
+                                <td style="padding: 8px; border: 1px solid #000;">
+                                    <%= a.getPositionName() != null ? a.getPositionName() : "" %>
+                                </td>
                                 <td style="padding: 8px; border: 1px solid #000; text-align: center;">
-                                    <a href="<%= request.getContextPath() %>/mentors?action=menteeDetail&id=<%= a.getMenteeId() %>" class="btn btn-sm btn-secondary" style="font-size: 11px;">Hồ sơ</a>
-                                    <a href="<%= request.getContextPath() %>/mentors?action=evaluateForm&assignmentId=<%= a.getAssignmentId() %>" class="btn btn-sm btn-primary" style="font-size: 11px;">Đánh giá</a>
+                                    <a href="<%= request.getContextPath() %>/mentors?action=menteeDetail&id=<%= a.getMenteeId() %>"
+                                       class="btn btn-sm btn-secondary" style="font-size: 11px;">Hồ sơ</a>
+                                    <a href="<%= request.getContextPath() %>/mentors?action=evaluateForm&assignmentId=<%= a.getAssignmentId() %>"
+                                       class="btn btn-sm btn-primary" style="font-size: 11px;">Đánh giá</a>
                                 </td>
                             </tr>
-                        <%  } 
-                        } else { %>
-                            <tr><td colspan="4" style="padding: 15px; text-align: center; border: 1px solid #000;">Chưa có dữ liệu ghép nối.</td></tr>
+                        <% } } else { %>
+                            <tr>
+                                <td colspan="4" style="padding: 15px; text-align: center; border: 1px solid #000;">
+                                    Chưa có dữ liệu ghép nối.
+                                </td>
+                            </tr>
                         <% } %>
                     </tbody>
                 </table>
             </div>
 
-            <!-- CỘT PHẢI: FORM GHÉP NỐI (Giữ nguyên form cũ của bạn) -->
+            <!-- CỘT PHẢI: FORM GHÉP NỐI -->
             <div class="card" style="flex: 1; border: 1px solid #000; padding: 20px;">
                 <div style="border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
-                    <h2 style="margin: 0; font-size: 18px;">Form Ghep Noi Moi</h2>
+                    <h2 style="margin: 0; font-size: 18px;">Form Ghép Nối Mới</h2>
                 </div>
 
                 <form action="<%= request.getContextPath() %>/mentors" method="POST">
                     <input type="hidden" name="action" value="assign">
-                    <input type="hidden" id="positionIdInput" name="positionId" value="">
+<input type="hidden" id="positionIdInput" name="positionId" value="">
                     <div style="margin-bottom: 15px;">
-                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">1. Chon Nhan vien moi (*):</label>
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">1. Chọn Nhân viên mới (*):</label>
                         <select id="menteeSelect" name="menteeId" onchange="filterMentorsByPosition()" required style="width: 100%; padding: 8px;">
                             <option value="">-- Chọn Nhân viên --</option>
                             <% if (newEmployees != null) {
-                                for(User mentee : newEmployees) { 
+                                for (User mentee : newEmployees) {
                                     String posName = mentee.getPositionName() != null ? mentee.getPositionName().trim() : "";
                             %>
-                            <option value="<%= mentee.getUserId() %>" 
-                                    data-position-id="<%= mentee.getPositionId() %>"
-                                    data-position-name="<%= posName %>">
-                                <%= mentee.getFullName() %> - <%= mentee.getLevelName() %> (<%= !posName.isEmpty() ? posName : "Chưa xếp vị trí" %>)
-                            </option>
-                            <%  } 
-                               } %>
+                                <option value="<%= mentee.getUserId() %>"
+                                        data-position-id="<%= mentee.getPositionId() %>"
+                                        data-position-name="<%= posName %>">
+                                    <%= mentee.getFullName() %> - <%= mentee.getLevelName() %> (<%= !posName.isEmpty() ? posName : "Chưa xếp vị trí" %>)
+                                </option>
+                            <% } } %>
                         </select>
                     </div>
-                   
+
                     <div style="margin-bottom: 15px;">
-                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">2. Chon Mentor huong dan (*):</label>
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">2. Chọn Mentor hướng dẫn (*):</label>
                         <select id="mentorSelect" name="mentorId" required style="width: 100%; padding: 8px;">
                             <option value="">-- Vui lòng chọn Nhân viên trước --</option>
                         </select>
@@ -99,7 +109,7 @@
 
                     <div style="text-align: right; margin-top: 20px;">
                         <button type="submit" style="padding: 10px 20px; background: #000; color: #fff; border: 1px solid #000; cursor: pointer; font-weight: bold;">
-                            XAC NHAN GHEP NOI
+                            XÁC NHẬN GHÉP NỐI
                         </button>
                     </div>
                 </form>
@@ -108,7 +118,6 @@
     </div>
 </main>
 
-<!-- GIỮ NGUYÊN ĐOẠN SCRIPT FILTER MENTOR CỦA BẠN Ở ĐÂY -->
 <script>
     var allMentors = [
         <% if (mentors != null) {
@@ -116,10 +125,11 @@
                 User m = mentors.get(i);
                 String mPosName = m.getPositionName() != null ? m.getPositionName().trim() : "";
         %>
-        { id: <%= m.getUserId() %>, name: "<%= m.getFullName().replace("\"", "\\\"") %>", positionId: <%= m.getPositionId() %>, positionName: "<%= mPosName.replace("\"", "\\\"") %>" }<%= (i < mentors.size() - 1) ? "," : "" %>
-        <%  } } %>
+            { id: <%= m.getUserId() %>, name: "<%= m.getFullName().replace("\"", "\\\"") %>", positionId: <%= m.getPositionId() %>, positionName: "<%= mPosName.replace("\"", "\\\"") %>" }<%= (i < mentors.size() - 1) ? ", " : "" %>
+        <%  }
+        } %>
     ];
-   
+
     function filterMentorsByPosition() {
         var menteeSelect = document.getElementById("menteeSelect");
         var mentorSelect = document.getElementById("mentorSelect");
@@ -144,10 +154,10 @@
         defaultOpt.value = "";
         defaultOpt.textContent = "-- Chọn Mentor --";
         mentorSelect.appendChild(defaultOpt);
-        
+
         var cleanMenteePosName = menteePosName ? menteePosName.trim().toLowerCase() : "";
 
-        allMentors.forEach(function(mentor) {
+        allMentors.forEach(function (mentor) {
             var isMatch = false;
             var cleanMentorPosName = mentor.positionName ? mentor.positionName.trim().toLowerCase() : "";
             if (menteePosId && menteePosId !== "0" && Number(mentor.positionId) === Number(menteePosId)) {

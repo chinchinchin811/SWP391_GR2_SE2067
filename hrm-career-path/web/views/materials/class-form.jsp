@@ -53,27 +53,30 @@
                             <label>Phòng ban mục tiêu</label>
                             <select class="form-control" name="departmentId">
                                 <option value="">— Tất cả —</option>
-                                <% if (departments != null) for (Department d : departments) { %>
+                                <% if (departments != null) {
+                                    for (Department d : departments) { %>
                                 <option value="<%= d.getDepartmentId() %>"><%= d.getDepartmentName() %></option>
-                                <% } %>
+                                <% } } %>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Vị trí mục tiêu</label>
                             <select class="form-control" name="positionId">
                                 <option value="">— Tất cả —</option>
-                                <% if (positions != null) for (Position p : positions) { %>
+                                <% if (positions != null) {
+                                    for (Position p : positions) { %>
                                 <option value="<%= p.getPositionId() %>"><%= p.getPositionName() %></option>
-                                <% } %>
+                                <% } } %>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Cấp bậc mục tiêu</label>
                             <select class="form-control" name="levelId">
                                 <option value="">— Tất cả —</option>
-                                <% if (levels != null) for (JobLevel l : levels) { %>
+                                <% if (levels != null) {
+                                    for (JobLevel l : levels) { %>
                                 <option value="<%= l.getLevelId() %>"><%= l.getLevelName() %></option>
-                                <% } %>
+                                <% } } %>
                             </select>
                         </div>
                     </div>
@@ -83,9 +86,10 @@
                             <label>Mentor</label>
                             <select class="form-control" name="mentorId">
                                 <option value="">— Chưa phân công —</option>
-                                <% if (mentors != null) for (User u : mentors) { %>
+                                <% if (mentors != null) {
+                                    for (User u : mentors) { %>
                                 <option value="<%= u.getUserId() %>"><%= u.getFullName() %></option>
-                                <% } %>
+                                <% } } %>
                             </select>
                         </div>
                         <div class="form-group">
@@ -101,14 +105,15 @@
                     <div class="form-group">
                         <label>Học liệu trong lớp</label>
                         <div style="max-height:220px;overflow:auto;border:1px solid #000;padding:10px">
-                            <% if (materials != null) for (LearningMaterial m : materials) { %>
+                            <% if (materials != null) {
+                                for (LearningMaterial m : materials) { %>
                             <label style="display:flex;align-items:baseline;gap:8px;padding:5px 0;cursor:pointer;font-size:13px">
                                 <input type="checkbox" name="materialIds" value="<%= m.getMaterialId() %>">
                                 <span><strong><%= m.getTitle() %></strong>
                                     <span style="color:#666;font-size:11.5px">(<%= m.getMaterialType() %>, <%= m.getDurationMinutes() %> phút)</span>
                                 </span>
                             </label>
-                            <% } %>
+                            <% } } %>
                         </div>
                     </div>
 

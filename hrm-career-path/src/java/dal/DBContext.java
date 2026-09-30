@@ -19,7 +19,7 @@ public class DBContext {
             return DriverManager.getConnection(System.getProperty("hrm.db.url", DB_URL),
                     System.getProperty("hrm.db.user", DB_USER), System.getProperty("hrm.db.password", DB_PASSWORD));
         } catch (ClassNotFoundException e) {
-            throw new SQLException("Khong tim thay SQL Server JDBC driver", e);
+            throw new SQLException("Không tìm thấy SQL Server JDBC driver", e);
         }
     }
 
@@ -31,24 +31,24 @@ public class DBContext {
     public void checkAndReconnect() {
         try (Connection conn = getConnection()) {
             if (!conn.isValid(3)) {
-                throw new SQLException("Ket noi khong hop le");
+                throw new SQLException("Kết nối không hợp lệ");
             }
         } catch (SQLException e) {
-            System.out.println("Loi khi ket noi lai: " + e.getMessage());
+            System.out.println("Lỗi khi kết nối lại: " + e.getMessage());
         }
     }
 
     public static void main(String[] args) {
-        System.out.println("Dang kiem tra ket noi database.");
+        System.out.println("Đang kiểm tra kết nối database.");
         try (Connection conn = DBContext.getInstance().getConnection()) {
             if (conn != null && !conn.isClosed()) {
-                System.out.println("Ket noi co so du lieu thanh cong!");
-                System.out.println("Catalog hien tai: " + conn.getCatalog());
+                System.out.println("Kết nối cơ sở dữ liệu thành công!");
+                System.out.println("Catalog hiện tại: " + conn.getCatalog());
             } else {
-                System.out.println("Ket noi that bai!");
+                System.out.println("Kết nối thất bại!");
             }
         } catch (SQLException e) {
-            System.err.println("Loi ket noi: " + e.getMessage());
+            System.err.println("Lỗi kết nối: " + e.getMessage());
         }
     }
 }

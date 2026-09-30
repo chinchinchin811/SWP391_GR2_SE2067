@@ -159,7 +159,7 @@ public class PositionServlet extends HttpServlet {
         String statusStr = request.getParameter("status");
 
         if (name == null || name.trim().isEmpty()) {
-            request.setAttribute("error", "Ten vi tri khong duoc de trong!");
+            request.setAttribute("error", "Tên vị trí không được để trống!");
             showCreateForm(request, response);
             return;
         }
@@ -178,10 +178,10 @@ public class PositionServlet extends HttpServlet {
 
         boolean success = positionDAO.addPosition(pos);
         if (success) {
-            request.getSession().setAttribute("successMessage", "Them moi vi tri chuyen mon thanh cong!");
+            request.getSession().setAttribute("successMessage", "Thêm mới vị trí chuyên môn thành công!");
             response.sendRedirect(request.getContextPath() + "/positions");
         } else {
-            request.setAttribute("error", "Khong the them vi tri moi!");
+            request.setAttribute("error", "Không thể thêm vị trí mới!");
             request.setAttribute("position", pos);
             showCreateForm(request, response);
         }
@@ -196,7 +196,7 @@ public class PositionServlet extends HttpServlet {
         String statusStr = request.getParameter("status");
 
         if (idStr == null || name == null || name.trim().isEmpty()) {
-            request.setAttribute("error", "Du lieu khong hop le!");
+            request.setAttribute("error", "Dữ liệu không hợp lệ!");
             showEditForm(request, response);
             return;
         }
@@ -215,10 +215,10 @@ public class PositionServlet extends HttpServlet {
 
             boolean success = positionDAO.updatePosition(pos);
             if (success) {
-                request.getSession().setAttribute("successMessage", "Cap nhat vi tri thanh cong!");
+                request.getSession().setAttribute("successMessage", "Cập nhật vị trí thành công!");
                 response.sendRedirect(request.getContextPath() + "/positions");
             } else {
-                request.setAttribute("error", "Cap nhat that bai!");
+                request.setAttribute("error", "Cập nhật thất bại!");
                 request.setAttribute("position", pos);
                 showEditForm(request, response);
             }
@@ -234,9 +234,9 @@ public class PositionServlet extends HttpServlet {
             int id = Integer.parseInt(idStr);
             boolean success = positionDAO.deletePosition(id);
             if (success) {
-                request.getSession().setAttribute("successMessage", "Xoa vi tri thanh cong!");
+                request.getSession().setAttribute("successMessage", "Xóa vị trí thành công!");
             } else {
-                request.getSession().setAttribute("errorMessage", "Khong the xoa vi tri nay vi dang co nhan su dam nhiem!");
+                request.getSession().setAttribute("errorMessage", "Không thể xóa vị trí này vì đang có nhân sự đảm nhiệm!");
             }
         } catch (NumberFormatException e) {
             e.printStackTrace();

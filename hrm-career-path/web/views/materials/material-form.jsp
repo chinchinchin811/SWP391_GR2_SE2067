@@ -14,6 +14,13 @@
         <h1><%= isEdit ? "Cập Nhật Học Liệu" : "Thêm Học Liệu" %></h1>
         <div class="topbar-actions">
             <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials">Quay lại kho học liệu</a>
+            <% if (isEdit) { %>
+            <form method="post" action="<%= request.getContextPath() %>/materials" style="display:inline-flex;margin:0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa học liệu này?')">
+                <input type="hidden" name="action" value="deleteMaterial">
+                <input type="hidden" name="id" value="<%= material.getMaterialId() %>">
+                <button type="submit" class="btn btn-danger">Xóa học liệu</button>
+            </form>
+            <% } %>
         </div>
     </div>
     <div class="content-body">
@@ -24,35 +31,35 @@
             <div class="card-body">
                 <form method="post" enctype="multipart/form-data" action="<%= request.getContextPath() %>/materials">
                     <input type="hidden" name="action" value="saveMaterial">
-                    <input type="hidden" name="id" value="<%= material.getMaterialId() %>">
+                    <input type="hidden" name="id" value="<%= material != null ? material.getMaterialId() : 0 %>">
 
                     <div class="form-row">
                         <div class="form-group">
                             <label>Tiêu đề <span style="color:#c00">*</span></label>
                             <input required class="form-control" name="title"
-                                   value="<%= material.getTitle() != null ? material.getTitle() : "" %>">
+                                   value="<%= material != null && material.getTitle() != null ? material.getTitle() : "" %>">
                         </div>
                         <div class="form-group" style="max-width:160px">
                             <label>Loại học liệu</label>
                             <select class="form-control" name="materialType">
-                                <option <%= "PDF".equals(material.getMaterialType()) ? "selected" : "" %>>PDF</option>
-                                <option <%= "SLIDE".equals(material.getMaterialType()) ? "selected" : "" %>>SLIDE</option>
-                                <option <%= "VIDEO".equals(material.getMaterialType()) ? "selected" : "" %>>VIDEO</option>
+                                <option <%= material != null && "PDF".equals(material.getMaterialType()) ? "selected" : "" %>>PDF</option>
+                                <option <%= material != null && "SLIDE".equals(material.getMaterialType()) ? "selected" : "" %>>SLIDE</option>
+                                <option <%= material != null && "VIDEO".equals(material.getMaterialType()) ? "selected" : "" %>>VIDEO</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label>Mô tả</label>
-                        <textarea class="form-control" rows="3" name="description"><%= material.getDescription() != null ? material.getDescription() : "" %></textarea>
+                        <textarea class="form-control" rows="3" name="description"><%= material != null && material.getDescription() != null ? material.getDescription() : "" %></textarea>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label>Phạm vi</label>
                             <select class="form-control" name="scopeType">
-                                <option <%= "CULTURE".equals(material.getScopeType()) ? "selected" : "" %>>CULTURE</option>
-                                <option <%= "DEPARTMENT".equals(material.getScopeType()) ? "selected" : "" %>>DEPARTMENT</option>
+                                <option <%= material != null && "CULTURE".equals(material.getScopeType()) ? "selected" : "" %>>CULTURE</option>
+                                <option <%= material != null && "DEPARTMENT".equals(material.getScopeType()) ? "selected" : "" %>>DEPARTMENT</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -62,7 +69,7 @@
                                 <% if (departments != null) {
                                     for (Department d : departments) { %>
                                 <option value="<%= d.getDepartmentId() %>"
-                                    <%= material.getDepartmentId() != null && material.getDepartmentId().equals(d.getDepartmentId()) ? "selected" : "" %>>
+                                    <%= material != null && material.getDepartmentId() != null && material.getDepartmentId().equals(d.getDepartmentId()) ? "selected" : "" %>>
                                     <%= d.getDepartmentName() %>
                                 </option>
                                 <% } } %>
@@ -71,7 +78,7 @@
                         <div class="form-group" style="max-width:140px">
                             <label>Thời lượng (phút)</label>
                             <input class="form-control" type="number" min="1" name="durationMinutes"
-                                   value="<%= material.getDurationMinutes() %>">
+                                   value="<%= material != null ? material.getDurationMinutes() : 0 %>">
                         </div>
                     </div>
 
@@ -83,17 +90,16 @@
                     <div class="form-group">
                         <label>Liên kết xem trực tuyến</label>
                         <input class="form-control" name="videoUrl"
-                               value="<%= material.getVideoUrl() != null ? material.getVideoUrl() : "" %>"
-                               placeholder="YouTube, Google Slides, Google Drive, Office Online hoặc URL MP4">
+                               value="<%= material != null && material.getVideoUrl() != null ? material.getVideoUrl() : "" %>"
+                               placeholder="URL PDF trực tuyến, Google Drive, Google Slides, YouTube hoặc Office Online">
                         <div style="font-size:11.5px;color:#777;margin-top:5px;line-height:1.6">
-                            Slide .ppt/.pptx tải lên từ máy không thể được trình duyệt render trực tiếp.
-                            Để xem trên web, hãy dán liên kết công khai Google Slides, Google Drive hoặc Office Online.
+                            Hỗ trợ: Link PDF trực tiếp (.pdf), Google Drive (tự động chuyển sang xem preview), Google Slides, YouTube hoặc Office Online.
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:400">
-                            <input type="checkbox" name="status" <%= material.isStatus() ? "checked" : "" %>>
+                            <input type="checkbox" name="status" <%= (material == null || material.isStatus()) ? "checked" : "" %>>
                             Công bố học liệu (hiển thị cho nhân viên)
                         </label>
                     </div>

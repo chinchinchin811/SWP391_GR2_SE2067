@@ -175,7 +175,7 @@ public class MentorServlet extends HttpServlet {
 
                 boolean success = new MentorDAO().assignMentorWithPosition(menteeId, mentorId, positionId, currentUser.getUserId());
                 if (success) {
-                    session.setAttribute("successMessage", "Ghep Mentor thanh cong!");
+                    session.setAttribute("successMessage", "Ghép Mentor thành công!");
                 }
             }
             response.sendRedirect(request.getContextPath() + "/mentors?action=pair");

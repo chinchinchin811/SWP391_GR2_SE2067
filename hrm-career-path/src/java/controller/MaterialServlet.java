@@ -63,6 +63,9 @@ public class MaterialServlet extends HttpServlet {
             }
             q.setAttribute("trainingClass", c);
             q.setAttribute("enrollments", dao.getEnrollments(c.getClassId()));
+            if (canManage(u)) {
+                q.setAttribute("availableMaterials", dao.getMaterials(null));
+            }
             go(q, s, "/views/materials/class-detail.jsp");
             return;
         }
@@ -97,6 +100,16 @@ public class MaterialServlet extends HttpServlet {
             formData(q);
             q.setAttribute("materials", dao.getMaterials(null));
             go(q, s, "/views/materials/class-form.jsp");
+            return;
+        }
+        if ("deleteMaterial".equals(a)) {
+            if (!canManage(u)) {
+                deny(s, q);
+                return;
+            }
+            dao.deleteMaterial(num(q, "id"));
+            flash(q, "Đã xóa học liệu thành công.");
+            s.sendRedirect(q.getContextPath() + "/materials");
             return;
         }
         s.sendRedirect(q.getContextPath() + "/materials");
@@ -139,19 +152,19 @@ public class MaterialServlet extends HttpServlet {
                 String end = q.getParameter("endDate");
                 Date endDate = end == null || end.trim().isEmpty() ? null : Date.valueOf(end);
                 if (startDate.toLocalDate().isBefore(LocalDate.now())) {
-                    error(q, "Ngay bat dau khong duoc nam trong qua khu.");
+                    error(q, "Ngày bắt đầu không được nằm trong quá khứ.");
                     s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
                     return;
                 }
                 if (endDate != null && endDate.before(startDate)) {
-                    error(q, "Ngay ket thuc phai sau hoac bang ngay bat dau.");
+                    error(q, "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.");
                     s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
                     return;
                 }
                 c.setStartDate(startDate);
                 c.setEndDate(endDate);
             } catch (IllegalArgumentException ex) {
-                error(q, "Ngay bat dau va ngay ket thuc khong hop le.");
+                error(q, "Ngày bắt đầu và ngày kết thúc không hợp lệ.");
                 s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
                 return;
             }
@@ -174,6 +187,34 @@ public class MaterialServlet extends HttpServlet {
             int classId = num(q, "classId");
             dao.deleteEnrollment(num(q, "enrollmentId"));
             flash(q, "Đã xóa học viên khỏi lớp.");
+            s.sendRedirect(q.getContextPath() + "/materials?action=classDetail&id=" + classId);
+            return;
+        }
+        if ("addClassMaterial".equals(a)) {
+            if (!canManage(u)) {
+                deny(s, q);
+                return;
+            }
+            int classId = num(q, "classId");
+            int materialId = num(q, "materialId");
+            if (materialId > 0) {
+                dao.addMaterialToClass(classId, materialId);
+                flash(q, "Đã thêm học liệu vào lớp đào tạo.");
+            }
+            s.sendRedirect(q.getContextPath() + "/materials?action=classDetail&id=" + classId);
+            return;
+        }
+        if ("removeClassMaterial".equals(a)) {
+            if (!canManage(u)) {
+                deny(s, q);
+                return;
+            }
+            int classId = num(q, "classId");
+            int materialId = num(q, "materialId");
+            if (materialId > 0) {
+                dao.removeMaterialFromClass(classId, materialId);
+                flash(q, "Đã gỡ học liệu khỏi lớp đào tạo.");
+            }
             s.sendRedirect(q.getContextPath() + "/materials?action=classDetail&id=" + classId);
             return;
         }
@@ -215,7 +256,12 @@ public class MaterialServlet extends HttpServlet {
             return;
         }
         byte[] data = dao.getMaterialFile(m.getMaterialId());
-        if (data == null) {
+        if (data == null || data.length < 100) {
+            String target = m.getPdfEmbedUrl() != null ? m.getPdfEmbedUrl() : m.getVideoUrl();
+            if (target != null && !target.trim().isEmpty()) {
+                s.sendRedirect(target.trim());
+                return;
+            }
             s.sendError(404, "Tệp chưa được tải lên; hãy dùng liên kết xem trực tuyến nếu có.");
             return;
         }

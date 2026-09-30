@@ -1,62 +1,164 @@
-/* CSS den trang toi gian, chi dung khung vien */
+/* ==========================================================================
+   HRM CAREER PATH SYSTEM - MODERN ENTERPRISE DESIGN SYSTEM
+   Phong cách Modern SaaS / Clean Enterprise (Giữ nguyên toàn bộ vị trí & ID)
+   ========================================================================== */
 
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+    /* Brand Colors */
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+
+    /* Neutrals */
+    --bg-body: #f8fafc;
+    --bg-surface: #ffffff;
+    --border-color: #e2e8f0;
+    --border-light: #f1f5f9;
+    
+    /* Text Colors */
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+
+    /* Sidebar Dark Theme */
+    --sidebar-bg: #0f172a;
+    --sidebar-surface: #1e293b;
+    --sidebar-border: #1e293b;
+    --sidebar-text: #94a3b8;
+    --sidebar-text-active: #ffffff;
+    --sidebar-active-bg: #4f46e5;
+
+    /* Semantic Status */
+    --success-bg: #ecfdf5;
+    --success-text: #059669;
+    --success-border: #a7f3d0;
+    --danger-bg: #fef2f2;
+    --danger-text: #dc2626;
+    --danger-border: #fecaca;
+    --warning-bg: #fffbeb;
+    --warning-text: #d97706;
+    --warning-border: #fde68a;
+    --info-bg: #eff6ff;
+    --info-text: #2563eb;
+    --info-border: #bfdbfe;
+
+    /* Geometry & Shadows */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-full: 9999px;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+}
+
+/* ==========================================================================
+   RESET & BASE STYLES
+   ========================================================================== */
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
 body {
-    background-color: #ffffff;
-    color: #111111;
-    font-size: 13px;
-    line-height: 1.55;
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    font-size: 13.5px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* Bo cuc tong the */
 .app-container {
     min-height: 100vh;
-    border: 1px solid #000000;
+    display: flex;
+    background-color: var(--bg-body);
+    border: none !important;
 }
 
-/* Menu ben trai */
+/* ==========================================================================
+   SIDEBAR (Thanh dieu huong ben trai)
+   ========================================================================== */
 .sidebar {
-    width: 220px;
+    width: 240px;
     height: 100vh;
     position: fixed;
     top: 0;
     left: 0;
     z-index: 100;
-    overflow: hidden;
-    background-color: #f5f5f5;
-    border-right: 1px solid #000000;
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-brand {
+    height: 70px;
+    min-height: 70px;
+    max-height: 70px;
+    box-sizing: border-box;
+    padding: 0 18px;
+    border-bottom: 1px solid var(--sidebar-border);
+    background-color: var(--sidebar-bg);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sidebar-brand .brand-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--primary) 0%, #818cf8 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.4);
+    flex-shrink: 0;
+}
+
+.sidebar-brand .brand-text {
     display: flex;
     flex-direction: column;
 }
 
-.sidebar-brand {
-    padding: 12px 10px;
-    border-bottom: 1px solid #000000;
-    background-color: #ffffff;
-}
-
 .sidebar-brand h3 {
-    font-size: 14px;
-    color: #000000;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
 }
 
 .sidebar-brand span {
     font-size: 11px;
-    color: #555555;
+    color: var(--text-muted);
+    font-weight: 500;
 }
 
 .sidebar-menu {
-    padding: 10px 0;
+    padding: 12px 10px;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     scrollbar-gutter: stable;
+}
+
+.sidebar-menu::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar-menu::-webkit-scrollbar-thumb {
+    background: var(--sidebar-surface);
+    border-radius: 4px;
 }
 
 .sidebar-menu-list,
@@ -65,290 +167,491 @@ body {
 }
 
 .sidebar-section {
-    margin: 5px 0;
+    margin: 6px 0;
 }
 
 .sidebar-menu-category {
     width: 100%;
     border: 0;
-    background: transparent;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
     font-size: 11px;
-    font-weight: bold;
-    color: #333333;
-    padding: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    padding: 9px 12px;
     text-transform: uppercase;
-    border-bottom: 1px dashed #cccccc;
+    letter-spacing: 0.6px;
     cursor: pointer;
     text-align: left;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    margin: 3px 0;
 }
 
 .sidebar-menu-category:hover,
 .sidebar-menu-category:focus-visible {
-    background-color: #e7e7e7;
-    outline: 1px solid #000000;
-    outline-offset: -1px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    outline: none;
+}
+
+.sidebar-section.is-open .sidebar-menu-category,
+.sidebar-section.has-active .sidebar-menu-category {
+    color: #ffffff;
+    background: rgba(79, 70, 229, 0.15);
+    border-left: 3px solid var(--primary);
+}
+
+.sidebar-menu-category .nav-cat-icon {
+    margin-right: 7px;
+    font-size: 12px;
+    color: #818cf8;
 }
 
 .sidebar-menu-category-icon {
-    font-size: 16px;
+    font-size: 11px;
     line-height: 1;
-    transition: transform 0.2s ease;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .sidebar-section.is-collapsed .sidebar-menu-category-icon {
     transform: rotate(-90deg);
 }
 
+.sidebar-section.is-open .sidebar-menu-category-icon,
+.sidebar-section:not(.is-collapsed) .sidebar-menu-category-icon {
+    transform: rotate(0deg);
+    color: #818cf8;
+}
+
+.sidebar-submenu {
+    list-style: none;
+    max-height: 500px;
+    overflow: hidden;
+    padding-left: 8px;
+    border-left: 2px solid rgba(255, 255, 255, 0.08);
+    margin-left: 12px;
+    margin-top: 2px;
+    margin-bottom: 6px;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
+}
+
 .sidebar-section.is-collapsed .sidebar-submenu {
-    display: none;
+    max-height: 0 !important;
+    opacity: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    pointer-events: none;
+    margin-bottom: 0;
 }
 
 .sidebar-menu li a {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     padding: 8px 12px;
-    color: #000000;
+    margin: 2px 0;
+    color: var(--sidebar-text);
     text-decoration: none;
-    font-size: 13px;
+    font-size: 12.5px;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    transition: all 0.15s ease;
+}
+
+.sidebar-menu li a .nav-icon {
+    font-size: 13.5px;
+    width: 16px;
+    text-align: center;
+    color: #64748b;
+    transition: color 0.15s ease;
 }
 
 .sidebar-menu li a:hover {
-    background-color: #e0e0e0;
+    background-color: var(--sidebar-surface);
+    color: var(--sidebar-text-active);
 }
 
-.sidebar-menu li.active a {
-    background-color: #000000;
+.sidebar-menu li a:hover .nav-icon {
+    color: #a5b4fc;
+}
+
+.sidebar-menu li.active > a {
+    background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
     color: #ffffff;
-    font-weight: bold;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
 }
 
-.sidebar-user {
-    padding: 10px;
-    border-top: 1px solid #000000;
-    background-color: #ffffff;
+.sidebar-menu li.active > a .nav-icon {
+    color: #ffffff;
+}
+
+.sidebar-submenu {
+    padding-left: 6px;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    margin-left: 14px;
+    margin-top: 3px;
+    margin-bottom: 5px;
+}
+
+.sidebar-submenu li a {
+    padding: 6px 10px;
     font-size: 12px;
 }
 
-.sidebar-user .user-name {
-    font-weight: bold;
-}
-
-.sidebar-user .user-role {
-    color: #444444;
-    margin: 2px 0 6px;
-}
-
-.sidebar-user .logout-link {
-    color: #000000;
-    font-weight: bold;
-}
-
-/* Phan noi dung chinh */
-.main-content {
-    width: calc(100% - 220px);
-    min-width: 0;
-    min-height: 100vh;
-    margin-left: 220px;
+/* User Box tai chan Sidebar */
+.sidebar-user {
+    padding: 14px 14px;
+    border-top: 1px solid var(--sidebar-border);
+    background-color: #0b1120;
     display: flex;
-    flex-direction: column;
-    background-color: #ffffff;
-}
-
-.topbar {
-    padding: 11px 18px;
-    border-bottom: 1px solid #000000;
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-    background-color: #fafafa;
-    gap: 12px;
+    gap: 10px;
 }
 
-.topbar h1 {
-    font-size: 16px;
-    font-weight: 700;
-    letter-spacing: -0.2px;
-    color: #000000;
+.sidebar-user .user-avatar-circle {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+    border: 1px solid #475569;
+    color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
     flex-shrink: 0;
 }
 
-.topbar-actions {
+.sidebar-user .user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.sidebar-user .user-name {
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 12.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-user .user-role {
+    color: #818cf8;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-user .logout-link {
+    color: #94a3b8;
+    font-size: 14px;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.sidebar-user .logout-link:hover {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* ==========================================================================
+   MAIN CONTENT & TOPBAR
+   ========================================================================== */
+.main-content {
+    width: calc(100% - 240px);
+    min-width: 0;
+    min-height: 100vh;
+    margin-left: 240px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-body);
+}
+
+.topbar {
+    height: 70px;
+    min-height: 70px;
+    max-height: 70px;
+    box-sizing: border-box;
+    padding: 0 28px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-surface);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    gap: 16px;
+}
+
+.topbar h1 {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    color: var(--text-primary);
+    flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    line-height: 1.2;
+}
+
+.topbar-actions,
+.topbar > div:not(h1) {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     flex-shrink: 0;
 }
 
 .content-body {
-    padding: 18px;
+    padding: 24px 28px;
     flex: 1;
 }
 
-/* Hop thong ke (Stats) */
+/* ==========================================================================
+   STAT CARDS (Dashboard Metrics)
+   ========================================================================== */
 .stats-grid {
     display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 16px;
+    margin-bottom: 24px;
     flex-wrap: wrap;
 }
 
 .stat-box {
     flex: 1;
-    min-width: 140px;
-    background-color: #ffffff;
-    border: 1px solid #000000;
-    padding: 10px;
+    min-width: 170px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--primary);
+    opacity: 0.8;
+}
+
+.stat-box:nth-child(2)::before { background: #06b6d4; }
+.stat-box:nth-child(3)::before { background: #10b981; }
+.stat-box:nth-child(4)::before { background: #f59e0b; }
+.stat-box:nth-child(5)::before { background: #8b5cf6; }
+
+.stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: #cbd5e1;
 }
 
 .stat-box h3 {
-    font-size: 20px;
-    color: #000000;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.6px;
+    line-height: 1.2;
+    margin-bottom: 4px;
 }
 
 .stat-box p {
     font-size: 12px;
-    color: #555555;
-}
-
-/* Khung chua bang / form */
-.card {
-    border: 1px solid #000000;
-    margin-bottom: 18px;
-    background-color: #ffffff;
-}
-
-.card-header {
-    padding: 9px 14px;
-    border-bottom: 1px solid #000000;
-    background-color: #f0f0f0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
-
-.card-header h2 {
-    font-size: 13px;
-    font-weight: 700;
-    color: #000000;
+    font-weight: 600;
+    color: var(--text-secondary);
     letter-spacing: 0.1px;
 }
 
-.card-body {
-    padding: 14px;
+/* ==========================================================================
+   CARDS (Khung chua noi dung / bang / form)
+   ========================================================================== */
+.card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    margin-bottom: 24px;
+    background-color: var(--bg-surface);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
 }
 
-/* Bang du lieu */
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.card-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-light);
+    background-color: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.card-header h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.2px;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+/* ==========================================================================
+   DATA TABLE (Bang du lieu sach dep)
+   ========================================================================== */
 table.data-table {
     width: 100%;
     border-collapse: collapse;
+    background: transparent;
 }
 
 table.data-table th,
 table.data-table td {
-    border: 1px solid #000000;
-    padding: 9px 12px;
+    padding: 12px 16px;
     text-align: left;
-    font-size: 12.5px;
+    font-size: 13px;
     vertical-align: middle;
-    line-height: 1.45;
+    line-height: 1.5;
+    border: none;
+    border-bottom: 1px solid var(--border-light);
 }
 
 table.data-table th {
-    background-color: #e8e8e8;
+    background-color: #f8fafc;
+    color: var(--text-secondary);
     font-weight: 700;
-    font-size: 12px;
-    letter-spacing: 0.15px;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
     white-space: nowrap;
+    border-bottom: 1px solid var(--border-color);
+}
+
+table.data-table tbody tr {
+    transition: background-color 0.15s ease;
 }
 
 table.data-table tbody tr:hover {
-    background-color: #f8f8f8;
+    background-color: #f8fafc;
 }
 
-/* Nut bam (Buttons) */
+table.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ==========================================================================
+   BUTTONS (Nut bam hien dai)
+   ========================================================================== */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    min-height: 30px;
-    padding: 4px 10px;
-    font-size: 12px;
-    border: 1px solid #000000;
-    background-color: #ffffff;
-    color: #000000;
+    gap: 6px;
+    min-height: 34px;
+    padding: 6px 14px;
+    font-size: 12.5px;
+    font-weight: 600;
+    border: 1px solid transparent;
     cursor: pointer;
     text-decoration: none;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     white-space: nowrap;
     line-height: 1.2;
-    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.btn:hover {
-    background-color: #000000;
-    color: #ffffff;
+.btn:active {
+    transform: scale(0.98);
 }
 
 .btn-primary {
-    background-color: #000000;
+    background-color: var(--primary);
     color: #ffffff;
-    border-color: #000000;
+    border-color: var(--primary-dark);
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.2);
 }
 .btn-primary:hover {
-    background-color: #2a2a2a;
+    background-color: var(--primary-hover);
     color: #ffffff;
+    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+    transform: translateY(-1px);
 }
 
 .btn-secondary {
     background-color: #ffffff;
-    color: #000000;
-    border-color: #000000;
+    color: var(--text-secondary);
+    border-color: var(--border-color);
+    box-shadow: var(--shadow-sm);
 }
 .btn-secondary:hover {
-    background-color: #ebebeb;
-    color: #000000;
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+    color: var(--text-primary);
+    transform: translateY(-1px);
 }
 
 .btn-danger {
-    background-color: #fff7f7;
-    color: #b42318;
-    border-color: #b42318;
+    background-color: var(--danger-bg);
+    color: var(--danger-text);
+    border-color: var(--danger-border);
 }
 .btn-danger:hover {
-    background-color: #b42318;
+    background-color: var(--danger-text);
     color: #ffffff;
+    box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+    transform: translateY(-1px);
 }
 
 .btn-sm {
-    min-height: 26px;
-    padding: 3px 8px;
-    font-size: 11px;
-    font-weight: 500;
+    min-height: 28px;
+    padding: 4px 10px;
+    font-size: 11.5px;
+    border-radius: var(--radius-sm);
 }
 
-/* Nhom nut hanh dong trong bang */
 .action-btn-group {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 6px;
 }
 
 .btn-edit {
     background-color: #ffffff;
-    color: #1f2937;
-    border-color: #64748b;
+    color: var(--text-secondary);
+    border-color: var(--border-color);
 }
-
 .btn-edit:hover {
-    background-color: #1f2937;
-    border-color: #1f2937;
-    color: #ffffff;
+    background-color: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
 }
 
 .table-actions {
@@ -365,202 +668,474 @@ table.data-table tbody tr:hover {
 }
 
 .btn:focus-visible {
-    outline: 2px solid #2563eb;
+    outline: 2px solid var(--primary);
     outline-offset: 2px;
 }
 
-/* Nhan trang thai */
+/* ==========================================================================
+   BADGES & CHIPS (The trang thai bo tron mem mai)
+   ========================================================================== */
 .badge {
-    display: inline-block;
-    padding: 2px 7px;
-    font-size: 11px;
-    font-weight: 700;
-    border: 1px solid #000000;
-    background-color: #ffffff;
-    color: #000000;
-    letter-spacing: 0.3px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    font-size: 11.5px;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    background-color: var(--primary-light);
+    color: var(--primary);
+    border: 1px solid #c7d2fe;
+    letter-spacing: 0.1px;
     line-height: 1.35;
 }
 
-/* Nhan dem so luong */
+/* Badges theo vai tro (Vibrant Role Colors) */
+.badge-admin, .badge-role-admin { background-color: #f3e8ff; color: #7e22ce; border-color: #d8b4fe; font-weight: 700; }
+.badge-hr, .badge-role-hr { background-color: #ffe4e6; color: #e11d48; border-color: #fecdd3; font-weight: 700; }
+.badge-manager, .badge-role-manager { background-color: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; font-weight: 700; }
+.badge-mentor, .badge-role-mentor { background-color: #fef3c7; color: #b45309; border-color: #fde68a; font-weight: 700; }
+.badge-employee, .badge-role-employee { background-color: #e0f2fe; color: #0284c7; border-color: #bae6fd; font-weight: 700; }
+
+/* Badges theo trang thai (Vibrant Status Badges) */
+.badge-status-active { background-color: #dcfce7; color: #15803d; border-color: #86efac; font-weight: 600; }
+.badge-status-inactive { background-color: #fee2e2; color: #b91c1c; border-color: #fca5a5; font-weight: 600; }
+.status-dot { font-size: 6px; margin-right: 3px; }
+.badge-status-active .status-dot { color: #22c55e; }
+.badge-status-inactive .status-dot { color: #ef4444; }
+
+/* User Cell & Avatar Chip */
+.user-cell { display: flex; align-items: center; gap: 10px; }
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 5px rgba(79, 70, 229, 0.25);
+}
+.user-fullname { font-weight: 700; color: #0f172a; line-height: 1.3; }
+.user-sub { font-size: 11px; color: #64748b; font-weight: 500; }
+.level-tag {
+    display: inline-block;
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+/* Nut hanh dong mau sac phong phu */
+.btn-action-assign {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+    color: #ffffff !important;
+    border: 1px solid #4338ca;
+    box-shadow: 0 1px 3px rgba(79, 70, 229, 0.25);
+}
+.btn-action-assign:hover {
+    background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(79, 70, 229, 0.35);
+}
+
+.btn-action-view {
+    background-color: #f0fdf4;
+    color: #166534 !important;
+    border: 1px solid #bbf7d0;
+}
+.btn-action-view:hover {
+    background-color: #16a34a;
+    color: #ffffff !important;
+    border-color: #16a34a;
+    transform: translateY(-1px);
+}
+
+.btn-action-edit {
+    background-color: #eff6ff;
+    color: #1d4ed8 !important;
+    border: 1px solid #bfdbfe;
+}
+.btn-action-edit:hover {
+    background-color: #2563eb;
+    color: #ffffff !important;
+    border-color: #2563eb;
+    transform: translateY(-1px);
+}
+
 .badge-count {
     font-size: 12px;
-    color: #444444;
-    font-weight: 400;
+    color: var(--text-secondary);
+    font-weight: 500;
     flex-shrink: 0;
 }
 
-/* Form */
+/* ==========================================================================
+   FORMS & INPUTS
+   ========================================================================== */
 .form-group {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
     font-weight: 600;
     font-size: 12.5px;
-    color: #111111;
+    color: var(--text-primary);
 }
 
 .form-control {
     width: 100%;
-    padding: 7px 9px;
+    padding: 9px 12px;
     font-size: 13px;
-    border: 1px solid #000000;
-    border-radius: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
     background-color: #ffffff;
-    color: #000000;
-    line-height: 1.45;
+    color: var(--text-primary);
+    line-height: 1.5;
+    font-family: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .form-control:focus {
-    outline: 2px solid #000000;
-    outline-offset: -1px;
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
 }
 
 .form-row {
     display: flex;
-    gap: 14px;
+    gap: 16px;
     flex-wrap: wrap;
 }
 
 .form-row .form-group {
     flex: 1;
-    min-width: 160px;
+    min-width: 180px;
 }
 
 .form-actions {
-    margin-top: 18px;
-    padding-top: 14px;
-    border-top: 1px solid #cccccc;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-light);
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
 }
 
-/* Thong bao */
-.alert {
-    padding: 8px 12px;
-    margin-bottom: 12px;
-    border: 1px solid #000000;
-    font-size: 12px;
-}
-.alert-success { background-color: #f0f0f0; }
-.alert-danger { background-color: #e0e0e0; font-weight: bold; }
-
-/* Hop loc */
+/* Hop loc (Filter box) */
 .filter-box {
-    border: 1px solid #000000;
-    padding: 10px;
-    margin-bottom: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px 18px;
+    margin-bottom: 20px;
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: flex-end;
     flex-wrap: wrap;
-    background-color: #fafafa;
+    background-color: var(--bg-surface);
+    box-shadow: var(--shadow-sm);
 }
 
 .filter-box .form-group {
     margin-bottom: 0;
-    min-width: 140px;
+    min-width: 160px;
 }
 
-/* Trang dang nhap */
+/* ==========================================================================
+   ALERTS (Thong bao ket qua)
+   ========================================================================== */
+.alert {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: var(--radius-md);
+    font-size: 12.5px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid transparent;
+}
+
+.alert-success {
+    background-color: var(--success-bg);
+    color: var(--success-text);
+    border-color: var(--success-border);
+}
+
+.alert-danger {
+    background-color: var(--danger-bg);
+    color: var(--danger-text);
+    border-color: var(--danger-border);
+}
+
+/* ==========================================================================
+   LOGIN PAGE (Trang dang nhap phong cach SaaS)
+   ========================================================================== */
+.login-body {
+    background: radial-gradient(circle at 10% 20%, rgba(79, 70, 229, 0.08) 0%, rgba(248, 250, 252, 1) 90%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .login-wrapper {
-    width: 340px;
-    margin: 60px auto;
-    border: 1px solid #000000;
-    padding: 20px;
+    width: 390px;
+    margin: 40px auto;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 36px 32px;
     background-color: #ffffff;
+    box-shadow: var(--shadow-lg);
+}
+
+.login-brand-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--primary) 0%, #818cf8 100%);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin: 0 auto 16px;
+    box-shadow: 0 8px 16px rgba(79, 70, 229, 0.3);
 }
 
 .login-wrapper h2 {
     text-align: center;
-    font-size: 16px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-primary);
     margin-bottom: 4px;
+    letter-spacing: -0.3px;
 }
 
 .login-wrapper p.subtitle {
     text-align: center;
-    font-size: 11px;
-    color: #555555;
-    margin-bottom: 15px;
-    border-bottom: 1px solid #000000;
-    padding-bottom: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
 .test-accounts {
-    margin-top: 15px;
-    padding: 8px;
-    border: 1px dashed #000000;
+    margin-top: 20px;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--border-color);
     font-size: 11px;
-    line-height: 1.5;
-    background-color: #fafafa;
+    line-height: 1.6;
+    background-color: #f8fafc;
+    color: var(--text-secondary);
 }
 
-/* Tien ich bo sung */
-table.data-table td,
-table.data-table th {
-    color: #111111;
+/* ==========================================================================
+   FLASHCARDS MODULE (The hoc tap 3D cao cap)
+   ========================================================================== */
+.flashcard-container {
+    display: flex;
+    gap: 24px;
 }
 
-table.data-table .col-code {
-    font-size: 12px;
-    color: #333;
-    white-space: nowrap;
+.deck-sidebar {
+    width: 260px;
+    border-right: 1px solid var(--border-color);
+    padding-right: 18px;
 }
 
-table.data-table .col-center {
+.deck-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 13px;
+    background: #ffffff;
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.deck-item:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateX(3px);
+}
+
+.deck-item.active {
+    background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+    color: #ffffff;
+    border-color: var(--primary-dark);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.card-area {
+    flex: 1;
+    padding: 24px;
     text-align: center;
-    color: #111111;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
 }
 
-table.data-table .col-count {
+.flashcard {
+    width: 460px;
+    height: 270px;
+    margin: 15px auto;
+    perspective: 1000px;
+    cursor: pointer;
+}
+
+.flashcard-inner {
+    width: 100%;
+    height: 100%;
     text-align: center;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+}
+
+.flashcard.flipped .flashcard-inner {
+    transform: rotateY(180deg);
+}
+
+.flashcard-front, .flashcard-back {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 30px;
+    box-sizing: border-box;
+    font-size: 18px;
     font-weight: 700;
-    font-size: 14px;
-    color: #111111;
+    box-shadow: var(--shadow-md);
 }
 
-table.data-table .col-date {
-    text-align: center;
-    font-size: 12.5px;
-    color: #111111;
-    white-space: nowrap;
+.flashcard-front {
+    color: var(--text-primary);
+    background: #ffffff;
 }
 
-table.data-table .col-actions {
-    text-align: center;
-    white-space: nowrap;
+.flashcard-back {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    color: #ffffff;
+    border-color: #312e81;
+    transform: rotateY(180deg);
 }
 
-@media (max-width: 760px) {
-    .app-container {
-        display: block;
-    }
-    .topbar {
-        flex-wrap: wrap;
-        gap: 8px;
-    }
+.card-controls {
+    margin-top: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+}
+
+.btn-nav {
+    padding: 9px 20px;
+    border: 1px solid var(--border-color);
+    background: #ffffff;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.15s ease;
+}
+
+.btn-nav:hover {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary-dark);
+}
+
+/* ==========================================================================
+   SMART INLINE OVERRIDES (Bien cac style inline vieng den thanh hien dai)
+   ========================================================================== */
+div[style*="border: 1px solid #000"],
+div[style*="border: 1px solid black"] {
+    border-color: var(--border-color) !important;
+    border-radius: var(--radius-lg) !important;
+    box-shadow: var(--shadow-sm) !important;
+}
+
+h2[style*="border-bottom: 1px solid #000"],
+h3[style*="border-bottom: 1px solid #000"],
+div[style*="border-bottom: 1px solid #000"] {
+    border-bottom: 1px solid var(--border-light) !important;
+}
+
+table[style*="border: 1px solid #000"],
+table[style*="border: 1px solid black"] {
+    border: none !important;
+}
+
+td[style*="border: 1px solid #000"],
+th[style*="border: 1px solid #000"] {
+    border: none !important;
+    border-bottom: 1px solid var(--border-light) !important;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
+@media (max-width: 820px) {
     .sidebar {
         width: 100%;
         height: auto;
-        max-height: none;
         position: static;
-        overflow: visible;
+        box-shadow: none;
     }
-    .sidebar-menu {
-        overflow: visible;
+    .sidebar-brand {
+        height: auto;
+        min-height: 60px;
+        max-height: none;
+        padding: 12px 16px;
     }
     .main-content {
         width: 100%;
         margin-left: 0;
     }
-    table.data-table th,
-    table.data-table td {
-        padding: 7px 8px;
-        font-size: 12px;
+    .topbar {
+        height: auto;
+        min-height: auto;
+        max-height: none;
+        padding: 14px 18px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .content-body {
+        padding: 16px;
+    }
+    .stats-grid {
+        gap: 10px;
+    }
+    .flashcard {
+        width: 100%;
+        max-width: 380px;
     }
 }
-

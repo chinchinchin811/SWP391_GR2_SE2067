@@ -11,10 +11,13 @@
     <div class="topbar">
         <h1>Gán Nhân Sự Vào Lớp</h1>
         <div class="topbar-actions">
+            <% if (trainingClass != null) { %>
             <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials?action=classDetail&id=<%= trainingClass.getClassId() %>">Quay lại chi tiết lớp</a>
+            <% } %>
         </div>
     </div>
     <div class="content-body">
+        <% if (trainingClass != null) { %>
         <div class="card">
             <div class="card-header">
                 <h2><%= trainingClass.getClassName() %></h2>
@@ -74,6 +77,7 @@
                 </form>
             </div>
         </div>
+        <% } %>
     </div>
 </main>
 <jsp:include page="/views/common/footer.jsp" />

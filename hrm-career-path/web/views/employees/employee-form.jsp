@@ -8,7 +8,7 @@
 <%
     User emp = (User) request.getAttribute("employee");
     boolean isEdit = (emp != null && emp.getUserId() > 0);
-    request.setAttribute("pageTitle", (isEdit ? "Cap Nhat Nhan Su" : "Khai Bao Nhan Su Moi") + " | HRM");
+    request.setAttribute("pageTitle", (isEdit ? "Cập Nhật Nhân Sự" : "Khai Báo Nhân Sự Mới") + " | HRM");
 
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<Position> positions = (List<Position>) request.getAttribute("positions");
@@ -20,10 +20,10 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1><%= isEdit ? "Cap Nhat Ho So Nhan Vien" : "Khai Bao Nhan Vien Moi" %></h1>
+        <h1><%= isEdit ? "Cập Nhật Hồ Sơ Nhân Viên" : "Khai Báo Nhân Viên Mới" %></h1>
         <div>
             <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">
-                Quay lai danh sach
+                Quay lại danh sách
             </a>
         </div>
     </div>
@@ -35,7 +35,7 @@
 
         <div class="card" style="max-width: 750px; margin: 0 auto;">
             <div class="card-header">
-                <h2><%= isEdit ? "Thong Tin Nhan Vien" : "Khai Bao Thong Tin & Xep Phong Ban/Vi Tri" %></h2>
+                <h2><%= isEdit ? "Thông Tin Nhân Viên" : "Khai Báo Thông Tin & Xếp Phòng Ban / Vị Trí" %></h2>
             </div>
             <div class="card-body">
                 <form action="<%= request.getContextPath() %>/employees" method="POST">
@@ -45,12 +45,12 @@
                     <% } %>
 
                     <div style="font-weight: bold; margin-bottom: 10px; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-                        1. Thong tin tai khoan & Ca nhan
+                        1. Thông tin tài khoản & Cá nhân
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="username">Ten dang nhap (Username) (*):</label>
+                            <label for="username">Tên đăng nhập (Username) (*):</label>
                             <input type="text" id="username" name="username" class="form-control" 
                                    value="<%= emp != null && emp.getUsername() != null ? emp.getUsername() : "" %>" 
                                    <%= isEdit ? "readonly style='background: #f1f2f6;'" : "required" %>>
@@ -58,16 +58,16 @@
 
                         <% if (!isEdit) { %>
                         <div class="form-group">
-                            <label for="password">Mat khau khoi tao:</label>
+                            <label for="password">Mật khẩu khởi tạo:</label>
                             <input type="password" id="password" name="password" class="form-control" 
-                                   placeholder="Mac dinh: 123">
+                                   placeholder="Mặc định: 123">
                         </div>
                         <% } %>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="fullName">Ho va Ten (*):</label>
+                            <label for="fullName">Họ và Tên (*):</label>
                             <input type="text" id="fullName" name="fullName" class="form-control" 
                                    value="<%= emp != null && emp.getFullName() != null ? emp.getFullName() : "" %>" required>
                         </div>
@@ -81,34 +81,34 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="phone">So dien thoai:</label>
+                            <label for="phone">Số điện thoại:</label>
                             <input type="text" id="phone" name="phone" class="form-control" 
                                    value="<%= emp != null && emp.getPhone() != null ? emp.getPhone() : "" %>">
                         </div>
 
                         <div class="form-group">
-                            <label for="gender">Gioi tinh:</label>
+                            <label for="gender">Giới tính:</label>
                             <select id="gender" name="gender" class="form-control">
                                 <option value="Nam" <%= (emp != null && "Nam".equalsIgnoreCase(emp.getGender())) ? "selected" : "" %>>Nam</option>
-                                <option value="Nữ" <%= (emp != null && "Nữ".equalsIgnoreCase(emp.getGender())) ? "selected" : "" %>>Nu</option>
-                                <option value="Khác" <%= (emp != null && "Khác".equalsIgnoreCase(emp.getGender())) ? "selected" : "" %>>Khac</option>
+                                <option value="Nữ" <%= (emp != null && ("Nữ".equalsIgnoreCase(emp.getGender()) || "Nu".equalsIgnoreCase(emp.getGender()))) ? "selected" : "" %>>Nữ</option>
+                                <option value="Khác" <%= (emp != null && ("Khác".equalsIgnoreCase(emp.getGender()) || "Khac".equalsIgnoreCase(emp.getGender()))) ? "selected" : "" %>>Khác</option>
                             </select>
                         </div>
 
                         <div class="form-group">
-                            <label for="dob">Ngay sinh:</label>
+                            <label for="dob">Ngày sinh:</label>
                             <input type="date" id="dob" name="dob" class="form-control" 
                                    value="<%= emp != null && emp.getDob() != null ? emp.getDob().toString() : "" %>">
                         </div>
                     </div>
 
                     <div style="font-weight: bold; margin: 15px 0 10px; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-                        2. Phan quyen & To chuc
+                        2. Phân quyền & Tổ chức
                     </div>
 
                     <div class="form-row">
-                        <div class="form-group">
-                            <label for="roleId">Vai tro (*):</label>
+                        <div class="form-group" style="<%= !isEdit ? "flex: 1;" : "" %>">
+                            <label for="roleId">Vai trò (*):</label>
                             <select id="roleId" name="roleId" class="form-control" required>
                                 <%
                                     if (roles != null) {
@@ -123,21 +123,23 @@
                             </select>
                         </div>
 
+                        <% if (isEdit) { %>
                         <div class="form-group">
-                            <label for="status">Trang thai:</label>
+                            <label for="status">Trạng thái:</label>
                             <select id="status" name="status" class="form-control">
-                                <option value="1" <%= (emp == null || emp.isStatus()) ? "selected" : "" %>>Dang lam viec</option>
-                                <option value="0" <%= (emp != null && !emp.isStatus()) ? "selected" : "" %>>Da nghi viec</option>
+                                <option value="1" <%= (emp == null || emp.isStatus()) ? "selected" : "" %>>Đang làm việc</option>
+                                <option value="0" <%= (emp != null && !emp.isStatus()) ? "selected" : "" %>>Đã nghỉ việc</option>
                             </select>
                         </div>
+                        <% } %>
                     </div>
 
                     <% if (!isEdit) { %>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="departmentId">Phong ban:</label>
+                            <label for="departmentId">Phòng ban:</label>
                             <select id="departmentId" name="departmentId" class="form-control">
-                                <option value="0">-- Chua xep phong ban --</option>
+                                <option value="0">-- Chưa xếp phòng ban --</option>
                                 <%
                                     if (departments != null) {
                                         for (Department d : departments) {
@@ -151,9 +153,9 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="positionId">Vi tri chuyen mon:</label>
+                            <label for="positionId">Vị trí chuyên môn:</label>
                             <select id="positionId" name="positionId" class="form-control">
-                                <option value="0">-- Chua xep vi tri --</option>
+                                <option value="0">-- Chưa xếp vị trí --</option>
                                 <%
                                     if (positions != null) {
                                         for (Position p : positions) {
@@ -167,9 +169,9 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="levelId">Cap bac khoi diem:</label>
+                            <label for="levelId">Cấp bậc khởi điểm:</label>
                             <select id="levelId" name="levelId" class="form-control">
-                                <option value="0">-- Chua chon cap bac --</option>
+                                <option value="0">-- Chưa chọn cấp bậc --</option>
                                 <%
                                     if (jobLevels != null) {
                                         for (JobLevel lvl : jobLevels) {
@@ -184,15 +186,15 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="hireDate">Ngay bat dau lam viec:</label>
+                        <label for="hireDate">Ngày bắt đầu làm việc:</label>
                         <input type="date" id="hireDate" name="hireDate" class="form-control">
                     </div>
                     <% } %>
 
                     <div class="form-actions">
-                        <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">Huy</a>
+                        <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">Hủy</a>
                         <button type="submit" class="btn btn-primary">
-                            <%= isEdit ? "Luu Thay Doi" : "Them Nhan Vien" %>
+                            <%= isEdit ? "Lưu Thay Đổi" : "Thêm Nhân Viên" %>
                         </button>
                     </div>
                 </form>

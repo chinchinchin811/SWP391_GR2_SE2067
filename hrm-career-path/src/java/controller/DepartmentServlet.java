@@ -160,7 +160,7 @@ public class DepartmentServlet extends HttpServlet {
         String statusStr = request.getParameter("status");
 
         if (name == null || name.trim().isEmpty()) {
-            request.setAttribute("error", "Ten phong ban khong duoc de trong!");
+            request.setAttribute("error", "Tên phòng ban không được để trống!");
             showCreateForm(request, response);
             return;
         }
@@ -179,10 +179,10 @@ public class DepartmentServlet extends HttpServlet {
 
         boolean success = departmentDAO.addDepartment(dept);
         if (success) {
-            request.getSession().setAttribute("successMessage", "Them moi phong ban thanh cong!");
+            request.getSession().setAttribute("successMessage", "Thêm mới phòng ban thành công!");
             response.sendRedirect(request.getContextPath() + "/departments");
         } else {
-            request.setAttribute("error", "Khong the them phong ban (Co the ten da ton tai)!");
+            request.setAttribute("error", "Không thể thêm phòng ban (Có thể tên đã tồn tại)!");
             request.setAttribute("department", dept);
             showCreateForm(request, response);
         }
@@ -197,7 +197,7 @@ public class DepartmentServlet extends HttpServlet {
         String statusStr = request.getParameter("status");
 
         if (idStr == null || name == null || name.trim().isEmpty()) {
-            request.setAttribute("error", "Du lieu cap nhat khong hop le!");
+            request.setAttribute("error", "Dữ liệu cập nhật không hợp lệ!");
             showEditForm(request, response);
             return;
         }
@@ -216,10 +216,10 @@ public class DepartmentServlet extends HttpServlet {
 
             boolean success = departmentDAO.updateDepartment(dept);
             if (success) {
-                request.getSession().setAttribute("successMessage", "Cap nhat phong ban thanh cong!");
+                request.getSession().setAttribute("successMessage", "Cập nhật phòng ban thành công!");
                 response.sendRedirect(request.getContextPath() + "/departments");
             } else {
-                request.setAttribute("error", "Cap nhat that bai!");
+                request.setAttribute("error", "Cập nhật thất bại!");
                 request.setAttribute("department", dept);
                 showEditForm(request, response);
             }
@@ -242,9 +242,9 @@ public class DepartmentServlet extends HttpServlet {
 
             boolean success = departmentDAO.assignManager(deptId, managerId);
             if (success) {
-                request.getSession().setAttribute("successMessage", "Gan Truong phong thanh cong!");
+                request.getSession().setAttribute("successMessage", "Gán Trưởng phòng thành công!");
             } else {
-                request.getSession().setAttribute("errorMessage", "Khong the gan Truong phong!");
+                request.getSession().setAttribute("errorMessage", "Không thể gán Trưởng phòng!");
             }
         } catch (NumberFormatException e) {
             e.printStackTrace();
@@ -259,9 +259,9 @@ public class DepartmentServlet extends HttpServlet {
             int id = Integer.parseInt(idStr);
             boolean success = departmentDAO.deleteDepartment(id);
             if (success) {
-                request.getSession().setAttribute("successMessage", "Xoa phong ban thanh cong!");
+                request.getSession().setAttribute("successMessage", "Xóa phòng ban thành công!");
             } else {
-                request.getSession().setAttribute("errorMessage", "Khong the xoa phong ban nay vi dang co rang buoc du lieu!");
+                request.getSession().setAttribute("errorMessage", "Không thể xóa phòng ban này vì đang có ràng buộc dữ liệu!");
             }
         } catch (NumberFormatException e) {
             e.printStackTrace();

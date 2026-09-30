@@ -231,7 +231,7 @@ public class UserDAO {
                     } else {
                         psHist.setNull(4, Types.INTEGER);
                     }
-                    psHist.setString(5, "Tuyen dung nhan vien moi vao he thong");
+                    psHist.setString(5, "Tuyển dụng nhân viên mới vào hệ thống");
                     if (createdBy > 0) {
                         psHist.setInt(6, createdBy);
                     } else {

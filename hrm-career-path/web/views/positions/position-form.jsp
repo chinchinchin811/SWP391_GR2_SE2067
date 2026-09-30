@@ -5,7 +5,7 @@
 <%
     Position pos = (Position) request.getAttribute("position");
     boolean isEdit = (pos != null && pos.getPositionId() > 0);
-    request.setAttribute("pageTitle", (isEdit ? "Chinh sua Vi tri" : "Tao Vi tri Moi") + " | HRM");
+    request.setAttribute("pageTitle", (isEdit ? "Chỉnh sửa Vị trí" : "Tạo Vị trí Mới") + " | HRM");
     List<Department> departments = (List<Department>) request.getAttribute("departments");
 %>
 <jsp:include page="/views/common/header.jsp" />
@@ -13,7 +13,7 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1><%= isEdit ? "Cap Nhat Vi Tri" : "Tao Vi Tri Moi" %></h1>
+        <h1><%= isEdit ? "Cập Nhật Vị Trí" : "Tạo Vị Trí Mới" %></h1>
         <div>
             <a href="<%= request.getContextPath() %>/positions" class="btn btn-secondary">
                 Quay lại danh sách
@@ -68,8 +68,8 @@
                     <div class="form-group">
                         <label for="status">Trạng Thái:</label>
                         <select id="status" name="status" class="form-control">
-                            <option value="1" <%= (pos == null || pos.isStatus()) ? "selected" : "" %>>Dang ap dung</option>
-                            <option value="0" <%= (pos != null && !pos.isStatus()) ? "selected" : "" %>>Tam khoa</option>
+                            <option value="1" <%= (pos == null || pos.isStatus()) ? "selected" : "" %>>Đang áp dụng</option>
+                            <option value="0" <%= (pos != null && !pos.isStatus()) ? "selected" : "" %>>Tạm khóa</option>
                         </select>
                     </div>
 
