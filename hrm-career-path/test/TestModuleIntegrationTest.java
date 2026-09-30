@@ -352,9 +352,14 @@ public class TestModuleIntegrationTest {
                 st.execute("CREATE DATABASE [" + database + "]");
                 created = true;
                 fixture();
-                String schema = Files.readString(Path.of("database/schema/create_tables_sqlserver.sql"), StandardCharsets.UTF_8);
+                Path schemaPath = Files.exists(Path.of("database/schema/create_tables_sqlserver.sql"))
+                        ? Path.of("database/schema/create_tables_sqlserver.sql")
+                        : Path.of("hrm-career-path/database/schema/create_tables_sqlserver.sql");
+                String schema = Files.readString(schemaPath, StandardCharsets.UTF_8);
                 int moduleStart = schema.indexOf("-- BEGIN TEST MODULE");
-                if (moduleStart < 0) throw new IllegalStateException("Missing test module schema section");
+                if (moduleStart < 0) {
+                    throw new IllegalStateException("Missing test module schema section");
+                }
                 String migration = schema.substring(moduleStart);
                 sql(migration);
                 sql(migration);
