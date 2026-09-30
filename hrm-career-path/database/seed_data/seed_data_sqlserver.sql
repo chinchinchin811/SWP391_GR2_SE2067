@@ -119,19 +119,37 @@ GO
 -- 8. SEED DATA: HỌC LIỆU & LỚP ĐÀO TẠO (LEARNING MATERIALS & TRAINING CLASSES)
 -- =======================================================
 INSERT INTO dbo.Learning_Materials 
-(title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, video_url, duration_minutes, status, created_by)
+(title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, file_size, video_url, duration_minutes, status, is_deleted, created_by, created_at, updated_at)
 VALUES 
-(N'Sổ Tay Văn Hóa & Quy Định Công Ty', 
- N'Tài liệu định hướng nhân sự mới về tầm nhìn, sứ mệnh, giá trị cốt lõi và nội quy lao động công ty.', 
- 'PDF', 'CULTURE', NULL, NULL, NULL, 'So_Tay_Van_Hoa_Doanh_Nghiep.pdf', 'application/pdf', NULL, 30, 1, 2),
+(N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty', 
+ N'Tài liệu định hướng chuẩn mực dành cho toàn bộ nhân sự mới: Tầm nhìn sứ mệnh, 5 giá trị cốt lõi, tác phong làm việc chuyên nghiệp, nội quy lao động và chính sách phúc lợi.', 
+ 'PDF', 'CULTURE', NULL, NULL, NULL, 
+ N'So_Tay_Van_Hoa_Doanh_Nghiep.pdf', 'application/pdf', 1048576, NULL, 30, 1, 0, 2, '2026-09-28 08:24:23.550', '2026-09-28 08:24:23.550'),
 
-(N'Slide Giới Thiệu Quy Trình Phát Triển Phần Mềm Scrum/Agile', 
- N'Trình chiếu tổng quan về quy trình phối hợp Agile/Scrum, các buổi lễ Sprint và trách nhiệm vị trí.', 
- 'SLIDE', 'DEPARTMENT', 1, 1, 2, 'Agile_Scrum_Onboarding.pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', NULL, 45, 1, 3),
+(N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum', 
+ N'Trình chiếu bài giảng chi tiết về quy trình vận hành Sprint, các buổi lễ Scrum (Planning, Daily Standup, Review, Retrospective), cách quản lý Task trên Jira và văn hóa phối hợp đội ngũ.', 
+ 'SLIDE', 'DEPARTMENT', 1, NULL, NULL, 
+ N'Agile_Scrum_Onboarding.pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 2097152, 'https://docs.google.com/presentation/d/1WX3Lvh6A8TqQBmbr4XyRN8SaWSsxIoQo/edit?rtpof=true', 45, 1, 0, 3, '2026-09-28 08:24:23.553', '2026-09-28 08:29:17.967'),
 
 (N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE', 
- N'Video hướng dẫn chuẩn kiến trúc MVC, vòng đời Servlet và tương tác cơ sở dữ liệu qua JDBC trong dự án doanh nghiệp.', 
- 'VIDEO', 'DEPARTMENT', 1, 1, 2, NULL, 'video/mp4', 'https://www.youtube.com/watch?v=kYJzphqI3qA', 25, 1, 3);
+ N'Khóa học video cô đọng chuẩn kiến trúc phần mềm MVC, vòng đời Servlet, Bộ lọc Filter, quản lý Session và tương tác cơ sở dữ liệu qua JDBC Transaction trong dự án doanh nghiệp thực tế.', 
+ 'VIDEO', 'DEPARTMENT', 1, NULL, NULL, 
+ NULL, 'video/mp4', NULL, 'https://www.youtube.com/watch?v=4wqMsmSEllA&t=532s', 25, 1, 0, 3, '2026-09-28 08:24:23.557', '2026-09-28 08:30:25.600'),
+
+(N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp', 
+ N'Hướng dẫn thực thi các tiêu chuẩn an toàn bảo mật thông tin nội bộ, nguyên tắc đặt mật khẩu định kỳ, bảo mật mã nguồn dự án và phòng ngừa tấn công lừa đảo qua mạng (Phishing).', 
+ 'PDF', 'CULTURE', NULL, NULL, NULL, 
+ N'GIÁO TRÌNH TRIẾT HỌC MÁC - LÊNIN - KHÔNG CHUYÊN.pdf', 'application/pdf', 10518152, NULL, 20, 1, 0, 2, '2026-09-28 08:24:23.560', '2026-09-28 08:27:09.823'),
+
+(N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026', 
+ N'Thước phim truyền thông nội bộ giới thiệu lịch sử hình thành, đội ngũ ban điều hành, giá trị con người và định hướng phát triển bền vững của công ty trong năm 2026.', 
+ 'VIDEO', 'CULTURE', NULL, NULL, NULL, 
+ NULL, 'video/mp4', NULL, 'https://www.youtube.com/watch?v=KRYONejN6SU', 15, 1, 0, 2, '2026-09-28 08:24:23.560', '2026-09-28 08:27:47.147'),
+
+(N'Bộ Tiêu Chuẩn Lập Trình Java & Quy Định Đặt Mã Nguồn (Clean Code)', 
+ N'Tài liệu quy định chi tiết về cấu trúc mã nguồn, quy chuẩn đặt tên biến/hàm/lớp, nguyên tắc SOLID, kỹ thuật xử lý ngoại lệ và viết Unit Test theo chuẩn dự án doanh nghiệp.', 
+ 'PDF', 'DEPARTMENT', 1, 1, 2, 
+ N'Java_Clean_Code_Conventions.pdf', 'application/pdf', 1258291, NULL, 40, 1, 0, 3, '2026-09-28 08:24:23.560', '2026-09-28 08:24:23.560');
 GO
 
 -- Checkpoint câu hỏi dừng trong video bài giảng
@@ -174,8 +192,8 @@ GO
 
 -- Gắn học liệu vào lớp đào tạo
 DECLARE @class_id INT = (SELECT TOP 1 class_id FROM dbo.Training_Classes WHERE class_code = 'CLS-IT-FRESHER-2026');
-DECLARE @culture_id INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Sổ Tay Văn Hóa & Quy Định Công Ty');
-DECLARE @slide_id INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Slide Giới Thiệu Quy Trình Phát Triển Phần Mềm Scrum/Agile');
+DECLARE @culture_id INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty');
+DECLARE @slide_id INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum');
 DECLARE @video_id INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE');
 
 IF @class_id IS NOT NULL AND @culture_id IS NOT NULL AND @slide_id IS NOT NULL AND @video_id IS NOT NULL
