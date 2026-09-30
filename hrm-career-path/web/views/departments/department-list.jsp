@@ -21,19 +21,19 @@
         <h1><%= (roleId == 3) ? "Thông Tin Phòng Ban Phụ Trách" : "Cơ Cấu Tổ Chức Phòng Ban" %></h1>
         <div>
             <% if (roleId == 1 || roleId == 2) { %>
-                <a href="<%= request.getContextPath() %>/departments?action=create" class="btn btn-primary">
-                    + Tạo Phòng Ban Mới
-                </a>
+            <a href="<%= request.getContextPath() %>/departments?action=create" class="btn btn-primary">
+                + Tạo Phòng Ban Mới
+            </a>
             <% } %>
         </div>
     </div>
 
     <div class="content-body">
         <% if (successMessage != null) { %>
-            <div class="alert alert-success"><%= successMessage %></div>
+        <div class="alert alert-success"><%= successMessage %></div>
         <% } %>
         <% if (errorMessage != null) { %>
-            <div class="alert alert-danger"><%= errorMessage %></div>
+        <div class="alert alert-danger"><%= errorMessage %></div>
         <% } %>
 
         <div class="card">
@@ -51,9 +51,9 @@
                             <th>Mô Tả Chức Năng</th>
                             <th>Số Nhân Sự</th>
                             <th>Trạng Thái</th>
-                            <% if (roleId == 1 || roleId == 2) { %>
-                                <th style="text-align: center; width: 140px;">Thao Tác</th>
-                            <% } %>
+                                <% if (roleId == 1 || roleId == 2) { %>
+                            <th style="text-align: center; width: 140px;">Thao Tác</th>
+                                <% } %>
                         </tr>
                     </thead>
                     <tbody>
@@ -66,19 +66,19 @@
                             <td><b><%= d.getDepartmentName() %></b></td>
                             <td>
                                 <% if (d.getManagerName() != null && !d.getManagerName().trim().isEmpty() && !"Chưa bổ nhiệm".equalsIgnoreCase(d.getManagerName().trim())) { %>
-                                    <div class="user-cell">
-                                        <div class="avatar-sm">
-                                            <%= d.getManagerName().substring(0, 1).toUpperCase() %>
-                                        </div>
-                                        <div>
-                                            <div class="user-fullname"><%= d.getManagerName() %></div>
-                                            <div class="user-sub"><span class="badge badge-manager" style="font-size: 10px; padding: 1px 6px;">Trưởng phòng</span></div>
-                                        </div>
+                                <div class="user-cell">
+                                    <div class="avatar-sm">
+                                        <%= d.getManagerName().substring(0, 1).toUpperCase() %>
                                     </div>
+                                    <div>
+                                        <div class="user-fullname"><%= d.getManagerName() %></div>
+                                        <div class="user-sub"><span class="badge badge-manager" style="font-size: 10px; padding: 1px 6px;">Trưởng phòng</span></div>
+                                    </div>
+                                </div>
                                 <% } else { %>
-                                    <span class="badge" style="background: #f1f5f9; color: #64748b; border-color: #e2e8f0;">
-                                        <i class="fa-regular fa-clock" style="font-size: 10px;"></i> Chưa bổ nhiệm
-                                    </span>
+                                <span class="badge" style="background: #f1f5f9; color: #64748b; border-color: #e2e8f0;">
+                                    <i class="fa-regular fa-clock" style="font-size: 10px;"></i> Chưa bổ nhiệm
+                                </span>
                                 <% } %>
                             </td>
                             <td><%= d.getDescription() != null ? d.getDescription() : "-" %></td>
@@ -89,26 +89,26 @@
                             </td>
                             <td>
                                 <% if (d.isStatus()) { %>
-                                    <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Hoạt động</span>
+                                <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Hoạt động</span>
                                 <% } else { %>
-                                    <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Tạm ngưng</span>
+                                <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Tạm ngưng</span>
                                 <% } %>
                             </td>
                             <% if (roleId == 1 || roleId == 2) { %>
-                                <td>
-                                    <div class="table-actions">
-                                        <a href="<%= request.getContextPath() %>/departments?action=edit&amp;id=<%= d.getDepartmentId() %>" class="btn btn-sm btn-action-edit" aria-label="Sửa phòng ban <%= d.getDepartmentName() %>">
-                                            <i class="fa-regular fa-pen-to-square"></i> <span>Sửa</span>
-                                        </a>
-                                        <form action="<%= request.getContextPath() %>/departments" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phòng ban này?');" style="margin: 0; display: inline-flex;">
-                                            <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="id" value="<%= d.getDepartmentId() %>">
-                                            <button type="submit" class="btn btn-sm btn-danger" aria-label="Xóa phòng ban <%= d.getDepartmentName() %>">
-                                                <i class="fa-regular fa-trash-can"></i> <span>Xóa</span>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
+                            <td>
+                                <div class="table-actions">
+                                    <a href="<%= request.getContextPath() %>/departments?action=edit&amp;id=<%= d.getDepartmentId() %>" class="btn btn-sm btn-action-edit" aria-label="Sửa phòng ban <%= d.getDepartmentName() %>">
+                                        <i class="fa-regular fa-pen-to-square"></i> <span>Sửa</span>
+                                    </a>
+                                    <form action="<%= request.getContextPath() %>/departments" method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa phòng ban này?');" style="margin: 0; display: inline-flex;">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<%= d.getDepartmentId() %>">
+                                        <button type="submit" class="btn btn-sm btn-danger" aria-label="Xóa phòng ban <%= d.getDepartmentName() %>">
+                                            <i class="fa-regular fa-trash-can"></i> <span>Xóa</span>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
                             <% } %>
                         </tr>
                         <%

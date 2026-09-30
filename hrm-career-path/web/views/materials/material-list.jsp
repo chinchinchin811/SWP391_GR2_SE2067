@@ -18,13 +18,13 @@
         <div class="topbar-actions">
             <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials?action=classList">Quản lý lớp đào tạo</a>
             <% if (canManage) { %>
-                <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=create">+ Thêm học liệu</a>
+            <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=create">+ Thêm học liệu</a>
             <% } %>
         </div>
     </div>
     <div class="content-body">
         <% if (successMessage != null) { %>
-            <div class="alert alert-success"><%= successMessage %></div>
+        <div class="alert alert-success"><%= successMessage %></div>
         <% } %>
 
         <div class="card">

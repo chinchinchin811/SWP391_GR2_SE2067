@@ -267,27 +267,44 @@ public final class TestDAO {
 
     /** Chỉ gọi sau khi service kiểm tra quyền bộ đề/assignment trong cùng transaction. */
     public List<TestQuestion> questions(int contentId, boolean includeKey) throws SQLException {
-        String sql = "SELECT id,prompt,option_a,option_b,option_c,option_d,"
-                + (includeKey ? "correct_option" : "CAST(NULL AS INT) AS correct_option")
-                + " FROM Test_Questions WHERE content_id=? ORDER BY id";
+        Map<Integer, List<TestQuestionOption>> options = new LinkedHashMap<>();
+        String optionSql = "SELECT q.id AS question_id,o.id,o.option_text,"
+                + (includeKey ? "o.is_correct" : "CAST(NULL AS BIT) AS is_correct")
+                + " FROM Test_Questions q JOIN Test_Question_Options o ON o.question_id=q.id"
+                + " WHERE q.content_id=? ORDER BY q.id,o.display_order,o.id";
+        try (PreparedStatement ps = prepare(optionSql, contentId); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Boolean correct = rs.getObject("is_correct") == null ? null : rs.getBoolean("is_correct");
+                options.computeIfAbsent(rs.getInt("question_id"), ignored -> new ArrayList<>())
+                        .add(new TestQuestionOption(rs.getInt("id"), rs.getString("option_text"), correct));
+            }
+        }
+
         List<TestQuestion> rows = new ArrayList<>();
-        try (PreparedStatement ps = prepare(sql, contentId); ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) rows.add(new TestQuestion(rs.getInt("id"), rs.getString("prompt"),
-                    List.of(rs.getString("option_a"),rs.getString("option_b"),rs.getString("option_c"),rs.getString("option_d")),
-                    (Integer) rs.getObject("correct_option")));
+        try (PreparedStatement ps = prepare(
+                "SELECT id,prompt,question_type FROM Test_Questions WHERE content_id=? ORDER BY id", contentId);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                int questionId = rs.getInt("id");
+                rows.add(new TestQuestion(questionId, rs.getString("prompt"),
+                        rs.getString("question_type"), options.getOrDefault(questionId, List.of())));
+            }
         }
         return rows;
     }
 
     /** Trả lựa chọn đã nộp chỉ sau khi xác minh quyền assignment ngay trong SQL. */
-    public Map<Integer,Integer> answers(TestActor actor, int id) throws SQLException {
+    public Map<Integer,Set<Integer>> answers(TestActor actor, int id) throws SQLException {
         List<Object> args = new ArrayList<>();
         String scope = assignmentScope(actor, args);
         args.add(id);
-        Map<Integer,Integer> result = new LinkedHashMap<>();
-        try (PreparedStatement ps = prepare("SELECT x.question_id,x.selected_option" + ASSIGNMENT_FROM
-                + "JOIN Test_Answers x ON x.assignment_id=a.id WHERE " + scope + " AND a.id=?", args.toArray()); ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) result.put(rs.getInt(1),rs.getInt(2));
+        Map<Integer,Set<Integer>> result = new LinkedHashMap<>();
+        try (PreparedStatement ps = prepare("SELECT x.question_id,x.option_id" + ASSIGNMENT_FROM
+                + "JOIN Test_Answer_Options x ON x.assignment_id=a.id WHERE " + scope
+                + " AND a.id=? ORDER BY x.question_id,x.option_id", args.toArray()); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                result.computeIfAbsent(rs.getInt(1), ignored -> new LinkedHashSet<>()).add(rs.getInt(2));
+            }
         }
         return result;
     }

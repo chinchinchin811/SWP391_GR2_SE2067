@@ -133,33 +133,6 @@ public final class TestService {
                 checkedDescription, type, start, end, contentId));
     }
 
-    /**
-     * Tạo đợt giao và bộ trắc nghiệm nháp trong cùng transaction. Nếu một bước
-     * lỗi thì cả hai bản ghi đều được rollback, tránh để lại bộ đề mồ côi.
-     */
-    public CreatedTemplate createTemplateWithNewQuiz(int userId, String title, String description,
-            String type, Instant start, Instant end, String quizTitle, String quizPrompt) throws SQLException {
-        final String checkedTitle = text(title, 200, true);
-        final String checkedDescription = text(description, 20000, true);
-        final String checkedQuizTitle = text(quizTitle, 200, true);
-        final String checkedQuizPrompt = text(quizPrompt, 20000, true);
-        validateTemplate(type, start, end);
-        return transaction(dao -> {
-            TestActor actor = dao.actor(userId);
-            Integer department = templateDepartment(actor, type);
-            int contentId = dao.insertId("INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by) "
-                    + "OUTPUT INSERTED.id VALUES (?,?,?,?,?,?)", checkedQuizTitle,
-                    checkedQuizPrompt, "quiz", type, department, actor.id());
-            int templateId = insertTemplate(dao, actor, checkedTitle, checkedDescription,
-                    type, start, end, contentId);
-            return new CreatedTemplate(templateId, contentId);
-        });
-    }
-
-    public record CreatedTemplate(int templateId, int contentId) {
-
-    }
-
     private void validateTemplate(String type, Instant start, Instant end) {
         if (start == null || end == null || !start.isBefore(end) || !clock.instant().isBefore(end)
                 || start.isBefore(Instant.parse("2000-01-01T00:00:00Z")) || end.isAfter(Instant.parse("2100-01-01T00:00:00Z"))) {
@@ -572,37 +545,6 @@ public final class TestService {
     }
 
     /**
-     * Tạo nội dung nháp; scope tự lấy từ quyền hiện tại, không nhận phòng từ
-     * form.
-     */
-    public int createContent(int userId, String kind, String title, String prompt) throws SQLException {
-        return createContent(userId, kind, title, prompt, null);
-    }
-
-    public int createContent(int userId, String kind, String title, String prompt, String requestedType) throws SQLException {
-        if (!"quiz".equals(kind) && !"question".equals(kind)) {
-            throw new TestException(400, "Hình thức không hợp lệ.");
-        }
-        String name = text(title, 200, true), body = text(prompt, 20000, true);
-        return transaction(dao -> {
-            TestActor actor = dao.actor(userId);
-            bankManager(actor);
-            String scopeType = requestedType == null
-                    ? (actor.cultureManager() ? "culture" : "department") : requestedType;
-            if (!"culture".equals(scopeType) && !"department".equals(scopeType)) {
-                throw new TestException(400, "Loại ngân hàng không hợp lệ.");
-            }
-            if ("culture".equals(scopeType) && !actor.cultureManager()) {
-                throw new TestException(403, "Không có quyền tạo ngân hàng văn hóa.");
-            }
-            Integer department = "department".equals(scopeType) && !actor.cultureManager()
-                    ? actor.managedDepartmentId() : null;
-            return dao.insertId("INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by) OUTPUT INSERTED.id VALUES (?,?,?,?,?,?)",
-                    name, body, kind, scopeType, department, actor.id());
-        });
-    }
-
-    /**
      * Xem kho có phân trang, không cho nhân viên dò ID lấy đáp án.
      */
     public List<TestContent> listContent(int userId, int page, int size) throws SQLException {
@@ -614,29 +556,7 @@ public final class TestService {
         });
     }
 
-    /**
-     * Xóa mềm các bộ đề được chọn; bài đã giao vẫn giữ nguyên nội dung lịch sử.
-     */
-    public void deleteContents(int userId, List<Integer> contentIds) throws SQLException {
-        if (contentIds == null || contentIds.isEmpty() || contentIds.size() > 100) {
-            throw new TestException(400, "Hãy chọn từ 1 đến 100 bộ đề để xóa.");
-        }
-        Set<Integer> ids = new LinkedHashSet<>(contentIds);
-        transaction(dao -> {
-            TestActor actor = dao.actor(userId);
-            bankManager(actor);
-            for (Integer id : ids) {
-                if (id == null || id <= 0) {
-                    throw new TestException(400, "Bộ đề không hợp lệ.");
-                }
-                dao.managedContent(actor, id);
-                changed(dao.execute("UPDATE Test_Content SET is_deleted=1 WHERE id=? AND is_deleted=0", id));
-            }
-            return null;
-        });
-    }
-
-    public record ContentDetail(TestContent content, List<TestQuestion> questions, Map<Integer, Integer> answers) {
+    public record ContentDetail(TestContent content, List<TestQuestion> questions, Map<Integer, Set<Integer>> answers) {
 
     }
 
@@ -649,91 +569,6 @@ public final class TestService {
             TestActor actor = dao.actor(userId);
             TestContent content = dao.managedContent(actor, id);
             return new ContentDetail(content, dao.questions(id, true), Map.of());
-        });
-    }
-
-    /**
-     * Thêm câu trắc nghiệm 4 lựa chọn, 1 đáp án; chỉ sửa draft, tối đa 100
-     * câu/bộ.
-     */
-    public void addQuestion(int userId, int id, String prompt, List<String> options, int correct) throws SQLException {
-        String body = text(prompt, 4000, true);
-        List<String> choices = questionOptions(options, correct);
-        transaction(dao -> {
-            TestContent content = dao.managedContent(dao.actor(userId), id);
-            if (!"draft".equals(content.status()) || !"quiz".equals(content.kind())) {
-                throw new TestException(409, "Chỉ thêm câu vào bộ trắc nghiệm nháp.");
-            }
-            if (dao.questions(id, false).size() >= 100) {
-                throw new TestException(400, "Mỗi bộ đề tối đa 100 câu.");
-            }
-            dao.execute("INSERT INTO Test_Questions(content_id,prompt,option_a,option_b,option_c,option_d,correct_option) VALUES (?,?,?,?,?,?,?)",
-                    id, body, choices.get(0), choices.get(1), choices.get(2), choices.get(3), correct);
-            return null;
-        });
-    }
-
-    /**
-     * Xóa câu nháp nhập sai; bộ ready bất biến để bài đã giao không đổi nội
-     * dung/đáp án.
-     */
-    public void removeQuestion(int userId, int id, int questionId) throws SQLException {
-        transaction(dao -> {
-            TestContent content = dao.managedContent(dao.actor(userId), id);
-            if (!"draft".equals(content.status())) {
-                throw new TestException(409, "Bộ đề sẵn sàng không được thay đổi.");
-            }
-            changed(dao.execute("DELETE FROM Test_Questions WHERE id=? AND content_id=?", questionId, id));
-            return null;
-        });
-    }
-
-    /**
-     * Sửa câu nhập sai khi bộ đề vẫn còn là bản nháp.
-     */
-    public void updateQuestion(int userId, int id, int questionId, String prompt,
-            List<String> options, int correct) throws SQLException {
-        String body = text(prompt, 4000, true);
-        List<String> choices = questionOptions(options, correct);
-        transaction(dao -> {
-            TestContent content = dao.managedContent(dao.actor(userId), id);
-            if (!"draft".equals(content.status()) || !"quiz".equals(content.kind())) {
-                throw new TestException(409, "Chỉ sửa câu trong bộ trắc nghiệm nháp.");
-            }
-            changed(dao.execute("UPDATE Test_Questions SET prompt=?,option_a=?,option_b=?,option_c=?,option_d=?,correct_option=? WHERE id=? AND content_id=?",
-                    body, choices.get(0), choices.get(1), choices.get(2), choices.get(3), correct, questionId, id));
-            return null;
-        });
-    }
-
-    private List<String> questionOptions(List<String> options, int correct) {
-        if (options == null || options.size() != 4 || correct < 0 || correct > 3) {
-            throw new TestException(400, "Cần 4 lựa chọn và 1 đáp án đúng.");
-        }
-        List<String> choices = new ArrayList<>();
-        Set<String> normalized = new HashSet<>();
-        for (String value : options) {
-            String choice = text(value, 1000, true);
-            choices.add(choice);
-            normalized.add(choice.toLowerCase(Locale.ROOT));
-        }
-        if (normalized.size() != 4) {
-            throw new TestException(400, "Bốn lựa chọn A, B, C và D phải khác nhau.");
-        }
-        return choices;
-    }
-
-    /**
-     * Chốt nội dung trước khi giao; quiz rỗng không được chuyển ready.
-     */
-    public void publishContent(int userId, int id) throws SQLException {
-        transaction(dao -> {
-            TestContent content = dao.managedContent(dao.actor(userId), id);
-            if ("quiz".equals(content.kind()) && dao.questions(id, false).isEmpty()) {
-                throw new TestException(400, "Hãy thêm ít nhất một câu trắc nghiệm.");
-            }
-            changed(dao.execute("UPDATE Test_Content SET status='ready' WHERE id=? AND status='draft'", id));
-            return null;
         });
     }
 
@@ -753,8 +588,8 @@ public final class TestService {
     }
 
     /**
-     * Người làm nhận nội dung khi đến giờ, tuyệt đối không nhận correctOption
-     * trong DTO/HTML.
+     * Người làm nhận nội dung khi đến giờ; cờ đáp án đúng trong các lựa chọn
+     * luôn bị ẩn khỏi DTO/HTML.
      */
     public ContentDetail getAssignmentContent(int userId, int id) throws SQLException {
         return transaction(dao -> {
@@ -777,11 +612,13 @@ public final class TestService {
      * Nộp quiz nguyên tử: kiểm tra đủ câu/đúng bộ, lưu lựa chọn và tính điểm
      * trên server.
      */
-    public void submitQuiz(int userId, int id, Map<Integer, Integer> answers) throws SQLException {
+    public void submitQuiz(int userId, int id, Map<Integer, Set<Integer>> answers) throws SQLException {
         if (answers == null || answers.isEmpty() || answers.size() > 100) {
             throw new TestException(400, "Hãy trả lời đầy đủ các câu hỏi.");
         }
-        Map<Integer, Integer> submitted = new LinkedHashMap<>(answers);
+        Map<Integer, Set<Integer>> submitted = new LinkedHashMap<>();
+        answers.forEach((questionId, selected) -> submitted.put(questionId,
+                selected == null ? Set.of() : new LinkedHashSet<>(selected)));
         transaction(dao -> {
             TestActor actor = dao.actor(userId);
             TestAssignment a = assignment(dao, actor, id);
@@ -799,14 +636,23 @@ public final class TestService {
             }
             int correct = 0;
             for (TestQuestion q : questions) {
-                Integer choice = submitted.get(q.id());
-                if (choice == null || choice < 0 || choice > 3) {
+                Set<Integer> choices = submitted.get(q.id());
+                Set<Integer> available = q.options().stream()
+                        .map(TestQuestionOption::id).collect(java.util.stream.Collectors.toSet());
+                if (choices == null || choices.isEmpty() || choices.size() > q.options().size()
+                        || !available.containsAll(choices)) {
                     throw new TestException(400, "Lựa chọn không hợp lệ hoặc câu hỏi không thuộc bộ đề.");
                 }
-                if (choice.equals(q.correctOption())) {
+                if (!q.multipleChoice() && choices.size() != 1) {
+                    throw new TestException(400, "Câu hỏi này chỉ được chọn một đáp án.");
+                }
+                if (choices.equals(q.correctOptionIds())) {
                     correct++;
                 }
-                dao.execute("INSERT INTO Test_Answers(assignment_id,question_id,selected_option) VALUES (?,?,?)", id, q.id(), choice);
+                for (Integer optionId : choices) {
+                    dao.execute("INSERT INTO Test_Answer_Options(assignment_id,question_id,option_id) VALUES (?,?,?)",
+                            id, q.id(), optionId);
+                }
             }
             BigDecimal score = BigDecimal.valueOf(correct * 10L).divide(BigDecimal.valueOf(questions.size()), 2, java.math.RoundingMode.HALF_UP);
             changed(dao.execute("UPDATE Test_Assignments SET status='submitted',submitted_at=?,quiz_score=? WHERE id=? AND status IN ('pending','in_progress') AND is_deleted=0", now, score, id));

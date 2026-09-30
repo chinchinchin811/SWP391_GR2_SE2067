@@ -155,56 +155,20 @@ public class TestServlet extends HttpServlet {
                 throw new TestException(403, "Phiên biểu mẫu không hợp lệ. Hãy tải lại trang rồi thử lại.");
             String action = action(req);
             String next;
-            if ("createContent".equals(action)) {
-                int id=service.createContent(userId,req.getParameter("kind"),req.getParameter("title"),req.getParameter("prompt"));
-                next="bankDetail&id="+id;
-            } else if ("deleteContents".equals(action)) {
-                String[] selected = req.getParameterValues("contentId");
-                List<Integer> ids = new ArrayList<>();
-                if (selected != null) {
-                    for (String value : selected) ids.add(integer(value));
-                }
-                service.deleteContents(userId, ids);
-                next = "bank";
-            } else if ("create".equals(action)) {
+            if ("create".equals(action)) {
                 String selected = req.getParameter("contentId");
                 Instant start = inputTime(req.getParameter("startDate"), req.getParameter("startTime"));
                 Instant end = inputTime(req.getParameter("endDate"), req.getParameter("endTime"));
-                if ("newQuiz".equals(selected)) {
-                    TestService.CreatedTemplate created = service.createTemplateWithNewQuiz(userId,
-                            req.getParameter("title"), req.getParameter("description"), req.getParameter("type"),
-                            start, end, req.getParameter("quizTitle"), req.getParameter("quizPrompt"));
-                    next = "bankDetail&id=" + created.contentId();
-                } else {
-                    Integer contentId = selected == null || selected.isBlank() ? null : integer(selected);
-                    int id = service.createTemplate(userId, req.getParameter("title"), req.getParameter("description"),
-                            req.getParameter("type"), start, end, contentId);
-                    next = "detail&id=" + id;
+                if (selected == null || selected.isBlank()) {
+                    throw new TestException(400, "Hãy chọn đề thi đã lưu trong database.");
                 }
+                int id = service.createTemplate(userId, req.getParameter("title"), req.getParameter("description"),
+                        req.getParameter("type"), start, end, integer(selected));
+                next = "detail&id=" + id;
             } else {
                 int id = integer(req.getParameter("id"));
                 next = "detail&id=" + id;
                 switch (action) {
-                    case "addQuestion": {
-                        int correct;
-                        try { correct=Integer.parseInt(req.getParameter("correct")); }
-                        catch (NumberFormatException e) { throw new TestException(400,"Đáp án đúng không hợp lệ."); }
-                        service.addQuestion(userId,id,req.getParameter("prompt"),
-                                Arrays.asList(req.getParameter("optionA"),req.getParameter("optionB"),req.getParameter("optionC"),req.getParameter("optionD")),correct);
-                        next="bankDetail&id="+id; break;
-                    }
-                    case "removeQuestion": service.removeQuestion(userId,id,integer(req.getParameter("questionId"))); next="bankDetail&id="+id; break;
-                    case "updateQuestion": {
-                        int correct;
-                        try { correct = Integer.parseInt(req.getParameter("correct")); }
-                        catch (NumberFormatException e) { throw new TestException(400, "Đáp án đúng không hợp lệ."); }
-                        service.updateQuestion(userId, id, integer(req.getParameter("questionId")),
-                                req.getParameter("prompt"), Arrays.asList(req.getParameter("optionA"),
-                                req.getParameter("optionB"), req.getParameter("optionC"), req.getParameter("optionD")), correct);
-                        next = "bankDetail&id=" + id;
-                        break;
-                    }
-                    case "publishContent": service.publishContent(userId,id); next="bankDetail&id="+id; break;
                     case "publish": service.publishTemplate(userId, id); break;
                     case "close": service.closeTemplate(userId, id); break;
                     case "archive": service.archiveTemplate(userId, id); next = "list"; break;
@@ -219,16 +183,19 @@ public class TestServlet extends HttpServlet {
                     }
                     case "start": service.startAssignment(userId, id); next = "assignment&id=" + id; break;
                     case "submitQuiz": {
-                        Map<Integer,Integer> answers=new LinkedHashMap<>();
+                        Map<Integer,Set<Integer>> answers=new LinkedHashMap<>();
                         for (String param:Collections.list(req.getParameterNames())) {
                             if (!param.startsWith("answer_")) continue;
                             String[] values=req.getParameterValues(param);
-                            if (values.length!=1) throw new TestException(400,"Mỗi câu chỉ chọn một đáp án.");
+                            if (values == null || values.length == 0 || values.length > 20)
+                                throw new TestException(400,"Số đáp án được chọn không hợp lệ.");
                             int questionId=integer(param.substring(7));
-                            int choice;
-                            try { choice=Integer.parseInt(values[0]); }
-                            catch(NumberFormatException e) { throw new TestException(400,"Lựa chọn không hợp lệ."); }
-                            if (answers.put(questionId,choice)!=null) throw new TestException(400,"Câu hỏi bị lặp.");
+                            Set<Integer> choices = new LinkedHashSet<>();
+                            for (String value : values) choices.add(integer(value));
+                            if (choices.size() != values.length)
+                                throw new TestException(400,"Lựa chọn bị lặp.");
+                            if (answers.put(questionId,choices)!=null)
+                                throw new TestException(400,"Câu hỏi bị lặp.");
                         }
                         service.submitQuiz(userId,id,answers); next="assignment&id="+id; break;
                     }

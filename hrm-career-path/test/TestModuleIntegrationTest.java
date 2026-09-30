@@ -62,6 +62,31 @@ public class TestModuleIntegrationTest {
         }
     }
 
+    private static int insertId(String sql, Object... values) throws SQLException {
+        try (Connection conn = connection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (int i = 0; i < values.length; i++) ps.setObject(i + 1, values[i]);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) throw new SQLException("Insert did not return an id");
+                return rs.getInt(1);
+            }
+        }
+    }
+
+    private static int content(String title, String type, Integer department, int creator, String status) throws SQLException {
+        return insertId("INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by,status) "
+                + "OUTPUT INSERTED.id VALUES (?,?,?,?,?,?,?)", title, "Hướng dẫn", "quiz", type, department, creator, status);
+    }
+
+    private static int question(int contentId, String prompt, String type) throws SQLException {
+        return insertId("INSERT INTO Test_Questions(content_id,prompt,question_type) OUTPUT INSERTED.id VALUES (?,?,?)",
+                contentId, prompt, type);
+    }
+
+    private static int option(int questionId, String text, boolean correct, int order) throws SQLException {
+        return insertId("INSERT INTO Test_Question_Options(question_id,option_text,is_correct,display_order) "
+                + "OUTPUT INSERTED.id VALUES (?,?,?,?)", questionId, text, correct, order);
+    }
+
     private static void check(boolean condition, String label) {
         if (!condition) {
             throw new AssertionError(label);
@@ -87,14 +112,25 @@ public class TestModuleIntegrationTest {
      */
     private static void fixture() throws SQLException {
         sql("CREATE TABLE Roles(role_id INT PRIMARY KEY,role_name VARCHAR(50)); "
-                + "CREATE TABLE Departments(department_id INT PRIMARY KEY,manager_id INT,status BIT,is_deleted BIT); "
-                + "CREATE TABLE Users(user_id INT PRIMARY KEY,full_name NVARCHAR(100),role_id INT REFERENCES Roles(role_id),"
+                + "CREATE TABLE Departments(department_id INT PRIMARY KEY,department_name NVARCHAR(100),manager_id INT,status BIT,is_deleted BIT); "
+                + "CREATE TABLE Users(user_id INT PRIMARY KEY,username VARCHAR(50),full_name NVARCHAR(100),role_id INT REFERENCES Roles(role_id),"
                 + "department_id INT REFERENCES Departments(department_id),status BIT,is_deleted BIT); "
                 + "INSERT INTO Roles VALUES (1,'ADMIN'),(2,'HR'),(3,'MANAGER'),(4,'EMPLOYEE'); "
-                + "INSERT INTO Departments VALUES (1,3,1,0),(2,5,1,0); "
-                + "INSERT INTO Users VALUES (1,N'Admin',1,NULL,1,0),(2,N'HR',2,NULL,1,0),"
-                + "(3,N'Leader A',3,1,1,0),(4,N'Member A',4,1,1,0),(5,N'Leader B',3,2,1,0),"
-                + "(6,N'Member B',4,2,1,0),(7,N'Member A2',4,1,1,0),(8,N'No department',4,NULL,1,0);");
+                + "INSERT INTO Departments VALUES (1,N'Phòng Kỹ Thuật (IT)',3,1,0),(2,N'Phòng Nhân Sự (HR)',5,1,0); "
+                + "INSERT INTO Users VALUES (1,'admin',N'Admin',1,NULL,1,0),(2,'hr_manager',N'HR',2,NULL,1,0),"
+                + "(3,'manager_it',N'Leader A',3,1,1,0),(4,'member_a',N'Member A',4,1,1,0),(5,'manager_b',N'Leader B',3,2,1,0),"
+                + "(6,'member_b',N'Member B',4,2,1,0),(7,'member_a2',N'Member A2',4,1,1,0),(8,'no_department',N'No department',4,NULL,1,0); "
+                + "CREATE TABLE Test_Content(id INT IDENTITY PRIMARY KEY,title NVARCHAR(200) NOT NULL,prompt NVARCHAR(MAX) NOT NULL,"
+                + "kind VARCHAR(20) NOT NULL,type VARCHAR(20) NOT NULL,department_id INT NULL REFERENCES Departments(department_id),"
+                + "created_by INT NOT NULL REFERENCES Users(user_id),status VARCHAR(20) NOT NULL DEFAULT 'draft',is_deleted BIT NOT NULL DEFAULT 0,"
+                + "created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()); "
+                + "CREATE TABLE Test_Questions(id INT IDENTITY PRIMARY KEY,content_id INT NOT NULL REFERENCES Test_Content(id),"
+                + "prompt NVARCHAR(4000) NOT NULL,option_a NVARCHAR(1000) NOT NULL,option_b NVARCHAR(1000) NOT NULL,"
+                + "option_c NVARCHAR(1000) NOT NULL,option_d NVARCHAR(1000) NOT NULL,correct_option INT NOT NULL); "
+                + "INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by,status,is_deleted) "
+                + "VALUES(N'Legacy',N'Legacy','quiz','department',1,3,'ready',1); "
+                + "INSERT INTO Test_Questions(content_id,prompt,option_a,option_b,option_c,option_d,correct_option) "
+                + "VALUES(1,N'Câu hỏi cũ',N'A',N'B',N'C',N'D',2);");
     }
 
     /**
@@ -257,86 +293,71 @@ public class TestModuleIntegrationTest {
     }
 
     /**
-     * Kiểm tra kho, khóa nội dung, chọn đúng phạm vi và không lộ/nhận đáp án
-     * đúng từ client.
+     * Kiểm tra kho đề chỉ đọc từ database, số lựa chọn linh hoạt, câu đúng/sai,
+     * câu nhiều đáp án và việc không làm lộ đáp án cho người thi.
      */
     private static void runQuestionTests() throws Exception {
         sql("UPDATE Users SET department_id=1 WHERE user_id=4; UPDATE Users SET status=1 WHERE user_id=6;");
         TestService s = service(NOW);
-        rejects(403, () -> s.createContent(7, "quiz", "x", "y"));
-        rejects(400, () -> s.createContent(3, "invalid", "x", "y"));
-        int disposable = s.createContent(3, "quiz", "Bộ đề xóa", "Không còn sử dụng");
-        s.deleteContents(3, List.of(disposable));
-        rejects(404, () -> s.getContent(3, disposable));
-        rejects(400, () -> s.deleteContents(3, List.of()));
-        int quiz = s.createContent(3, "quiz", "Bộ kiến thức", "Chọn một đáp án"), essay = s.createContent(3, "question", "Câu tự luận", "Mô tả cách xử lý tình huống");
-        int culture = s.createContent(2, "question", "Văn hóa", "Giá trị cốt lõi"), draft = s.createContent(3, "question", "Nháp", "Chưa sẵn sàng");
-        rejects(400, () -> s.publishContent(3, quiz));
-        rejects(400, () -> s.addQuestion(3, quiz, "Q", List.of("A", "A", "C", "D"), 0));
-        rejects(400, () -> s.addQuestion(3, quiz, "Q", List.of("A", "a", "C", "D"), 0));
-        rejects(400, () -> s.addQuestion(3, quiz, "Q", List.of("A", "B", "C", "D"), 4));
-        for (int i = 0; i < 3; i++) {
-            s.addQuestion(3, quiz, "Câu " + i, List.of("A", "B", "C", "D"), i);
-        }
-        s.addQuestion(3, quiz, "Câu xóa", List.of("A", "B", "C", "D"), 0);
-        int edited = s.getContent(3, quiz).questions().get(0).id();
-        s.updateQuestion(3, quiz, edited, "Câu đã sửa", List.of("A1", "B1", "C1", "D1"), 0);
-        check(s.getContent(3, quiz).questions().get(0).prompt().equals("Câu đã sửa"), "edit draft question");
-        int removed = s.getContent(3, quiz).questions().get(3).id();
-        s.removeQuestion(3, quiz, removed);
-        check(s.getContent(3, quiz).questions().size() == 3, "remove only draft question");
-        s.publishContent(3, quiz);
-        s.publishContent(3, essay);
-        s.publishContent(2, culture);
-        rejects(409, () -> s.addQuestion(3, quiz, "Q", List.of("A", "B", "C", "D"), 0));
-        rejects(409, () -> s.updateQuestion(3, quiz, edited, "Q", List.of("A", "B", "C", "D"), 0));
-        rejects(409, () -> s.removeQuestion(3, quiz, s.getContent(3, quiz).questions().get(0).id()));
+
+        int quiz = content("Đề chuyên môn", "department", 1, 3, "ready");
+        int draft = content("Đề nháp", "department", 1, 3, "draft");
+        int culture = content("Đề văn hóa", "culture", null, 2, "ready");
+
+        int trueFalse = question(quiz, "PreparedStatement giúp chống SQL Injection.", "true_false");
+        int tfTrue = option(trueFalse, "Đúng", true, 1);
+        option(trueFalse, "Sai", false, 2);
+
+        int multiple = question(quiz, "Chọn đúng ba thực hành tốt.", "multiple");
+        int multiA = option(multiple, "PreparedStatement", true, 1);
+        int multiB = option(multiple, "Try-with-resources", true, 2);
+        int multiC = option(multiple, "Tách service", true, 3);
+        option(multiple, "Hard-code password", false, 4);
+        int multiWrong = option(multiple, "Nuốt exception", false, 5);
+
+        int sixChoices = question(quiz, "HTTP nào là Created?", "single");
+        option(sixChoices, "200", false, 1);
+        int created = option(sixChoices, "201", true, 2);
+        option(sixChoices, "204", false, 3);
+        option(sixChoices, "400", false, 4);
+        option(sixChoices, "404", false, 5);
+        option(sixChoices, "500", false, 6);
+
+        check(s.getContent(3, quiz).questions().get(2).options().size() == 6, "question supports more than four options");
+        check(s.getContent(3, quiz).questions().get(1).correctOptionIds().size() == 3, "question supports three correct options");
         rejects(403, () -> s.listContent(4, 1, 20));
-        rejects(404, () -> s.getContent(4, quiz));
         rejects(404, () -> s.getContent(5, quiz));
-        int t = s.createTemplate(3, "Đợt quiz", "Hướng dẫn", "department", NOW, NOW.plusSeconds(3600));
+
+        int t = s.createTemplate(3, "Đợt quiz", "Hướng dẫn", "department", NOW, NOW.plusSeconds(3600), quiz);
         s.publishTemplate(3, t);
-        check(s.getContentChoices(3, t).size() == 2, "only ready matching content shown");
+        check(s.getContentChoices(3, t).size() == 1, "only ready professional content shown");
         rejects(409, () -> s.assignTest(3, t, List.of(7), draft));
         rejects(404, () -> s.assignTest(3, t, List.of(7), culture));
         s.assignTest(3, t, List.of(7), quiz);
-        s.assignTest(3, t, List.of(4), essay);
-        int a = assignment(t, 7), e = assignment(t, 4);
-        check(s.getAssignment(7, a).contentId() == quiz, "assignment keeps chosen quiz");
+        int a = assignment(t, 7);
         TestService.ContentDetail student = s.getAssignmentContent(7, a);
-        check(student.questions().stream().allMatch(q -> q.correctOption() == null), "student DTO has no answer keys");
-        check(s.getAssignmentContent(3, a).questions().stream().allMatch(q -> q.correctOption() != null), "manager can inspect keys");
-        rejects(404, () -> s.getAssignmentContent(4, a));
-        rejects(400, () -> s.submitAssignment(7, a, "bypass", null, null));
-        Map<Integer, Integer> answers = new LinkedHashMap<>();
-        for (TestQuestion q : student.questions()) {
-            answers.put(q.id(), 0);
-        }
-        Map<Integer, Integer> missing = new LinkedHashMap<>(answers);
-        missing.remove(student.questions().get(2).id());
+        check(student.questions().stream().flatMap(q -> q.options().stream()).allMatch(o -> o.correct() == null),
+                "student DTO has no answer keys");
+        check(s.getAssignmentContent(3, a).questions().stream().allMatch(q -> !q.correctOptionIds().isEmpty()),
+                "manager can inspect answer keys");
+
+        Map<Integer, Set<Integer>> answers = new LinkedHashMap<>();
+        answers.put(trueFalse, Set.of(tfTrue));
+        answers.put(multiple, Set.of(multiA, multiB, multiWrong)); // Sai một lựa chọn.
+        answers.put(sixChoices, Set.of(created));
+        Map<Integer, Set<Integer>> missing = new LinkedHashMap<>(answers);
+        missing.remove(sixChoices);
         rejects(400, () -> s.submitQuiz(7, a, missing));
-        Map<Integer, Integer> foreign = new LinkedHashMap<>(missing);
-        foreign.put(removed, 0);
-        rejects(400, () -> s.submitQuiz(7, a, foreign));
-        check(count("SELECT COUNT(*) FROM Test_Answers WHERE assignment_id=" + a) == 0, "invalid question rolls back partial answers");
-        answers.put(student.questions().get(1).id(), 1); // 2/3 đúng.
+        check(count("SELECT COUNT(*) FROM Test_Answer_Options WHERE assignment_id=" + a) == 0,
+                "invalid submission rolls back all selected options");
+
         s.submitQuiz(7, a, answers);
-        check(s.getAssignment(7, a).quizScore().compareTo(new BigDecimal("6.67")) == 0, "server calculates rounded score");
-        check(s.getAssignment(7, a).status().equals("submitted"), "quiz waits for manager confirmation");
-        check(s.getAssignmentContent(7, a).answers().equals(answers), "saved choices roundtrip");
+        check(s.getAssignment(7, a).quizScore().compareTo(new BigDecimal("6.67")) == 0,
+                "server scores exact answer sets");
+        check(s.getAssignmentContent(7, a).answers().equals(answers), "multiple selections roundtrip");
         rejects(409, () -> s.submitQuiz(7, a, answers));
-        s.submitAssignment(4, e, "Bài tự luận", null, null);
-        check(s.getAssignmentContent(4, e).content().prompt().contains("tình huống"), "essay keeps selected question");
-        rejects(409, () -> s.submitQuiz(4, e, answers));
         s.evaluateAssignment(3, a, new BigDecimal("6.67"), "Xác nhận kết quả");
         check(s.getAssignment(7, a).evaluation() != null, "manager confirms quiz grade");
-        int later = s.createTemplate(3, "Lịch tới", "x", "department", NOW.plusSeconds(100), NOW.plusSeconds(200));
-        s.publishTemplate(3, later);
-        s.assignTest(3, later, List.of(7), quiz);
-        int pending = assignment(later, 7);
-        check(s.getAssignmentContent(7, pending) == null, "questions hidden until start");
-        rejects(409, () -> s.submitQuiz(7, pending, answers));
-        check(s.getAssignmentContent(3, pending) != null, "manager can review before start");
     }
 
     /**
@@ -363,8 +384,25 @@ public class TestModuleIntegrationTest {
                 String migration = schema.substring(moduleStart);
                 sql(migration);
                 sql(migration);
+                check(count("SELECT COUNT(*) FROM Test_Question_Options WHERE question_id=1") == 4,
+                        "legacy four-column questions migrate exactly once");
                 runTests();
                 runQuestionTests();
+                Path seedPath = Files.exists(Path.of("database/seed_data/seed_data_sqlserver.sql"))
+                        ? Path.of("database/seed_data/seed_data_sqlserver.sql")
+                        : Path.of("hrm-career-path/database/seed_data/seed_data_sqlserver.sql");
+                String seed = Files.readString(seedPath, StandardCharsets.UTF_8);
+                int seedStart = seed.indexOf("-- 8. SEED DATA: KHO ĐỀ THI");
+                int seedEnd = seed.indexOf("\nGO", seedStart);
+                if (seedStart < 0 || seedEnd < 0) throw new IllegalStateException("Missing test question seed section");
+                String testSeed = seed.substring(seedStart, seedEnd);
+                sql(testSeed);
+                sql(testSeed);
+                check(count("SELECT COUNT(*) FROM Test_Content WHERE title IN (N'Đề thi Văn hóa doanh nghiệp',N'Đề thi Chuyên môn Java Backend')") == 2,
+                        "question seed is idempotent");
+                check(count("SELECT COUNT(*) FROM Test_Questions q JOIN Test_Content c ON c.id=q.content_id "
+                        + "WHERE c.title IN (N'Đề thi Văn hóa doanh nghiệp',N'Đề thi Chuyên môn Java Backend')") == 20,
+                        "question seed creates both exam directions");
                 System.out.println("PASS: " + assertions + " assertions on isolated SQL Server database.");
             } finally {
                 if (created && database.matches("HRM_TestModule_it_[a-f0-9]{32}")) {
