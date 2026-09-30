@@ -14,6 +14,13 @@
         <h1><%= isEdit ? "Cập Nhật Học Liệu" : "Thêm Học Liệu" %></h1>
         <div class="topbar-actions">
             <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials">Quay lại kho học liệu</a>
+            <% if (isEdit) { %>
+            <form method="post" action="<%= request.getContextPath() %>/materials" style="display:inline-flex;margin:0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa học liệu này?')">
+                <input type="hidden" name="action" value="deleteMaterial">
+                <input type="hidden" name="id" value="<%= material.getMaterialId() %>">
+                <button type="submit" class="btn btn-danger">Xóa học liệu</button>
+            </form>
+            <% } %>
         </div>
     </div>
     <div class="content-body">
@@ -84,10 +91,9 @@
                         <label>Liên kết xem trực tuyến</label>
                         <input class="form-control" name="videoUrl"
                                value="<%= material != null && material.getVideoUrl() != null ? material.getVideoUrl() : "" %>"
-                               placeholder="YouTube, Google Slides, Google Drive, Office Online hoặc URL MP4">
+                               placeholder="URL PDF trực tuyến, Google Drive, Google Slides, YouTube hoặc Office Online">
                         <div style="font-size:11.5px;color:#777;margin-top:5px;line-height:1.6">
-                            Slide .ppt/.pptx tải lên từ máy không thể được trình duyệt render trực tiếp.
-                            Để xem trên web, hãy dán liên kết công khai Google Slides, Google Drive hoặc Office Online.
+                            Hỗ trợ: Link PDF trực tiếp (.pdf), Google Drive (tự động chuyển sang xem preview), Google Slides, YouTube hoặc Office Online.
                         </div>
                     </div>
 

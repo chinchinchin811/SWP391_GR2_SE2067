@@ -177,7 +177,17 @@ public class MaterialDAO {
 
     public List<LearningMaterial> getClassMaterials(int id) {
         List<LearningMaterial> out = new ArrayList<LearningMaterial>();
-        String sql = "SELECT m.*,cm.order_index,cm.is_mandatory FROM Class_Materials cm JOIN Learning_Materials m ON m.material_id=cm.material_id WHERE cm.class_id=? AND m.is_deleted=0 ORDER BY cm.order_index";
+        String sql = "SELECT m.*, d.department_name, p.position_name, l.level_name, u.full_name creator_name, "
+                + "(SELECT COUNT(*) FROM Video_Checkpoints v WHERE v.material_id = m.material_id) checkpoint_count, "
+                + "cm.order_index, cm.is_mandatory "
+                + "FROM Class_Materials cm "
+                + "JOIN Learning_Materials m ON m.material_id = cm.material_id "
+                + "LEFT JOIN Departments d ON d.department_id = m.department_id "
+                + "LEFT JOIN Positions p ON p.position_id = m.position_id "
+                + "LEFT JOIN Job_Levels l ON l.level_id = m.level_id "
+                + "LEFT JOIN Users u ON u.user_id = m.created_by "
+                + "WHERE cm.class_id = ? AND m.is_deleted = 0 "
+                + "ORDER BY cm.order_index";
         try (Connection c = DBContext.getInstance().getConnection(); PreparedStatement p = c.prepareStatement(sql)) {
             p.setInt(1, id);
             try (ResultSet r = p.executeQuery()) {
@@ -248,6 +258,35 @@ public class MaterialDAO {
                 p.addBatch();
             }
             p.executeBatch();
+        }
+    }
+
+    public boolean addMaterialToClass(int classId, int materialId) {
+        String sql = "IF NOT EXISTS (SELECT 1 FROM Class_Materials WHERE class_id = ? AND material_id = ?) "
+                + "INSERT INTO Class_Materials(class_id, material_id, order_index, is_mandatory) "
+                + "SELECT ?, ?, ISNULL(MAX(order_index), 0) + 1, 1 FROM Class_Materials WHERE class_id = ?";
+        try (Connection c = DBContext.getInstance().getConnection(); PreparedStatement p = c.prepareStatement(sql)) {
+            p.setInt(1, classId);
+            p.setInt(2, materialId);
+            p.setInt(3, classId);
+            p.setInt(4, materialId);
+            p.setInt(5, classId);
+            return p.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean removeMaterialFromClass(int classId, int materialId) {
+        String sql = "DELETE FROM Class_Materials WHERE class_id = ? AND material_id = ?";
+        try (Connection c = DBContext.getInstance().getConnection(); PreparedStatement p = c.prepareStatement(sql)) {
+            p.setInt(1, classId);
+            p.setInt(2, materialId);
+            return p.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 
@@ -454,15 +493,28 @@ public class MaterialDAO {
         m.setDepartmentId((Integer) r.getObject("department_id"));
         m.setPositionId((Integer) r.getObject("position_id"));
         m.setLevelId((Integer) r.getObject("level_id"));
-        m.setDepartmentName(r.getString("department_name"));
-        m.setPositionName(r.getString("position_name"));
-        m.setLevelName(r.getString("level_name"));
+        try {
+            m.setDepartmentName(r.getString("department_name"));
+        } catch (SQLException ignored) {
+        }
+        try {
+            m.setPositionName(r.getString("position_name"));
+        } catch (SQLException ignored) {
+        }
+        try {
+            m.setLevelName(r.getString("level_name"));
+        } catch (SQLException ignored) {
+        }
         m.setFileName(r.getString("file_name"));
         m.setFileType(r.getString("file_type"));
         m.setVideoUrl(r.getString("video_url"));
         m.setDurationMinutes(r.getInt("duration_minutes"));
         m.setStatus(r.getBoolean("status"));
         m.setCreatedBy(r.getInt("created_by"));
+        try {
+            m.setCreatorName(r.getString("creator_name"));
+        } catch (SQLException ignored) {
+        }
         try {
             m.setCheckpointCount(r.getInt("checkpoint_count"));
             m.setUserProgressStatus(r.getString("user_progress_status"));
