@@ -259,6 +259,24 @@ public class LearningMaterial implements Serializable {
                 int q = id.indexOf('?');
                 return q != -1 ? id.substring(0, q) : id;
             }
+        } else if (videoUrl.contains("/embed/")) {
+            String[] parts = videoUrl.split("/embed/");
+            if (parts.length > 1) {
+                String id = parts[1];
+                int q = id.indexOf('?');
+                int amp = id.indexOf('&');
+                int cut = (q != -1 && amp != -1) ? Math.min(q, amp) : (q != -1 ? q : amp);
+                return cut != -1 ? id.substring(0, cut) : id;
+            }
+        } else if (videoUrl.contains("/shorts/")) {
+            String[] parts = videoUrl.split("/shorts/");
+            if (parts.length > 1) {
+                String id = parts[1];
+                int q = id.indexOf('?');
+                int amp = id.indexOf('&');
+                int cut = (q != -1 && amp != -1) ? Math.min(q, amp) : (q != -1 ? q : amp);
+                return cut != -1 ? id.substring(0, cut) : id;
+            }
         }
         return null;
     }
@@ -279,5 +297,51 @@ public class LearningMaterial implements Serializable {
                     + URLEncoder.encode(url, StandardCharsets.UTF_8);
         }
         return url;
+    }
+
+    /** Returns a browser-friendly embed URL for public PDF online links (Google Drive, Docs, direct PDF). */
+    public String getPdfEmbedUrl() {
+        if (videoUrl == null || videoUrl.trim().isEmpty()) {
+            return null;
+        }
+        String url = videoUrl.trim();
+        // Google Drive /file/d/{id}/...
+        if (url.contains("drive.google.com/file/d/")) {
+            int start = url.indexOf("/file/d/") + 8;
+            int end = url.indexOf('/', start);
+            String fileId = end != -1 ? url.substring(start, end) : url.substring(start);
+            int q = fileId.indexOf('?');
+            if (q != -1) fileId = fileId.substring(0, q);
+            return "https://drive.google.com/file/d/" + fileId + "/preview";
+        }
+        // Google Drive id=...
+        if (url.contains("drive.google.com") && url.contains("id=")) {
+            int start = url.indexOf("id=") + 3;
+            String fileId = url.substring(start);
+            int amp = fileId.indexOf('&');
+            if (amp != -1) fileId = fileId.substring(0, amp);
+            return "https://drive.google.com/file/d/" + fileId + "/preview";
+        }
+        // Google Docs link
+        if (url.contains("docs.google.com/document/")) {
+            return url.replaceFirst("/(edit|view)(\\?.*)?$", "/preview");
+        }
+        // Office / OneDrive link
+        if (url.contains("view.officeapps.live.com") || url.contains("office.com")) {
+            return url;
+        }
+        return url;
+    }
+
+    /** Returns Google Docs Viewer embed URL as a reliable cross-origin fallback for web PDFs. */
+    public String getGoogleDocsViewerUrl() {
+        if (videoUrl == null || videoUrl.trim().isEmpty()) {
+            return null;
+        }
+        String url = videoUrl.trim();
+        if (url.contains("drive.google.com") || url.contains("docs.google.com")) {
+            return getPdfEmbedUrl();
+        }
+        return "https://docs.google.com/viewer?url=" + URLEncoder.encode(url, StandardCharsets.UTF_8) + "&embedded=true";
     }
 }

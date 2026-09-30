@@ -35,11 +35,11 @@
             <div class="card-body" style="padding:0">
                 <table class="data-table">
                     <colgroup>
-                        <col style="width:44%">
+                        <col style="width:40%">
                         <col style="width:10%">
                         <col style="width:13%">
                         <col style="width:13%">
-                        <col style="width:20%">
+                        <col style="width:24%">
                     </colgroup>
                     <thead>
                         <tr>
@@ -68,6 +68,11 @@
                                     <a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=view&id=<%= m.getMaterialId() %>">Xem</a>
                                     <% if (canManage) { %>
                                     <a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=edit&id=<%= m.getMaterialId() %>">Sửa</a>
+                                    <form method="post" action="<%= request.getContextPath() %>/materials" style="display:inline-flex;margin:0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa học liệu này?')">
+                                        <input type="hidden" name="action" value="deleteMaterial">
+                                        <input type="hidden" name="id" value="<%= m.getMaterialId() %>">
+                                        <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
+                                    </form>
                                     <% } %>
                                 </div>
                             </td>
