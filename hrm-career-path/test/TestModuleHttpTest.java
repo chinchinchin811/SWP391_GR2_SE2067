@@ -19,6 +19,15 @@ public class TestModuleHttpTest {
 
     private static URI origin;
     private static int assertions;
+    private static int quizContentId;
+    private static int essayContentId;
+    private static int cultureContentId;
+    private static int trueFalseQuestionId;
+    private static int trueOptionId;
+    private static int multipleQuestionId;
+    private static int multipleOptionA;
+    private static int multipleOptionB;
+    private static int multipleOptionC;
 
     private static void check(boolean ok, String message) {
         if (!ok) {
@@ -70,6 +79,16 @@ public class TestModuleHttpTest {
         }
     }
 
+    private static int insertId(Connection conn, String sql, Object... values) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (int i = 0; i < values.length; i++) ps.setObject(i + 1, values[i]);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getInt(1);
+            }
+        }
+    }
+
     private static String assignmentId(Connection conn, String template) throws SQLException {
         try (Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT id FROM Test_Assignments WHERE test_template_id=" + Integer.parseInt(template))) {
             rs.next();
@@ -84,7 +103,31 @@ public class TestModuleHttpTest {
     private static void run(Connection conn) throws Exception {
         HttpClient anonymous = HttpClient.newHttpClient();
         check(get(anonymous, "/hrm/tests").statusCode() == 302, "unauthenticated redirect");
-        HttpClient manager = login("leader"), member = login("member"), outsider = login("outsider");
+        HttpClient manager = login("leader"), member = login("member"), outsider = login("outsider"),
+                adminClient = login("admin"), hrClient = login("hr");
+        HttpResponse<String> adminForm = get(adminClient, "/hrm/tests?action=new");
+        check(adminForm.statusCode() == 200 && adminForm.body().contains("value=\"culture\"")
+                && !adminForm.body().contains("value=\"department\""), "ADMIN create form only shows culture type");
+        String adminToken = csrf(adminForm.body());
+        check(post(adminClient, "/hrm/tests", "csrf", adminToken, "action", "create", "title", "Không hợp lệ",
+                "description", "Chuyên môn", "type", "department", "contentId", String.valueOf(essayContentId),
+                "startDate", LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(1).toString(), "startTime", "08:00",
+                "endDate", LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(1).toString(), "endTime", "09:00").statusCode() == 403,
+                "ADMIN department template rejected by server");
+        String adminBank = get(adminClient, "/hrm/tests?action=bank").body();
+        check(adminBank.contains("Đề Văn hóa HTTP") && !adminBank.contains("Bộ đề HTTP")
+                && !adminBank.contains("Đề thi Chuyên môn"), "ADMIN bank only shows culture content");
+        int hrTemplate = insertId(conn, "INSERT INTO Test_Templates(title,description,type,department_id,created_by,status,start_time,end_time,default_content_id) "
+                + "OUTPUT INSERTED.id VALUES (N'Bài cho HR',N'Kiểm tra quyền chấm','culture',NULL,4,'published',DATEADD(MINUTE,-1,SYSUTCDATETIME()),DATEADD(HOUR,1,SYSUTCDATETIME()),?)",
+                cultureContentId);
+        int hrAssignment = insertId(conn, "INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id,status,submitted_at,submission_content) "
+                + "OUTPUT INSERTED.id VALUES (?,5,4,?,'submitted',SYSUTCDATETIME(),N'Bài làm HR')", hrTemplate, cultureContentId);
+        HttpResponse<String> hrOwnPage = get(hrClient, "/hrm/tests?action=assignment&id=" + hrAssignment);
+        check(hrOwnPage.statusCode() == 200 && !hrOwnPage.body().contains("Đánh giá bài làm"),
+                "HR self assignment does not render evaluation form");
+        String hrToken = csrf(get(hrClient, "/hrm/tests?action=new").body());
+        check(post(hrClient, "/hrm/tests", "csrf", hrToken, "action", "evaluate", "id", String.valueOf(hrAssignment),
+                "score", "9", "comment", "Tự chấm").statusCode() == 403, "HR self evaluation rejected by server");
         HttpResponse<String> form = get(manager, "/hrm/tests?action=new");
         check(form.statusCode() == 200, "render create form");
         String token = csrf(form.body());
@@ -95,18 +138,42 @@ public class TestModuleHttpTest {
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
         String title = "Đề tiếng Việt <script>alert(1)</script>";
         String template = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", title, "description", "Yêu cầu <img src=x onerror=alert(1)>",
-                "type", "department", "startDate", now.minusMinutes(10).format(dateFmt), "startTime", now.minusMinutes(10).format(timeFmt),
+                "type", "department", "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
+        execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + template);
         check(get(member, "/hrm/tests?action=detail&id=" + template).statusCode() == 404, "draft inaccessible to member");
         check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", template).statusCode() == 303, "publish form");
+        HttpResponse<String> listPage = get(manager, "/hrm/tests");
+        check(listPage.statusCode() == 200 && listPage.body().contains("&lt;script&gt;"), "title HTML escaped in list");
+        check(!listPage.body().contains("<script>alert(1)</script>"), "no raw script in title");
         HttpResponse<String> detail = get(manager, "/hrm/tests?action=detail&id=" + template);
-        check(detail.statusCode() == 200 && detail.body().contains("&lt;script&gt;"), "title HTML escaped");
-        check(!detail.body().contains("<script>alert(1)</script>"), "no raw script in title");
+        check(detail.statusCode() == 200 && !detail.body().contains("&lt;script&gt;")
+                && !detail.body().contains("Yêu cầu &lt;img"), "template summary block removed from detail page");
+        check(detail.body().contains("Member") && !detail.body().contains("Outsider") && !detail.body().contains("Administrator"),
+                "MANAGER candidate list only contains employees in managed department");
+        check(!detail.body().contains("value=\"archive\"") && !detail.body().contains("Lưu trữ đề"),
+                "template archive action removed");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "archive", "id", template).statusCode() == 400,
+                "removed archive endpoint rejected");
         check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", template, "assigneeId", "2").statusCode() == 303, "assign form");
         String assignment = assignmentId(conn, template);
+        HttpResponse<String> pendingDetail = get(manager, "/hrm/tests?action=detail&id=" + template);
+        check(pendingDetail.statusCode() == 200 && pendingDetail.body().contains("Member")
+                && pendingDetail.body().contains("Chưa làm")
+                && pendingDetail.body().contains("Đánh giá chuyên môn")
+                && pendingDetail.body().contains("Câu tình huống")
+                && pendingDetail.body().contains("Bắt đầu") && pendingDetail.body().contains("Kết thúc"),
+                "manager detail reports pending assignee with scope, content and schedule");
         HttpResponse<String> mine = get(member, "/hrm/tests?action=assignment&id=" + assignment);
-        check(mine.statusCode() == 200 && mine.body().contains("multipart/form-data"), "render submission form");
+        check(mine.statusCode() == 200 && mine.body().contains("Chưa làm")
+                && mine.body().contains("Bắt đầu làm") && !mine.body().contains("multipart/form-data"),
+                "pending assignment only renders start action");
         String memberToken = csrf(mine.body());
+        check(post(member, "/hrm/tests", "csrf", memberToken, "action", "start", "id", assignment).statusCode() == 303,
+                "start assignment");
+        mine = get(member, "/hrm/tests?action=assignment&id=" + assignment);
+        check(mine.body().contains("multipart/form-data") && !mine.body().contains("Bắt đầu làm")
+                && !mine.body().contains("Thu hồi bài chưa bắt đầu"), "started assignment only renders submission form");
         check(get(outsider, "/hrm/tests?action=assignment&id=" + assignment).statusCode() == 404, "assignment IDOR blocked");
         check(get(member, "/hrm/WEB-INF/views/tests/index.jsp").statusCode() == 404, "JSP direct access blocked");
         String boundary = "hrm-boundary-" + UUID.randomUUID();
@@ -139,43 +206,54 @@ public class TestModuleHttpTest {
         check(get(member, "/hrm/tests?action=calendar&from=invalid&to=invalid").statusCode() == 400, "invalid date returns 400");
         check(get(manager, "/hrm/tests?action=bank").statusCode() == 200, "bank management page renders");
         check(get(member, "/hrm/tests?action=bank").statusCode() == 403, "member cannot browse bank");
-        String quiz = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create",
-                "title", "Đợt tạo kèm bộ đề", "description", "Tạo trắc nghiệm trong đợt giao",
-                "type", "department", "contentId", "newQuiz", "quizTitle", "Bộ đề mới", "quizPrompt", "Chọn đáp án",
-                "startDate", now.minusMinutes(10).format(dateFmt), "startTime", now.minusMinutes(10).format(timeFmt),
-                "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
-        check(get(manager, "/hrm/tests?action=bankDetail&id=" + quiz).statusCode() == 200, "bank detail JSP renders");
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "addQuestion", "id", quiz, "prompt", "2 + 2 bằng?", "optionA", "3", "optionB", "4", "optionC", "5", "optionD", "6", "correct", "1").statusCode() == 303, "add quiz question form");
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "publishContent", "id", quiz).statusCode() == 303, "publish content form");
-        check(get(member, "/hrm/tests?action=bankDetail&id=" + quiz).statusCode() == 404, "member cannot read answer key page");
+        check(get(manager, "/hrm/tests?action=bankDetail&id=" + quizContentId).statusCode() == 200, "read-only bank detail renders");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "addQuestion", "id", String.valueOf(quizContentId)).statusCode() == 400,
+                "manual question endpoint removed");
+        check(get(member, "/hrm/tests?action=bankDetail&id=" + quizContentId).statusCode() == 404, "member cannot read answer key page");
         String qt = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", "Đợt giao trắc nghiệm", "description", "Giao bộ đề", "type", "department",
-                "startDate", now.minusMinutes(10).format(dateFmt), "startTime", now.minusMinutes(10).format(timeFmt),
+                "contentId", String.valueOf(quizContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
+        execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + qt);
         check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", qt).statusCode() == 303, "publish quiz event");
         String selection = get(manager, "/hrm/tests?action=detail&id=" + qt).body();
-        check(selection.contains("name=\"contentId\"") && selection.contains("Bộ đề mới"), "assignment selector lists prepared content");
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", qt, "assigneeId", "2", "contentId", quiz).statusCode() == 303, "assign selected quiz");
+        check(selection.contains("name=\"contentId\"") && selection.contains("Bộ đề HTTP"), "assignment selector lists database content");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", qt, "assigneeId", "2", "contentId", String.valueOf(quizContentId)).statusCode() == 303, "assign selected quiz");
         String qa = assignmentId(conn, qt);
         HttpResponse<String> quizPage = get(member, "/hrm/tests?action=assignment&id=" + qa);
-        check(quizPage.statusCode() == 200 && quizPage.body().contains("type=\"radio\""), "quiz answer form renders");
-        check(!quizPage.body().contains("Đáp án đúng") && !quizPage.body().contains("correctOption"), "no correct key in student HTML");
+        check(quizPage.body().contains("Bắt đầu làm") && !quizPage.body().contains("type=\"radio\""),
+                "pending quiz hides questions");
         String quizToken = csrf(quizPage.body());
-        Matcher qmatch = Pattern.compile("name=\"answer_(\\d+)\"").matcher(quizPage.body());
-        check(qmatch.find(), "question radio name exists");
-        String qid = qmatch.group(1);
-        check(post(member, "/hrm/tests", "csrf", quizToken, "action", "submitQuiz", "id", qa, "answer_" + qid, "1", "answer_" + qid, "0").statusCode() == 400, "duplicate answer params rejected");
-        check(post(member, "/hrm/tests", "csrf", quizToken, "action", "submitQuiz", "id", qa, "answer_" + qid, "1", "score", "0").statusCode() == 303, "submit selected answer");
+        check(post(member, "/hrm/tests", "csrf", quizToken, "action", "start", "id", qa).statusCode() == 303,
+                "start quiz assignment");
+        quizPage = get(member, "/hrm/tests?action=assignment&id=" + qa);
+        check(quizPage.statusCode() == 200 && quizPage.body().contains("type=\"radio\"")
+                && quizPage.body().contains("type=\"checkbox\""), "single and multiple answer controls render");
+        check(!quizPage.body().contains("Đáp án đúng") && !quizPage.body().contains("correctOption"), "no correct key in student HTML");
+        quizToken = csrf(quizPage.body());
+        check(post(member, "/hrm/tests", "csrf", quizToken, "action", "submitQuiz", "id", qa,
+                "answer_" + trueFalseQuestionId, String.valueOf(trueOptionId),
+                "answer_" + trueFalseQuestionId, String.valueOf(trueOptionId)).statusCode() == 400, "duplicate option rejected");
+        check(post(member, "/hrm/tests", "csrf", quizToken, "action", "submitQuiz", "id", qa,
+                "answer_" + trueFalseQuestionId, String.valueOf(trueOptionId),
+                "answer_" + multipleQuestionId, String.valueOf(multipleOptionA),
+                "answer_" + multipleQuestionId, String.valueOf(multipleOptionB),
+                "answer_" + multipleQuestionId, String.valueOf(multipleOptionC), "score", "0").statusCode() == 303,
+                "submit single and multiple selections");
         String scored = get(member, "/hrm/tests?action=assignment&id=" + qa).body();
         check(scored.contains("10.00") && scored.contains("checked"), "server score ignores client and retains selected choice");
         check(!scored.contains("Đáp án đúng"), "answer key stays private after submission");
-        String essay = newId(post(manager, "/hrm/tests", "csrf", token, "action", "createContent", "kind", "question", "title", "Câu tình huống", "prompt", "Xử lý phản hồi khách hàng như thế nào?"));
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "publishContent", "id", essay).statusCode() == 303, "publish essay question");
         String et = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", "Đợt câu hỏi", "description", "Giao câu hỏi", "type", "department",
-                "startDate", now.minusMinutes(10).format(dateFmt), "startTime", now.minusMinutes(10).format(timeFmt),
+                "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
+        execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + et);
         check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", et).statusCode() == 303, "publish essay event");
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", et, "assigneeId", "2", "contentId", essay).statusCode() == 303, "assign selected essay question");
-        String essayPage = get(member, "/hrm/tests?action=assignment&id=" + assignmentId(conn, et)).body();
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", et, "assigneeId", "2", "contentId", String.valueOf(essayContentId)).statusCode() == 303, "assign selected essay question");
+        String essayAssignment = assignmentId(conn, et);
+        String essayPage = get(member, "/hrm/tests?action=assignment&id=" + essayAssignment).body();
+        String essayToken = csrf(essayPage);
+        check(post(member, "/hrm/tests", "csrf", essayToken, "action", "start", "id", essayAssignment).statusCode() == 303,
+                "start essay assignment");
+        essayPage = get(member, "/hrm/tests?action=assignment&id=" + essayAssignment).body();
         check(essayPage.contains("Xử lý phản hồi khách hàng như thế nào?") && essayPage.contains("multipart/form-data") && !essayPage.contains("type=\"radio\""), "essay selection displays correct prompt and submission form");
         System.out.println("PASS: " + assertions + " HTTP assertions on isolated Tomcat and SQL Server.");
     }
@@ -210,9 +288,35 @@ public class TestModuleHttpTest {
                         + "INSERT INTO Users(username,password,full_name,email,role_id,department_id) VALUES "
                         + "('leader','test-password',N'Leader', 'leader@example.invalid',3,1),"
                         + "('member','test-password',N'Member','member@example.invalid',4,1),"
-                        + "('outsider','test-password',N'Outsider','outside@example.invalid',4,2); "
+                        + "('outsider','test-password',N'Outsider','outside@example.invalid',4,2),"
+                        + "('admin','test-password',N'Administrator','admin@example.invalid',1,NULL),"
+                        + "('hr','test-password',N'Human Resources','hr@example.invalid',2,NULL); "
                         + "UPDATE Departments SET manager_id=1 WHERE department_id=1;");
                 execute(admin, moduleSchema);
+                quizContentId = insertId(admin, "INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by,status) "
+                        + "OUTPUT INSERTED.id VALUES (N'Bộ đề HTTP',N'Chọn đáp án đúng','quiz','department',1,1,'ready')");
+                essayContentId = insertId(admin, "INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by,status) "
+                        + "OUTPUT INSERTED.id VALUES (N'Câu tình huống',N'Xử lý phản hồi khách hàng như thế nào?','question','department',1,1,'ready')");
+                cultureContentId = insertId(admin, "INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by,status) "
+                        + "OUTPUT INSERTED.id VALUES (N'Đề Văn hóa HTTP',N'Văn hóa doanh nghiệp','question','culture',NULL,4,'ready')");
+                trueFalseQuestionId = insertId(admin, "INSERT INTO Test_Questions(content_id,prompt,question_type) "
+                        + "OUTPUT INSERTED.id VALUES (?,N'Java là ngôn ngữ hướng đối tượng.','true_false')", quizContentId);
+                trueOptionId = insertId(admin, "INSERT INTO Test_Question_Options(question_id,option_text,is_correct,display_order) "
+                        + "OUTPUT INSERTED.id VALUES (?,N'Đúng',1,1)", trueFalseQuestionId);
+                insertId(admin, "INSERT INTO Test_Question_Options(question_id,option_text,is_correct,display_order) "
+                        + "OUTPUT INSERTED.id VALUES (?,N'Sai',0,2)", trueFalseQuestionId);
+                multipleQuestionId = insertId(admin, "INSERT INTO Test_Questions(content_id,prompt,question_type) "
+                        + "OUTPUT INSERTED.id VALUES (?,N'Chọn đúng ba thực hành tốt.','multiple')", quizContentId);
+                multipleOptionA = insertId(admin, "INSERT INTO Test_Question_Options(question_id,option_text,is_correct,display_order) "
+                        + "OUTPUT INSERTED.id VALUES (?,N'PreparedStatement',1,1)", multipleQuestionId);
+                multipleOptionB = insertId(admin, "INSERT INTO Test_Question_Options(question_id,option_text,is_correct,display_order) "
+                        + "OUTPUT INSERTED.id VALUES (?,N'Try-with-resources',1,2)", multipleQuestionId);
+                multipleOptionC = insertId(admin, "INSERT INTO Test_Question_Options(question_id,option_text,is_correct,display_order) "
+                        + "OUTPUT INSERTED.id VALUES (?,N'Tách tầng service',1,3)", multipleQuestionId);
+                insertId(admin, "INSERT INTO Test_Question_Options(question_id,option_text,is_correct,display_order) "
+                        + "OUTPUT INSERTED.id VALUES (?,N'Hard-code mật khẩu',0,4)", multipleQuestionId);
+                insertId(admin, "INSERT INTO Test_Question_Options(question_id,option_text,is_correct,display_order) "
+                        + "OUTPUT INSERTED.id VALUES (?,N'Nuốt exception',0,5)", multipleQuestionId);
                 System.setProperty("hrm.db.url", "jdbc:sqlserver://localhost:1433;databaseName=" + database + ";encrypt=true;trustServerCertificate=true;");
                 tomcat.setBaseDir(Files.createTempDirectory("hrm-test-tomcat-").toString());
                 tomcat.setPort(0);

@@ -367,17 +367,66 @@ END;
 
 IF OBJECT_ID('dbo.Test_Questions', 'U') IS NULL
 BEGIN
-    CREATE TABLE dbo.Test_Questions (
+    EXEC(N'
+        CREATE TABLE dbo.Test_Questions (
+            id INT IDENTITY PRIMARY KEY,
+            content_id INT NOT NULL REFERENCES dbo.Test_Content(id),
+            prompt NVARCHAR(4000) NOT NULL,
+            question_type VARCHAR(20) NOT NULL DEFAULT ''single'',
+            CONSTRAINT CK_Test_Question_Type CHECK (question_type IN (''single'',''multiple'',''true_false''))
+        );
+        CREATE INDEX IX_Questions_Content ON dbo.Test_Questions(content_id, id);
+    ');
+END;
+
+-- Nâng cấp schema cũ mà không làm mất câu hỏi đã có.
+IF COL_LENGTH('dbo.Test_Questions', 'question_type') IS NULL
+BEGIN
+    EXEC(N'ALTER TABLE dbo.Test_Questions ADD question_type VARCHAR(20) NOT NULL
+        CONSTRAINT DF_Test_Questions_Type DEFAULT ''single'';');
+    EXEC(N'ALTER TABLE dbo.Test_Questions ADD CONSTRAINT CK_Test_Question_Type
+        CHECK (question_type IN (''single'',''multiple'',''true_false''));');
+END;
+
+IF OBJECT_ID('dbo.Test_Question_Options', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Test_Question_Options (
         id INT IDENTITY PRIMARY KEY,
-        content_id INT NOT NULL REFERENCES dbo.Test_Content(id),
-        prompt NVARCHAR(4000) NOT NULL,
-        option_a NVARCHAR(1000) NOT NULL,
-        option_b NVARCHAR(1000) NOT NULL,
-        option_c NVARCHAR(1000) NOT NULL,
-        option_d NVARCHAR(1000) NOT NULL,
-        correct_option INT NOT NULL CHECK (correct_option BETWEEN 0 AND 3)
+        question_id INT NOT NULL REFERENCES dbo.Test_Questions(id) ON DELETE CASCADE,
+        option_text NVARCHAR(1000) NOT NULL,
+        is_correct BIT NOT NULL DEFAULT 0,
+        display_order INT NOT NULL,
+        CONSTRAINT CK_Test_Option_Order CHECK (display_order > 0),
+        CONSTRAINT UQ_Test_Option_Order UNIQUE (question_id, display_order),
+        CONSTRAINT UQ_Test_Option_Question UNIQUE (question_id, id)
     );
-    CREATE INDEX IX_Questions_Content ON dbo.Test_Questions(content_id, id);
+    CREATE INDEX IX_Test_Options_Question ON dbo.Test_Question_Options(question_id, display_order);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.key_constraints WHERE name = 'UQ_Test_Option_Question')
+    ALTER TABLE dbo.Test_Question_Options ADD CONSTRAINT UQ_Test_Option_Question UNIQUE (question_id, id);
+
+-- Chuyển dữ liệu 4 lựa chọn cũ sang bảng lựa chọn linh hoạt khi cần.
+IF COL_LENGTH('dbo.Test_Questions', 'option_a') IS NOT NULL
+BEGIN
+    EXEC(N'
+        INSERT INTO dbo.Test_Question_Options(question_id, option_text, is_correct, display_order)
+        SELECT q.id, legacy.option_text,
+               CASE WHEN q.correct_option = legacy.zero_based_order THEN 1 ELSE 0 END,
+               legacy.zero_based_order + 1
+        FROM dbo.Test_Questions q
+        CROSS APPLY (VALUES
+            (0, q.option_a), (1, q.option_b), (2, q.option_c), (3, q.option_d)
+        ) legacy(zero_based_order, option_text)
+        WHERE legacy.option_text IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM dbo.Test_Question_Options o WHERE o.question_id = q.id);
+
+        ALTER TABLE dbo.Test_Questions ALTER COLUMN option_a NVARCHAR(1000) NULL;
+        ALTER TABLE dbo.Test_Questions ALTER COLUMN option_b NVARCHAR(1000) NULL;
+        ALTER TABLE dbo.Test_Questions ALTER COLUMN option_c NVARCHAR(1000) NULL;
+        ALTER TABLE dbo.Test_Questions ALTER COLUMN option_d NVARCHAR(1000) NULL;
+        ALTER TABLE dbo.Test_Questions ALTER COLUMN correct_option INT NULL;
+    ');
 END;
 
 IF OBJECT_ID('dbo.Test_Templates', 'U') IS NULL
@@ -429,14 +478,41 @@ BEGIN
     CREATE INDEX IX_Assignment_Owner ON dbo.Test_Assignments(assignee_id, status);
 END;
 
-IF OBJECT_ID('dbo.Test_Answers', 'U') IS NULL
+-- Một câu có thể được chọn nhiều đáp án; mỗi lựa chọn là một dòng.
+IF OBJECT_ID('dbo.Test_Answer_Options', 'U') IS NULL
 BEGIN
-    CREATE TABLE dbo.Test_Answers (
+    CREATE TABLE dbo.Test_Answer_Options (
         assignment_id INT NOT NULL REFERENCES dbo.Test_Assignments(id),
         question_id INT NOT NULL REFERENCES dbo.Test_Questions(id),
-        selected_option INT NOT NULL CHECK (selected_option BETWEEN 0 AND 3),
-        PRIMARY KEY (assignment_id, question_id)
+        option_id INT NOT NULL,
+        PRIMARY KEY (assignment_id, question_id, option_id),
+        CONSTRAINT FK_Test_Answer_Selected_Option FOREIGN KEY (question_id, option_id)
+            REFERENCES dbo.Test_Question_Options(question_id, id)
     );
+    CREATE INDEX IX_Test_Answer_Question ON dbo.Test_Answer_Options(assignment_id, question_id);
+END;
+
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_Test_Answer_Selected_Option')
+    ALTER TABLE dbo.Test_Answer_Options ADD CONSTRAINT FK_Test_Answer_Selected_Option
+        FOREIGN KEY (question_id, option_id) REFERENCES dbo.Test_Question_Options(question_id, id);
+
+-- Giữ lại câu trả lời schema cũ và chuyển chỉ số A/B/C/D thành khóa lựa chọn.
+IF OBJECT_ID('dbo.Test_Answers', 'U') IS NOT NULL
+BEGIN
+    EXEC(N'
+        INSERT INTO dbo.Test_Answer_Options(assignment_id, question_id, option_id)
+        SELECT a.assignment_id, a.question_id, o.id
+        FROM dbo.Test_Answers a
+        JOIN dbo.Test_Question_Options o
+          ON o.question_id = a.question_id AND o.display_order = a.selected_option + 1
+        WHERE NOT EXISTS (
+            SELECT 1 FROM dbo.Test_Answer_Options x
+            WHERE x.assignment_id = a.assignment_id
+              AND x.question_id = a.question_id
+              AND x.option_id = o.id
+        );
+    ');
 END;
 
 IF OBJECT_ID('dbo.Test_Evaluations', 'U') IS NULL
@@ -451,40 +527,5 @@ BEGIN
     );
 END;
 
-IF OBJECT_ID('dbo.Test_Reminder_Outbox', 'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.Test_Reminder_Outbox (
-        id INT IDENTITY PRIMARY KEY,
-        assignment_id INT NOT NULL REFERENCES dbo.Test_Assignments(id),
-        scheduled_start DATETIME2 NOT NULL,
-        delivered_at DATETIME2 NULL,
-        CONSTRAINT UQ_Test_Reminder UNIQUE (assignment_id, scheduled_start)
-    );
-END;
-
-IF OBJECT_ID('dbo.Test_Notifications', 'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.Test_Notifications (
-        id INT IDENTITY PRIMARY KEY,
-        outbox_id INT NOT NULL UNIQUE REFERENCES dbo.Test_Reminder_Outbox(id),
-        user_id INT NOT NULL REFERENCES dbo.Users(user_id),
-        assignment_id INT NOT NULL REFERENCES dbo.Test_Assignments(id),
-        message NVARCHAR(300) NOT NULL,
-        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        read_at DATETIME2 NULL
-    );
-END;
-
-IF OBJECT_ID('dbo.Test_Audit', 'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.Test_Audit (
-        id BIGINT IDENTITY PRIMARY KEY,
-        actor_id INT NOT NULL REFERENCES dbo.Users(user_id),
-        action VARCHAR(40) NOT NULL,
-        template_id INT NOT NULL REFERENCES dbo.Test_Templates(id),
-        assignment_id INT NULL REFERENCES dbo.Test_Assignments(id),
-        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
-    );
-END;
-
 COMMIT;
+-- END TEST MODULE
