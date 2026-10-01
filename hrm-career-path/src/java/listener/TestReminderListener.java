@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.util.concurrent.*;
 import service.TestService;
 
-/** Job nền đóng đề hết hạn, thu hồi bài pending và xử lý outbox nhắc lịch. */
+/** Job nền đóng đề hết hạn; bài chưa làm vẫn được giữ trong báo cáo kết quả. */
 @WebListener
 public class TestReminderListener implements ServletContextListener {
 
@@ -26,7 +26,7 @@ public class TestReminderListener implements ServletContextListener {
         });
         executor.scheduleWithFixedDelay(() -> {
             try {
-                new TestService().sendUpcomingReminders(Instant.now());
+                new TestService().closeExpiredTests(Instant.now());
             } catch (Exception e) {
                 event.getServletContext().log("Không thể cập nhật lịch bài test; sẽ thử lại sau.", e);
             }

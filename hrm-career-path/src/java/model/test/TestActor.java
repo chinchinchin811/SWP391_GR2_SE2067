@@ -18,4 +18,9 @@ public record TestActor(int id, String name, String role, Integer departmentId, 
     public boolean departmentManager() {
         return "MANAGER".equals(role) && managedDepartmentId != null;
     }
+
+    /** HR quản lý chuyên môn toàn công ty; MANAGER chỉ quản lý phòng được giao. */
+    public boolean professionalManager() {
+        return "HR".equals(role) || departmentManager();
+    }
 }

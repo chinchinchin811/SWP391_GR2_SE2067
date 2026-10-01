@@ -23,7 +23,7 @@ public final class TestView {
             case "draft": return "Bản nháp";
             case "published": return "Đã công bố";
             case "closed": return "Đã đóng";
-            case "pending": return "Chưa bắt đầu";
+            case "pending": return "Chưa làm";
             case "in_progress": return "Đang làm";
             case "submitted": return "Đã nộp";
             case "evaluated": return "Đã chấm";

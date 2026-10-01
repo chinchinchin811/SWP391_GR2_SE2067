@@ -93,12 +93,13 @@ public final class TestDAO {
     private String management(TestActor actor, List<Object> args) {
         args.add(actor.departmentManager() ? actor.managedDepartmentId() : null);
         return "((t.type='culture' AND " + (actor.cultureManager() ? "1=1" : "1=0")
-                + ") OR (t.type='department' AND (" + (actor.cultureManager() ? "1=1" : "1=0") + " OR t.department_id=?)))";
+                + ") OR (t.type='department' AND (" + ("HR".equals(actor.role()) ? "1=1" : "1=0") + " OR t.department_id=?)))";
     }
 
     /** Lọc xóa mềm và giữ đề nháp trong phạm vi quản lý ngay tại SQL. */
     private String visible(TestActor actor, List<Object> args) {
-        return "t.is_deleted=0 AND (t.status<>'draft' OR " + management(actor, args) + ")";
+        return "t.is_deleted=0 AND " + ("ADMIN".equals(actor.role()) ? "t.type='culture' AND " : "")
+                + "(t.status<>'draft' OR " + management(actor, args) + ")";
     }
 
     /**
@@ -175,7 +176,9 @@ public final class TestDAO {
     }
 
     private static final String ASSIGNMENT_FROM = " FROM Test_Assignments a "
-            + "JOIN Test_Templates t ON t.id=a.test_template_id JOIN Users u ON u.user_id=a.assignee_id ";
+            + "JOIN Test_Templates t ON t.id=a.test_template_id JOIN Users u ON u.user_id=a.assignee_id "
+            + "JOIN Roles assignee_role ON assignee_role.role_id=u.role_id "
+            + "JOIN Users giver ON giver.user_id=a.assigned_by JOIN Roles giver_role ON giver_role.role_id=giver.role_id ";
 
     /**
      * Lấy bài nộp đã lọc quyền; chỉ trang detail mới đọc nội dung, danh sách
@@ -199,9 +202,11 @@ public final class TestDAO {
         }
         args.add(offset);
         args.add(size);
-        String sql = "SELECT a.id,a.test_template_id,a.assignee_id,a.status,a.submitted_at,a.file_name,"
+        String sql = "SELECT a.id,a.test_template_id,a.assignee_id,assignee_role.role_name AS assignee_role,"
+                + "a.assigned_by,giver_role.role_name AS assigned_by_role,a.status,a.submitted_at,a.file_name,"
                 + (id != null ? "a.submission_content" : "CAST(NULL AS NVARCHAR(MAX)) AS submission_content")
-                + ",t.title,u.full_name,e.evaluator_id,e.score,e.comment,e.evaluated_at,a.content_id,a.quiz_score,"
+                + ",t.title,t.type AS test_type,t.start_time,t.end_time,u.full_name,"
+                + "e.evaluator_id,e.score,e.comment,e.evaluated_at,a.content_id,a.quiz_score,"
                 + "b.kind AS content_kind,b.title AS content_title" + ASSIGNMENT_FROM
                 + "LEFT JOIN Test_Content b ON b.id=a.content_id "
                 + "LEFT JOIN Test_Evaluations e ON e.test_assignment_id=a.id WHERE " + filter
@@ -212,7 +217,10 @@ public final class TestDAO {
                 TestEvaluation evaluation = rs.getObject("evaluator_id") == null ? null : new TestEvaluation(
                         rs.getInt("evaluator_id"), rs.getBigDecimal("score"), rs.getString("comment"), instant(rs, "evaluated_at"));
                 result.add(new TestAssignment(rs.getInt("id"), rs.getInt("test_template_id"), rs.getInt("assignee_id"),
-                        rs.getString("full_name"), rs.getString("title"), rs.getString("status"), instant(rs, "submitted_at"),
+                        rs.getString("full_name"), rs.getString("assignee_role"),
+                        rs.getInt("assigned_by"), rs.getString("assigned_by_role"),
+                        rs.getString("title"), rs.getString("test_type"), instant(rs, "start_time"),
+                        instant(rs, "end_time"), rs.getString("status"), instant(rs, "submitted_at"),
                         rs.getString("submission_content"), rs.getString("file_name"), evaluation,
                         (Integer) rs.getObject("content_id"), rs.getString("content_kind"),
                         rs.getString("content_title"), rs.getBigDecimal("quiz_score")));
@@ -267,27 +275,44 @@ public final class TestDAO {
 
     /** Chỉ gọi sau khi service kiểm tra quyền bộ đề/assignment trong cùng transaction. */
     public List<TestQuestion> questions(int contentId, boolean includeKey) throws SQLException {
-        String sql = "SELECT id,prompt,option_a,option_b,option_c,option_d,"
-                + (includeKey ? "correct_option" : "CAST(NULL AS INT) AS correct_option")
-                + " FROM Test_Questions WHERE content_id=? ORDER BY id";
+        Map<Integer, List<TestQuestionOption>> options = new LinkedHashMap<>();
+        String optionSql = "SELECT q.id AS question_id,o.id,o.option_text,"
+                + (includeKey ? "o.is_correct" : "CAST(NULL AS BIT) AS is_correct")
+                + " FROM Test_Questions q JOIN Test_Question_Options o ON o.question_id=q.id"
+                + " WHERE q.content_id=? ORDER BY q.id,o.display_order,o.id";
+        try (PreparedStatement ps = prepare(optionSql, contentId); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Boolean correct = rs.getObject("is_correct") == null ? null : rs.getBoolean("is_correct");
+                options.computeIfAbsent(rs.getInt("question_id"), ignored -> new ArrayList<>())
+                        .add(new TestQuestionOption(rs.getInt("id"), rs.getString("option_text"), correct));
+            }
+        }
+
         List<TestQuestion> rows = new ArrayList<>();
-        try (PreparedStatement ps = prepare(sql, contentId); ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) rows.add(new TestQuestion(rs.getInt("id"), rs.getString("prompt"),
-                    List.of(rs.getString("option_a"),rs.getString("option_b"),rs.getString("option_c"),rs.getString("option_d")),
-                    (Integer) rs.getObject("correct_option")));
+        try (PreparedStatement ps = prepare(
+                "SELECT id,prompt,question_type FROM Test_Questions WHERE content_id=? ORDER BY id", contentId);
+                ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                int questionId = rs.getInt("id");
+                rows.add(new TestQuestion(questionId, rs.getString("prompt"),
+                        rs.getString("question_type"), options.getOrDefault(questionId, List.of())));
+            }
         }
         return rows;
     }
 
     /** Trả lựa chọn đã nộp chỉ sau khi xác minh quyền assignment ngay trong SQL. */
-    public Map<Integer,Integer> answers(TestActor actor, int id) throws SQLException {
+    public Map<Integer,Set<Integer>> answers(TestActor actor, int id) throws SQLException {
         List<Object> args = new ArrayList<>();
         String scope = assignmentScope(actor, args);
         args.add(id);
-        Map<Integer,Integer> result = new LinkedHashMap<>();
-        try (PreparedStatement ps = prepare("SELECT x.question_id,x.selected_option" + ASSIGNMENT_FROM
-                + "JOIN Test_Answers x ON x.assignment_id=a.id WHERE " + scope + " AND a.id=?", args.toArray()); ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) result.put(rs.getInt(1),rs.getInt(2));
+        Map<Integer,Set<Integer>> result = new LinkedHashMap<>();
+        try (PreparedStatement ps = prepare("SELECT x.question_id,x.option_id" + ASSIGNMENT_FROM
+                + "JOIN Test_Answer_Options x ON x.assignment_id=a.id WHERE " + scope
+                + " AND a.id=? ORDER BY x.question_id,x.option_id", args.toArray()); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                result.computeIfAbsent(rs.getInt(1), ignored -> new LinkedHashSet<>()).add(rs.getInt(2));
+            }
         }
         return result;
     }
@@ -322,8 +347,10 @@ public final class TestDAO {
         String sql = "SELECT u.user_id,u.full_name,u.department_id FROM Users u JOIN Roles r ON r.role_id=u.role_id CROSS JOIN Test_Templates t WHERE "
                 + filter + " AND t.id=? AND u.is_deleted=0 AND u.status=1 "
                 + "AND r.role_name<>'ADMIN' "
+                + (actor.departmentManager() ? "AND r.role_name='EMPLOYEE' AND u.department_id=? " : "")
                 + "AND NOT EXISTS (SELECT 1 FROM Test_Assignments a WHERE a.test_template_id=t.id AND a.assignee_id=u.user_id) "
                 + "ORDER BY u.full_name,u.user_id";
+        if (actor.departmentManager()) args.add(actor.managedDepartmentId());
         List<TestActor> result = new ArrayList<>();
         try (PreparedStatement ps = prepare(sql, args.toArray()); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -333,65 +360,8 @@ public final class TestDAO {
         return result;
     }
 
-    /**
-     * Ghi dấu vết xem chi tiết/ghi dữ liệu trong cùng transaction, không lưu
-     * nội dung nhạy cảm.
-     */
-    public void audit(TestActor actor, String action, int templateId, Integer assignmentId) throws SQLException {
-        execute("INSERT INTO Test_Audit(actor_id,action,template_id,assignment_id) VALUES (?,?,?,?)",
-                actor.id(), action, templateId, assignmentId);
-    }
-
-    /**
-     * Thông báo chỉ của actor và assignment vẫn còn được phép xem sau khi
-     * chuyển phòng.
-     */
-    public List<TestNotification> notifications(TestActor actor) throws SQLException {
-        List<Object> args = new ArrayList<>();
-        String filter = assignmentScope(actor, args);
-        args.add(actor.id());
-        List<TestNotification> result = new ArrayList<>();
-        String sql = "SELECT TOP (100) n.*" + ASSIGNMENT_FROM
-                + "JOIN Test_Notifications n ON n.assignment_id=a.id WHERE " + filter + " AND n.user_id=? ORDER BY n.id DESC";
-        try (PreparedStatement ps = prepare(sql, args.toArray()); ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                result.add(new TestNotification(rs.getInt("id"), rs.getInt("assignment_id"),
-                        rs.getString("message"), instant(rs, "created_at"), rs.getObject("read_at") != null));
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Tạo outbox idempotent cho bài pending trong 24 giờ trước lịch; unique
-     * chống job chạy lặp.
-     */
-    public void enqueueReminders(Instant now) throws SQLException {
-        execute("INSERT INTO Test_Reminder_Outbox(assignment_id,scheduled_start) "
-                + "SELECT a.id,t.start_time" + ASSIGNMENT_FROM
-                + "WHERE a.status='pending' AND a.is_deleted=0 AND t.is_deleted=0 AND t.status='published' "
-                + "AND u.status=1 AND u.is_deleted=0 "
-                + "AND t.start_time>? AND t.start_time<=? AND NOT EXISTS "
-                + "(SELECT 1 FROM Test_Reminder_Outbox o WITH (UPDLOCK,HOLDLOCK) WHERE o.assignment_id=a.id AND o.scheduled_start=t.start_time)",
-                now, now.plus(Duration.ofHours(24)));
-    }
-
-    /**
-     * Worker ghi thông báo nội bộ và đánh dấu delivered trong cùng transaction;
-     * lỗi sẽ retry lần sau.
-     */
-    public void deliverReminders(Instant now) throws SQLException {
+    /** Đóng đề hết hạn; giữ assignment pending để báo cáo là chưa làm. */
+    public void closeExpiredTests(Instant now) throws SQLException {
         execute("UPDATE Test_Templates SET status='closed',updated_at=? WHERE status='published' AND end_time<=?", now, now);
-        execute("UPDATE Test_Assignments SET is_deleted=1 WHERE status='pending' AND is_deleted=0 AND test_template_id IN (SELECT id FROM Test_Templates WHERE status='closed' AND end_time<=?)", now);
-        execute("INSERT INTO Test_Notifications(outbox_id,user_id,assignment_id,message) "
-                + "SELECT o.id,a.assignee_id,a.id,N'Bài test sắp bắt đầu: '+t.title FROM Test_Reminder_Outbox o "
-                + "JOIN Test_Assignments a ON a.id=o.assignment_id JOIN Test_Templates t ON t.id=a.test_template_id "
-                + "JOIN Users u ON u.user_id=a.assignee_id WHERE o.delivered_at IS NULL "
-                + "AND a.status='pending' AND a.is_deleted=0 AND t.is_deleted=0 AND t.status='published' "
-                + "AND u.status=1 AND u.is_deleted=0 "
-                + "AND t.start_time>? AND o.scheduled_start=t.start_time "
-                + "AND NOT EXISTS (SELECT 1 FROM Test_Notifications n WITH (UPDLOCK,HOLDLOCK) WHERE n.outbox_id=o.id)", now);
-        execute("UPDATE o SET delivered_at=? FROM Test_Reminder_Outbox o "
-                + "WHERE o.delivered_at IS NULL AND EXISTS (SELECT 1 FROM Test_Notifications n WHERE n.outbox_id=o.id)", now);
     }
 }

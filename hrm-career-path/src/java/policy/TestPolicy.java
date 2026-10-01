@@ -12,10 +12,11 @@ import model.TestTemplate;
  */
 public final class TestPolicy {
 
-    /** ADMIN/HR quản lý toàn công ty; MANAGER quản lý nội dung gắn với phòng mình. */
+    /** ADMIN chỉ quản lý Văn hóa; HR quản lý cả hai; MANAGER quản lý Chuyên môn đúng phòng. */
     public boolean canManage(TestActor actor, TestTemplate t) {
         return "culture".equals(t.type()) ? actor.cultureManager()
-                : actor.cultureManager() || (actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId()));
+                : "HR".equals(actor.role())
+                || (actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId()));
     }
 
     /** Đề nháp chỉ người quản lý xem; đề công bố/đóng hiển thị toàn công ty. */
@@ -44,8 +45,14 @@ public final class TestPolicy {
      * Cho chấm cả sau khi đóng đề, nhưng chỉ chấm bài submitted một lần.
      */
     public boolean canEvaluate(TestActor actor, TestAssignment a, TestTemplate t) {
-        return canViewAssignment(actor, a, t) && canManage(actor, t)
+        return canViewAssignment(actor, a, t) && canManage(actor, t) && canEvaluateAssignee(actor, a)
                 && "submitted".equals(a.status());
+    }
+
+    /** Người chấm phải có vai trò cao hơn người làm; cùng vai trò không được tự chấm lẫn nhau. */
+    public boolean canEvaluateAssignee(TestActor actor, TestAssignment assignment) {
+        return actor.id() != assignment.assigneeId()
+                && roleRank(actor.role()) > roleRank(assignment.assigneeRole());
     }
 
     /**
@@ -55,5 +62,19 @@ public final class TestPolicy {
         return a.assigneeId() == actor.id() && canView(actor, t) && "published".equals(t.status())
                 && !now.isBefore(t.startTime()) && now.isBefore(t.endTime())
                 && ("pending".equals(a.status()) || "in_progress".equals(a.status()));
+    }
+
+    /** Chỉ người giao hoặc vai trò cấp trên trong hệ thống được thu hồi. */
+    public boolean canRevoke(TestActor actor, TestAssignment assignment) {
+        return "pending".equals(assignment.status())
+                && (actor.id() == assignment.assignedBy()
+                || roleRank(actor.role()) > roleRank(assignment.assignedByRole()));
+    }
+
+    private int roleRank(String role) {
+        if ("ADMIN".equals(role)) return 4;
+        if ("HR".equals(role)) return 3;
+        if ("MANAGER".equals(role)) return 2;
+        return 1;
     }
 }
