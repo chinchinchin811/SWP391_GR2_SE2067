@@ -1,11 +1,27 @@
 package model;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * correctOption luôn null khi trả cho người làm; đáp án đúng chỉ dùng ở
- * server/người quản lý.
+ * Câu hỏi lấy từ database với số lựa chọn linh hoạt. Cờ đáp án đúng trong từng
+ * lựa chọn luôn null khi trả cho người làm bài.
  */
-public record TestQuestion(int id, String prompt, List<String> options, Integer correctOption) {
+public record TestQuestion(int id, String prompt, String type, List<TestQuestionOption> options) {
 
+    public TestQuestion {
+        options = List.copyOf(options);
+    }
+
+    public boolean multipleChoice() {
+        return "multiple".equals(type);
+    }
+
+    public Set<Integer> correctOptionIds() {
+        return options.stream()
+                .filter(option -> Boolean.TRUE.equals(option.correct()))
+                .map(TestQuestionOption::id)
+                .collect(Collectors.toUnmodifiableSet());
+    }
 }

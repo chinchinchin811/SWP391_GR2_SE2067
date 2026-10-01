@@ -116,7 +116,250 @@ INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
 GO
 
 -- =======================================================
--- 8. SEED DATA: HỌC LIỆU & LỚP ĐÀO TẠO (LEARNING MATERIALS & TRAINING CLASSES)
+-- 8. SEED DATA: KHO ĐỀ THI VĂN HÓA & CHUYÊN MÔN
+-- Câu hỏi chỉ được nạp từ database, không tạo thủ công trên giao diện.
+-- Hỗ trợ: đúng/sai, một đáp án, nhiều đáp án đúng và hơn 4 lựa chọn.
+-- =======================================================
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+
+DECLARE @culture_creator_id INT = (SELECT TOP (1) user_id FROM dbo.Users WHERE username = 'hr_manager');
+DECLARE @technical_creator_id INT = (SELECT TOP (1) user_id FROM dbo.Users WHERE username = 'manager_it');
+DECLARE @technical_department_id INT = (
+    SELECT TOP (1) department_id FROM dbo.Users
+    WHERE username = 'manager_it' AND department_id IS NOT NULL
+);
+
+IF @culture_creator_id IS NULL OR @technical_creator_id IS NULL OR @technical_department_id IS NULL
+    THROW 50001, N'Không tìm thấy tài khoản hoặc phòng ban để seed kho đề thi.', 1;
+
+DECLARE @culture_content_id INT = (
+    SELECT TOP (1) id FROM dbo.Test_Content
+    WHERE title = N'Đề thi Văn hóa doanh nghiệp' AND type = 'culture' AND is_deleted = 0
+);
+IF @culture_content_id IS NULL
+BEGIN
+    INSERT INTO dbo.Test_Content(title,prompt,kind,type,department_id,created_by,status,is_deleted)
+    VALUES (N'Đề thi Văn hóa doanh nghiệp',
+            N'Đánh giá kiến thức về bảo mật, giao tiếp, hợp tác và quy định làm việc.',
+            'quiz','culture',NULL,@culture_creator_id,'ready',0);
+    SET @culture_content_id = SCOPE_IDENTITY();
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Test_Questions WHERE content_id = @culture_content_id)
+BEGIN
+    DECLARE @question_id INT;
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@culture_content_id,N'Nhân viên được phép chia sẻ tài liệu nội bộ lên mạng xã hội nếu không ghi tên công ty.','true_false');
+    SET @question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@question_id,N'Đúng',0,1),(@question_id,N'Sai',1,2);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@culture_content_id,N'Chọn đúng 3 hành vi thể hiện cách làm việc chuyên nghiệp.','multiple');
+    SET @question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@question_id,N'Báo sớm cho quản lý khi có nguy cơ trễ tiến độ',1,1),
+        (@question_id,N'Bảo mật dữ liệu khách hàng và dữ liệu nội bộ',1,2),
+        (@question_id,N'Phản hồi dựa trên sự việc và hướng đến giải pháp',1,3),
+        (@question_id,N'Chia sẻ mật khẩu cho đồng nghiệp để xử lý nhanh hơn',0,4),
+        (@question_id,N'Bỏ qua quy trình phê duyệt khi công việc gấp',0,5),
+        (@question_id,N'Đưa tài liệu công ty lên thiết bị công cộng',0,6);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@culture_content_id,N'Khi chưa hiểu một quy định nội bộ, lựa chọn phù hợp nhất là gì?','single');
+    SET @question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@question_id,N'Hỏi quản lý, HR hoặc người phụ trách để được hướng dẫn',1,1),
+        (@question_id,N'Tự suy đoán rồi áp dụng cho cả nhóm',0,2),
+        (@question_id,N'Bỏ qua quy định đó',0,3),
+        (@question_id,N'Đợi đến khi có vi phạm mới tìm hiểu',0,4),
+        (@question_id,N'Hỏi trên mạng xã hội công khai',0,5),
+        (@question_id,N'Sao chép cách làm của một công ty khác',0,6);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@culture_content_id,N'Khi nhận email đáng ngờ yêu cầu cung cấp mật khẩu, nhân viên nên làm gì?','single');
+    SET @question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@question_id,N'Không cung cấp thông tin và báo bộ phận phụ trách',1,1),
+        (@question_id,N'Nhập mật khẩu để kiểm tra liên kết',0,2),
+        (@question_id,N'Chuyển tiếp email cho toàn công ty',0,3),
+        (@question_id,N'Trả lời email bằng tài khoản cá nhân',0,4);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@culture_content_id,N'Nhân viên có thể gửi dữ liệu khách hàng qua email cá nhân nếu chỉ dùng trong công việc.','true_false');
+    SET @question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@question_id,N'Đúng',0,1),(@question_id,N'Sai',1,2);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@culture_content_id,N'Khi phát hiện nguy cơ mất an toàn thông tin, nhân viên cần ưu tiên hành động nào?','single');
+    SET @question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@question_id,N'Báo ngay cho quản lý hoặc bộ phận phụ trách an toàn thông tin',1,1),
+        (@question_id,N'Tự xóa mọi dữ liệu liên quan rồi không báo cáo',0,2),
+        (@question_id,N'Đăng sự việc lên mạng xã hội để cảnh báo',0,3),
+        (@question_id,N'Chờ đến cuộc họp tuần mới thông báo',0,4),
+        (@question_id,N'Gửi dữ liệu cho bạn bè kiểm tra',0,5),
+        (@question_id,N'Bỏ qua nếu chưa thấy thiệt hại',0,6);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@culture_content_id,N'Chọn đúng 3 hành động giúp phối hợp nhóm hiệu quả.','multiple');
+    SET @question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@question_id,N'Cập nhật tiến độ và trở ngại một cách minh bạch',1,1),
+        (@question_id,N'Lắng nghe và phản hồi ý kiến đồng đội với sự tôn trọng',1,2),
+        (@question_id,N'Chủ động hỗ trợ khi thành viên khác cần giúp đỡ',1,3),
+        (@question_id,N'Giữ riêng thông tin quan trọng để tạo lợi thế cá nhân',0,4),
+        (@question_id,N'Đổ lỗi ngay khi có sự cố',0,5),
+        (@question_id,N'Từ chối mọi góp ý trái quan điểm',0,6);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@culture_content_id,N'Khi có khả năng phát sinh xung đột lợi ích, nhân viên nên làm gì?','single');
+    SET @question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@question_id,N'Chủ động khai báo với quản lý hoặc HR để được hướng dẫn',1,1),
+        (@question_id,N'Giữ kín vì đây là chuyện cá nhân',0,2),
+        (@question_id,N'Tự quyết định mà không cần báo cáo',0,3),
+        (@question_id,N'Nhờ đồng nghiệp che giấu thông tin',0,4);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@culture_content_id,N'Mọi hành vi quấy rối hoặc phân biệt đối xử tại nơi làm việc đều cần được phản ánh qua kênh phù hợp.','true_false');
+    SET @question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@question_id,N'Đúng',1,1),(@question_id,N'Sai',0,2);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@culture_content_id,N'Chọn đúng 3 dấu hiệu thường gặp của email lừa đảo.','multiple');
+    SET @question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@question_id,N'Địa chỉ người gửi bất thường hoặc gần giống tên miền thật',1,1),
+        (@question_id,N'Yêu cầu cung cấp mật khẩu hoặc thông tin nhạy cảm',1,2),
+        (@question_id,N'Tạo cảm giác khẩn cấp để buộc người nhận hành động ngay',1,3),
+        (@question_id,N'Email được gửi qua kênh nội bộ đã xác minh',0,4),
+        (@question_id,N'Nội dung đúng với công việc đã trao đổi trước đó',0,5),
+        (@question_id,N'Có chữ ký chuẩn của công ty và không yêu cầu thao tác',0,6);
+END;
+
+DECLARE @technical_content_id INT = (
+    SELECT TOP (1) id FROM dbo.Test_Content
+    WHERE title = N'Đề thi Chuyên môn Java Backend' AND type = 'department'
+      AND department_id = @technical_department_id AND is_deleted = 0
+);
+IF @technical_content_id IS NULL
+BEGIN
+    INSERT INTO dbo.Test_Content(title,prompt,kind,type,department_id,created_by,status,is_deleted)
+    VALUES (N'Đề thi Chuyên môn Java Backend',
+            N'Đánh giá nền tảng Java, SQL, HTTP, Git và kiểm thử dành cho phòng Kỹ thuật.',
+            'quiz','department',@technical_department_id,@technical_creator_id,'ready',0);
+    SET @technical_content_id = SCOPE_IDENTITY();
+END;
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Test_Questions WHERE content_id = @technical_content_id)
+BEGIN
+    DECLARE @technical_question_id INT;
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@technical_content_id,N'PreparedStatement với tham số ràng buộc giúp giảm nguy cơ SQL Injection.','true_false');
+    SET @technical_question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@technical_question_id,N'Đúng',1,1),(@technical_question_id,N'Sai',0,2);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@technical_content_id,N'Chọn đúng 3 thực hành tốt khi phát triển Java Backend.','multiple');
+    SET @technical_question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@technical_question_id,N'Dùng PreparedStatement cho dữ liệu đầu vào',1,1),
+        (@technical_question_id,N'Đóng tài nguyên JDBC bằng try-with-resources',1,2),
+        (@technical_question_id,N'Tách tầng controller, service và data access',1,3),
+        (@technical_question_id,N'Ghi mật khẩu trực tiếp vào source code',0,4),
+        (@technical_question_id,N'Nuốt mọi exception mà không ghi log',0,5),
+        (@technical_question_id,N'Nối trực tiếp input người dùng vào câu SQL',0,6);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@technical_content_id,N'Mã trạng thái HTTP nào biểu thị tài nguyên được tạo thành công?','single');
+    SET @technical_question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@technical_question_id,N'200 OK',0,1),
+        (@technical_question_id,N'201 Created',1,2),
+        (@technical_question_id,N'204 No Content',0,3),
+        (@technical_question_id,N'400 Bad Request',0,4),
+        (@technical_question_id,N'404 Not Found',0,5),
+        (@technical_question_id,N'500 Internal Server Error',0,6);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@technical_content_id,N'Những đặc điểm nào đúng về một unit test tốt?','multiple');
+    SET @technical_question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@technical_question_id,N'Kiểm tra một hành vi nhỏ và xác định',1,1),
+        (@technical_question_id,N'Có thể chạy độc lập và lặp lại',1,2),
+        (@technical_question_id,N'Phụ thuộc trực tiếp vào dữ liệu production',0,3),
+        (@technical_question_id,N'Luôn gọi dịch vụ bên ngoài thật',0,4),
+        (@technical_question_id,N'Thất bại phải chỉ ra hành vi bị sai',1,5);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@technical_content_id,N'Toán tử == luôn là cách đúng để so sánh nội dung của hai String trong Java.','true_false');
+    SET @technical_question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@technical_question_id,N'Đúng',0,1),(@technical_question_id,N'Sai',1,2);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@technical_content_id,N'Try-with-resources trong Java được dùng chủ yếu để làm gì?','single');
+    SET @technical_question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@technical_question_id,N'Tự động đóng tài nguyên triển khai AutoCloseable',1,1),
+        (@technical_question_id,N'Tạo nhiều thread cùng lúc',0,2),
+        (@technical_question_id,N'Bỏ qua mọi exception',0,3),
+        (@technical_question_id,N'Thay thế toàn bộ câu lệnh điều kiện',0,4),
+        (@technical_question_id,N'Tự động commit mọi transaction',0,5),
+        (@technical_question_id,N'Biên dịch Java thành JavaScript',0,6);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@technical_content_id,N'Chọn đúng 3 nguyên tắc phù hợp khi thiết kế REST API.','multiple');
+    SET @technical_question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@technical_question_id,N'Dùng danh từ để biểu diễn tài nguyên',1,1),
+        (@technical_question_id,N'Dùng mã trạng thái HTTP phù hợp với kết quả',1,2),
+        (@technical_question_id,N'Kiểm tra và xác thực dữ liệu đầu vào',1,3),
+        (@technical_question_id,N'Luôn trả HTTP 200 cho mọi trường hợp',0,4),
+        (@technical_question_id,N'Đưa mật khẩu và token vào URL',0,5),
+        (@technical_question_id,N'Dùng một endpoint duy nhất cho mọi tài nguyên',0,6);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@technical_content_id,N'Khi một thao tác transaction gặp lỗi trước khi hoàn tất, hành động phù hợp là gì?','single');
+    SET @technical_question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@technical_question_id,N'Rollback transaction để khôi phục tính nhất quán',1,1),
+        (@technical_question_id,N'Commit các thay đổi đã chạy được',0,2),
+        (@technical_question_id,N'Bỏ qua lỗi và tiếp tục',0,3),
+        (@technical_question_id,N'Xóa toàn bộ database',0,4),
+        (@technical_question_id,N'Tắt kiểm tra khóa ngoại',0,5),
+        (@technical_question_id,N'Chạy lại vô hạn không ghi log',0,6);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@technical_content_id,N'Git branch giúp phát triển thay đổi tách biệt trước khi hợp nhất.','true_false');
+    SET @technical_question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@technical_question_id,N'Đúng',1,1),(@technical_question_id,N'Sai',0,2);
+
+    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
+    VALUES (@technical_content_id,N'Chọn đúng 3 kiểm tra quan trọng cho một API tạo tài nguyên.','multiple');
+    SET @technical_question_id = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
+        (@technical_question_id,N'Yêu cầu hợp lệ tạo dữ liệu và trả kết quả thành công',1,1),
+        (@technical_question_id,N'Dữ liệu đầu vào sai bị từ chối với thông báo phù hợp',1,2),
+        (@technical_question_id,N'Người không có quyền không thể tạo tài nguyên',1,3),
+        (@technical_question_id,N'API chấp nhận mọi dữ liệu mà không kiểm tra',0,4),
+        (@technical_question_id,N'Test phụ thuộc vào thứ tự chạy ngẫu nhiên',0,5),
+        (@technical_question_id,N'Test dùng trực tiếp database production',0,6);
+END;
+
+COMMIT;
+GO
+
+-- =======================================================
+-- 9. SEED DATA: HỌC LIỆU & LỚP ĐÀO TẠO (LEARNING MATERIALS & TRAINING CLASSES)
 -- =======================================================
 INSERT INTO dbo.Learning_Materials 
 (title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, file_size, video_url, duration_minutes, status, is_deleted, created_by, created_at, updated_at)
@@ -280,7 +523,7 @@ END;
 GO
 
 -- =======================================================
--- 9. KIỂM TRA DỮ LIỆU ĐÃ NẠP: SELECT * FROM TẤT CẢ CÁC BẢNG
+-- 10. KIỂM TRA DỮ LIỆU ĐÃ NẠP: SELECT * FROM TẤT CẢ CÁC BẢNG
 -- =======================================================
 SELECT * FROM dbo.Roles;
 SELECT * FROM dbo.Job_Levels;
@@ -296,4 +539,7 @@ SELECT * FROM dbo.Class_Materials;
 SELECT * FROM dbo.Class_Enrollments;
 SELECT * FROM dbo.Learning_Progress;
 SELECT * FROM dbo.Video_Checkpoints;
+SELECT * FROM dbo.Test_Content;
+SELECT * FROM dbo.Test_Questions;
+SELECT * FROM dbo.Test_Question_Options;
 GO

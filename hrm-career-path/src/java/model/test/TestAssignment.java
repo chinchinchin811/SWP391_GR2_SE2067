@@ -7,7 +7,10 @@ import java.time.Instant;
  * quyền.
  */
 public record TestAssignment(int id, int templateId, int assigneeId, String assigneeName,
-        String title, String status, Instant submittedAt, String content, String fileName,
+        String assigneeRole,
+        int assignedBy, String assignedByRole,
+        String title, String testType, Instant startTime, Instant endTime,
+        String status, Instant submittedAt, String content, String fileName,
         TestEvaluation evaluation, Integer contentId, String contentKind, String contentTitle,
         java.math.BigDecimal quizScore) {
 

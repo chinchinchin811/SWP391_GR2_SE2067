@@ -287,15 +287,6 @@
     background: #f8fafc;
 }
 
-.test-notification {
-    border-bottom: 1px solid var(--border-color, #e2e8f0);
-    padding: 16px 0;
-}
-
-.test-notification:last-child {
-    border-bottom: none;
-}
-
 .test-module p {
     margin: 10px 0;
     line-height: 1.6;
@@ -305,6 +296,135 @@
 .test-module :focus-visible {
     outline: 2px solid var(--primary, #4f46e5);
     outline-offset: 2px;
+}
+
+/* ==========================================================================
+   BANK MODULE - SECTIONED TABLES, FIXED WIDTHS & EVEN SPACING
+   ========================================================================== */
+
+.test-bank-section {
+    margin-bottom: 32px;
+}
+
+.test-bank-section:last-of-type {
+    margin-bottom: 0;
+}
+
+.test-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+}
+
+.test-section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.test-section-title i {
+    color: var(--primary, #4f46e5);
+    font-size: 1.05rem;
+}
+
+.test-section-count {
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    background: #f1f5f9;
+    color: var(--text-secondary, #475569);
+    border-radius: 20px;
+    border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.test-table-wrapper {
+    background: #ffffff;
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.test-bank-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+}
+
+.test-bank-table th,
+.test-bank-table td {
+    padding: 14px 20px !important;
+    text-align: left !important;
+    vertical-align: middle !important;
+    box-sizing: border-box !important;
+}
+
+.test-bank-table th {
+    background: #f8fafc !important;
+    color: var(--text-secondary, #475569) !important;
+    font-size: 0.8125rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    border-bottom: 1px solid var(--border-color, #e2e8f0) !important;
+}
+
+.test-bank-table td {
+    color: var(--text-primary, #0f172a) !important;
+    font-size: 0.925rem !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.test-bank-table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+.test-bank-table tbody tr:hover td {
+    background: #f8fafc !important;
+}
+
+.test-bank-table .col-name {
+    width: 80% !important;
+}
+
+.test-bank-table .col-status {
+    width: 20% !important;
+}
+
+.test-title-link {
+    color: var(--primary, #4f46e5);
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.test-title-link:hover {
+    color: #3730a3;
+    text-decoration: underline;
+}
+
+.empty-row {
+    text-align: center !important;
+    padding: 32px 20px !important;
+    color: var(--text-muted, #94a3b8) !important;
+    font-size: 0.875rem !important;
+    background: #ffffff !important;
+}
+
+.empty-state {
+    padding: 24px;
+    text-align: center;
+    color: var(--text-secondary, #475569);
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px dashed var(--border-color, #cbd5e1);
+    margin-bottom: 24px;
 }
 
 @media (max-width: 768px) {
