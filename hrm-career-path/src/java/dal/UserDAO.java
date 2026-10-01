@@ -209,6 +209,16 @@ public class UserDAO {
             }
 
             if (newUserId > 0) {
+                // Neu vai tro la MANAGER (role_id = 3) va co phong ban, tu dong cap nhat Departments.manager_id
+                if (user.getRoleId() == 3 && user.getDepartmentId() != null && user.getDepartmentId() > 0) {
+                    String sqlUpdateDept = "UPDATE Departments SET manager_id = ? WHERE department_id = ?";
+                    try (PreparedStatement psDept = conn.prepareStatement(sqlUpdateDept)) {
+                        psDept.setInt(1, newUserId);
+                        psDept.setInt(2, user.getDepartmentId());
+                        psDept.executeUpdate();
+                    }
+                }
+
                 // Ghi nhan lich su tuyen dung
                 String sqlHistory = """
                     INSERT INTO Employee_History (user_id, old_department_id, new_department_id, old_position_id, new_position_id, old_level_id, new_level_id, change_type, change_date, notes, created_by)
@@ -516,6 +526,67 @@ public class UserDAO {
             e.printStackTrace();
         }
         return 0;
+    }
+
+    public int countAdmin() {
+        String sql = "SELECT COUNT(*) FROM Users WHERE role_id = 1 AND is_deleted = 0";
+        try (Connection conn = DBContext.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public User getManagerByDepartment(int departmentId) {
+        String sql = """
+            SELECT u.*, r.role_name, d.department_name, p.position_name, l.level_name
+            FROM Users u
+            JOIN Roles r ON u.role_id = r.role_id
+            LEFT JOIN Departments d ON u.department_id = d.department_id
+            LEFT JOIN Positions p ON u.position_id = p.position_id
+            LEFT JOIN Job_Levels l ON u.level_id = l.level_id
+            WHERE u.department_id = ? AND u.role_id = 3 AND u.is_deleted = 0 AND u.status = 1
+            """;
+        try (Connection conn = DBContext.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, departmentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapUserFromResultSet(rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean hasManagerInDepartment(int departmentId, Integer excludeUserId) {
+        String sql = """
+            SELECT COUNT(*) 
+            FROM Users 
+            WHERE department_id = ? AND role_id = 3 AND is_deleted = 0 AND status = 1
+            """ + (excludeUserId != null ? " AND user_id != ?" : "");
+        try (Connection conn = DBContext.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, departmentId);
+            if (excludeUserId != null) {
+                ps.setInt(2, excludeUserId);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     private User mapUserFromResultSet(ResultSet rs) throws SQLException {
