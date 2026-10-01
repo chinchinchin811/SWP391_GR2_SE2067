@@ -10,7 +10,10 @@
     boolean employeeActive = currentURI.contains("/employees");
     boolean mentorAdminActive = currentURI.contains("/mentors")
             && ("pair".equals(action) || "evaluations".equals(action));
-    boolean mentorWorkspaceActive = currentURI.contains("/mentors") && "evaluations".equals(action);
+     
+    boolean mentorWorkspaceActive = currentURI.contains("/mentors") 
+            && ("evaluations".equals(action) || "myMentees".equals(action));
+            
     boolean trainingActive = currentURI.contains("/materials");
     boolean testActive = currentURI.contains("/tests");
     
@@ -38,23 +41,10 @@
             <% if (loggedInUser != null && loggedInUser.getRoleId() == 4) { %>
             <li class="nav-item">
                 <a class="nav-link" href="<%= request.getContextPath() %>/mentors?action=myMentor">
-                    Mentor Hướng Dẫn Của Tôi
+                    <i class="fa-solid fa-user-tie nav-icon"></i> <span>Mentor Hướng Dẫn Của Tôi</span>
                 </a>
             </li>
-
             <% } %>
-            <% 
-    // Giả sử Role ID của Mentor trong database của bạn là 5
-    if (loggedInUser != null && loggedInUser.getRoleId() == 6) { 
-            %>
-            <li class="nav-item">
-                <a class="nav-link" href="<%= request.getContextPath() %>/mentors?action=myMentees">
-                    <i class="fa-solid fa-user-graduate nav-icon"></i> <span>Danh sách Mentee</span>
-                </a>
-            </li>
-            <% 
-                } 
-            %>
 
             <% if (roleId == 1 || roleId == 2) { %>
             <li class="sidebar-section <%= organizationActive ? "has-active" : "" %>" data-sidebar-section="organization">
@@ -133,30 +123,28 @@
             </li>
             <% } %>
 
+            <%-- [SỬA TẠI ĐÂY 2]: Tổ chức lại khu vực Mentor Workspace --%>
             <% if (roleId == 5) { %>
             <li class="sidebar-section <%= mentorWorkspaceActive ? "has-active" : "" %>" data-sidebar-section="mentor-workspace">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-mentor-workspace">
-                    <span>Mentor Workspace</span>
-                    <span class="sidebar-menu-category-icon" aria-hidden="true">⌄</span>
+                    
+                    <span><i class="fa-solid fa-user-tie nav-cat-icon"></i> Mentor Workspace</span>
+                    <span class="sidebar-menu-category-icon" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
                 </button>
                 <ul class="sidebar-submenu" id="sidebar-mentor-workspace">
-                    <li class="<%= mentorWorkspaceActive ? "active" : "" %>">
-                        <a href="<%= request.getContextPath() %>/mentors?action=evaluations"><i class="fa-solid fa-clipboard-check nav-icon"></i> <span>Đánh giá Mentee</span></a>
+                   
+                    <li class="<%= currentURI.contains("/mentors") && "myMentees".equals(action) ? "active" : "" %>">
+                        <a href="<%= request.getContextPath() %>/mentors?action=myMentees">
+                            <i class="fa-solid fa-user-graduate nav-icon"></i> <span>Danh sách Mentee của tôi</span>
+                        </a>
+                    </li>
+                    <li class="<%= currentURI.contains("/mentors") && "evaluations".equals(action) ? "active" : "" %>">
+                        <a href="<%= request.getContextPath() %>/mentors?action=evaluations">
+                            <i class="fa-solid fa-clipboard-check nav-icon"></i> <span>Đánh giá Mentee</span>
+                        </a>
                     </li>
                 </ul>
             </li>
-            <% 
-    // Kiểm tra nếu là Mentor (Giả sử Role ID của Mentor trong DB của bạn là 5, nếu khác hãy sửa lại số này)
-    if (loggedInUser != null && loggedInUser.getRoleId() == 5) { 
-            %>
-            <li class="nav-item">
-                <a class="nav-link" href="<%= request.getContextPath() %>/mentors?action=myMentees">
-                    Danh sách Mentee của tôi
-                </a>
-            </li>
-            <% 
-                } 
-            %>
             <% } %>
 
             <li class="sidebar-section <%= trainingActive ? "has-active" : "" %>" data-sidebar-section="training">
@@ -220,7 +208,6 @@
             var storageKey = 'hrm.sidebar.' + sectionName + '.open';
             var isCurrentActive = section.classList.contains('has-active');
             
-            // Mặc định: Chỉ mục đang active là MỞ, các mục khác ĐÓNG thành dropdown
             var isOpen = isCurrentActive;
             try {
                 var saved = localStorage.getItem(storageKey);
@@ -229,7 +216,6 @@
                 }
             } catch (e) {}
 
-            // Trang hiện tại luôn được mở
             if (isCurrentActive) {
                 isOpen = true;
             }
@@ -258,10 +244,8 @@
                 }
             }
 
-            // Thiết lập trạng thái ban đầu
             setDropdownState(isOpen, false);
 
-            // Bật lại animation sau 60ms
             setTimeout(function () {
                 submenu.style.transition = 'max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease';
             }, 60);
