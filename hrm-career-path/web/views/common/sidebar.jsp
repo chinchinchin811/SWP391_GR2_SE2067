@@ -20,19 +20,16 @@
     User loggedInUser = (User) session.getAttribute("currentUser");
 %>
 <aside class="sidebar">
-    <div class="sidebar-brand">
+    <a href="<%= request.getContextPath() %>/dashboard" class="sidebar-brand" title="Trang tổng quan">
         <div class="brand-icon"><i class="fa-solid fa-layer-group"></i></div>
         <div class="brand-text">
             <h3>HRM Career Path</h3>
             <span>Hệ thống Quản trị</span>
         </div>
-    </div>
+    </a>
 
     <nav class="sidebar-menu" aria-label="Điều hướng chính">
         <ul class="sidebar-menu-list">
-            <li class="<%= currentURI.contains("/dashboard") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/dashboard"><i class="fa-solid fa-chart-pie nav-icon"></i> <span>Tổng quan</span></a>
-            </li>
 
             <li class="<%= currentURI.contains("/flashcards") || currentURI.contains("/flashcard-list.jsp") ? "active" : "" %>">
                 <a href="<%= request.getContextPath() %>/flashcards"><i class="fa-solid fa-clone nav-icon"></i> <span>Flashcards</span></a>                
