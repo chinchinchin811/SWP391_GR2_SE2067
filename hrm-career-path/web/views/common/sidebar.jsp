@@ -22,7 +22,7 @@
     User loggedInUser = (User) session.getAttribute("currentUser");
 %>
 <aside class="sidebar">
-    <a href="<%= request.getContextPath() %><%= roleId == 1 ? "/flashcards" : "/dashboard" %>" class="sidebar-brand" title="<%= roleId == 1 ? "Flashcards" : "Trang tổng quan" %>">
+    <a href="<%= request.getContextPath() %>/dashboard" class="sidebar-brand" title="Trang tổng quan">
         <div class="brand-icon"><i class="fa-solid fa-layer-group"></i></div>
         <div class="brand-text">
             <h3>HRM Career Path</h3>
@@ -80,21 +80,7 @@
                     </li>
                 </ul>
             </li>
-
-            <li class="sidebar-section <%= mentorAdminActive ? "has-active" : "" %>" data-sidebar-section="mentor-admin">
-                <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-mentor-admin">
-                    <span><i class="fa-solid fa-handshake nav-cat-icon"></i> Quản trị Mentor</span>
-                    <span class="sidebar-menu-category-icon" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
-                </button>
-                <ul class="sidebar-submenu" id="sidebar-mentor-admin">
-                    <li class="<%= currentURI.contains("/mentors") && "pair".equals(action) ? "active" : "" %>">
-                        <a href="<%= request.getContextPath() %>/mentors?action=pair"><i class="fa-solid fa-link nav-icon"></i> <span>Ghép Nối Mentor</span></a>
-                    </li>
-                    <li class="<%= currentURI.contains("/mentors") && "evaluations".equals(action) ? "active" : "" %>">
-                        <a href="<%= request.getContextPath() %>/mentors?action=evaluations"><i class="fa-solid fa-clipboard-check nav-icon"></i> <span>Kết Quả Đánh Giá của Mentor</span></a>
-                    </li>
-                </ul>
-            </li>
+           
             <% } else if (roleId == 3) { %>
             <li class="sidebar-section <%= (organizationActive || employeeActive) ? "has-active" : "" %>" data-sidebar-section="managed-department">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-managed-department">
