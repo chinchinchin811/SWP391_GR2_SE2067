@@ -20,7 +20,7 @@
     <div class="topbar">
         <h1><%= (roleId == 3) ? "Thông Tin Phòng Ban Phụ Trách" : "Cơ Cấu Tổ Chức Phòng Ban" %></h1>
         <div>
-            <% if (roleId == 1 || roleId == 2) { %>
+            <% if (roleId == 2) { %>
                 <a href="<%= request.getContextPath() %>/departments?action=create" class="btn btn-primary">
                     + Tạo Phòng Ban Mới
                 </a>
@@ -51,7 +51,7 @@
                             <th>Mô Tả Chức Năng</th>
                             <th>Số Nhân Sự</th>
                             <th>Trạng Thái</th>
-                            <% if (roleId == 1 || roleId == 2) { %>
+                            <% if (roleId == 2) { %>
                                 <th style="text-align: center; width: 140px;">Thao Tác</th>
                             <% } %>
                         </tr>
@@ -94,7 +94,7 @@
                                     <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Tạm ngưng</span>
                                 <% } %>
                             </td>
-                            <% if (roleId == 1 || roleId == 2) { %>
+                            <% if (roleId == 2) { %>
                                 <td>
                                     <div class="table-actions">
                                         <a href="<%= request.getContextPath() %>/departments?action=edit&amp;id=<%= d.getDepartmentId() %>" class="btn btn-sm btn-action-edit" aria-label="Sửa phòng ban <%= d.getDepartmentName() %>">
@@ -116,7 +116,7 @@
                             } else {
                         %>
                         <tr>
-                            <td colspan="<%= (roleId == 1 || roleId == 2) ? "7" : "6" %>" style="text-align: center; padding: 15px;">Chưa có phòng ban nào.</td>
+                            <td colspan="<%= roleId == 2 ? "7" : "6" %>" style="text-align: center; padding: 15px;">Chưa có phòng ban nào.</td>
                         </tr>
                         <% } %>
                     </tbody>

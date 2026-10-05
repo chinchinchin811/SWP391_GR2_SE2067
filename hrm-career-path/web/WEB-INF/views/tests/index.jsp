@@ -32,9 +32,11 @@
     <div class="content-body">
         <nav class="test-nav" aria-label="Bài test">
             <a href="<%= base %>" class="<%= ("list".equals(view) && (request.getAttribute("scope") == null || "all".equals(request.getAttribute("scope")))) ? "active" : "" %>">Tất cả đề</a>
+            <% if(!"ADMIN".equals(actor.role())) { %>
             <a href="<%= base %>?scope=upcoming" class="<%= "upcoming".equals(request.getAttribute("scope")) ? "active" : "" %>">Sắp diễn ra</a>
-            <% if(!"ADMIN".equals(actor.role())) { %><a href="<%= base %>?action=mine" class="<%= "mine".equals(view) ? "active" : "" %>">Bài của tôi</a><% } %>
+            <a href="<%= base %>?action=mine" class="<%= "mine".equals(view) ? "active" : "" %>">Bài của tôi</a>
             <a href="<%= base %>?action=calendar" class="<%= "calendar".equals(view) ? "active" : "" %>">Lịch</a>
+            <% } %>
             <% if (actor.cultureManager() || actor.departmentManager()) { %><a href="<%= base %>?action=bank" class="<%= ("bank".equals(view) || "bankDetail".equals(view)) ? "active" : "" %>">Kho đề</a><% } %>
         </nav>
         <% if (flash != null) { %><div class="alert alert-success" role="status"><%= h(flash) %></div><% } %>

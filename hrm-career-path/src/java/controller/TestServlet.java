@@ -74,10 +74,18 @@ public class TestServlet extends HttpServlet {
             int page = req.getParameter("page") == null ? 1 : integer(req.getParameter("page"));
             req.setAttribute("pageNumber", page);
             String action = action(req);
+            if ("ADMIN".equals(actor.role()) && "calendar".equals(action)) {
+                res.sendRedirect(req.getContextPath() + "/tests");
+                return;
+            }
             req.setAttribute("testView", action);
             switch (action) {
                 case "list":
                     String scope = Optional.ofNullable(req.getParameter("scope")).orElse("all");
+                    if ("ADMIN".equals(actor.role()) && "upcoming".equals(scope)) {
+                        res.sendRedirect(req.getContextPath() + "/tests");
+                        return;
+                    }
                     req.setAttribute("scope", scope);
                     req.setAttribute("templates", service.listTemplates(userId, scope, page, 20));
                     break;

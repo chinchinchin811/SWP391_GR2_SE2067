@@ -32,7 +32,7 @@ public class DashboardServlet extends HttpServlet {
         User currentUser = (User) session.getAttribute("currentUser");
         int roleId = currentUser.getRoleId();
 
-        if (roleId == 1 || roleId == 2) {            
+        if (roleId == 1 || roleId == 2) {
             int totalDepartments = departmentDAO.countDepartments();
             int totalPositions = positionDAO.countPositions();
             int totalEmployees = userDAO.countEmployees();

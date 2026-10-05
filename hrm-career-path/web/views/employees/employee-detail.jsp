@@ -19,7 +19,7 @@
     <div class="topbar">
         <h1>Hồ Sơ Nhân Viên: <%= emp.getFullName() %></h1>
         <div style="display: flex; gap: 6px;">
-            <% if (roleId == 1 || roleId == 2) { %>
+            <% if (roleId == 2) { %>
                 <a href="<%= request.getContextPath() %>/employees?action=assign&id=<%= emp.getUserId() %>" class="btn btn-primary">
                     Điều chuyển / Thăng chức
                 </a>
@@ -29,7 +29,7 @@
                 <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">
                     Danh sách
                 </a>
-            <% } else if (roleId == 3) { %>
+            <% } else if (roleId == 1 || roleId == 3) { %>
                 <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">
                     Quay lại danh sách
                 </a>

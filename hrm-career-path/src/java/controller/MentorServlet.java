@@ -70,6 +70,10 @@ public class MentorServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        if (currentUser.getRoleId() == 1) {
+            response.sendRedirect(request.getContextPath() + "/flashcards");
+            return;
+        }
 
         String action = request.getParameter("action");
         if (action == null) {
@@ -79,7 +83,8 @@ public class MentorServlet extends HttpServlet {
             } else if (currentUser.getRoleId() == 5) {
                 action = "myMentees";
             } else {
-                action = "evaluations";
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
             }
         }
 
@@ -87,18 +92,11 @@ public class MentorServlet extends HttpServlet {
 
         switch (action) {
             case "pair":
-                if (currentUser.getRoleId() != 1 && currentUser.getRoleId() != 2) {
-                    response.sendRedirect(request.getContextPath() + "/dashboard");
-                    return;
-                }
-                request.setAttribute("newEmployees", mentorDAO.getUnassignedNewEmployees());
-                request.setAttribute("mentors", mentorDAO.getAllMentorsWithSpecialty());
-                request.setAttribute("assignments", mentorDAO.getActiveAssignments());
-                request.getRequestDispatcher("mentor-pairing.jsp").forward(request, response);
+                response.sendRedirect(request.getContextPath() + "/dashboard");
                 break;
 
             case "evaluations":
-                if (currentUser.getRoleId() == 4) {
+                if (currentUser.getRoleId() != 5) {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }
@@ -131,6 +129,10 @@ public class MentorServlet extends HttpServlet {
                 break;
 
             case "evaluateForm":
+                if (currentUser.getRoleId() != 5) {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
                 request.setAttribute("assignmentId", request.getParameter("assignmentId"));
                 request.getRequestDispatcher("mentor-evaluate-form.jsp").forward(request, response);
                 break;
@@ -155,31 +157,23 @@ public class MentorServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        if (currentUser.getRoleId() == 1) {
+            response.sendRedirect(request.getContextPath() + "/flashcards");
+            return;
+        }
 
         String action = request.getParameter("action");
 
         if ("assign".equals(action)) {
-            // SỬA LỖI: Cần lấy String trước, kiểm tra null/empty để tránh lỗi 500
-            String menteeIdStr = request.getParameter("menteeId");
-            String mentorIdStr = request.getParameter("mentorId");
+            response.sendRedirect(request.getContextPath() + "/dashboard");
+            return;
+        }
 
-            if (menteeIdStr != null && mentorIdStr != null && !menteeIdStr.isEmpty() && !mentorIdStr.isEmpty()) {
-                int menteeId = Integer.parseInt(menteeIdStr);
-                int mentorId = Integer.parseInt(mentorIdStr);
-
-                int positionId = 0;
-                String posParam = request.getParameter("positionId");
-                if (posParam != null && !posParam.trim().isEmpty()) {
-                    positionId = Integer.parseInt(posParam);
-                }
-
-                boolean success = new MentorDAO().assignMentorWithPosition(menteeId, mentorId, positionId, currentUser.getUserId());
-                if (success) {
-                    session.setAttribute("successMessage", "Ghép Mentor thành công!");
-                }
+        if ("saveEvaluation".equals(action)) {
+            if (currentUser.getRoleId() != 5) {
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
             }
-            response.sendRedirect(request.getContextPath() + "/mentors?action=pair");
-        }else if ("saveEvaluation".equals(action)) {
             String assignmentIdStr = request.getParameter("assignmentId");
             String feedback = request.getParameter("feedback");
             

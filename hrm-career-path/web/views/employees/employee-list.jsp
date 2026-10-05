@@ -32,7 +32,7 @@
             <%= (roleId == 3) ? "Nhân Sự Trực Thuộc Phòng Ban" : "Quản Lý Danh Sách Nhân Sự" %>
         </h1>
         <div>
-            <% if (roleId == 1 || roleId == 2) { %>
+            <% if (roleId == 2) { %>
                 <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
                     + Khai Báo Nhân Viên Mới
                 </a>
@@ -121,7 +121,7 @@
                             <th>Vị Trí & Cấp Bậc</th>
                             <th>Vai Trò</th>
                             <th>Trạng Thái</th>
-                            <th style="text-align: center; width: <%= (roleId == 1 || roleId == 2) ? "200px" : "80px" %>;">Thao Tác</th>
+                            <th style="text-align: center; width: <%= roleId == 2 ? "200px" : "80px" %>;">Thao Tác</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -160,7 +160,7 @@
                                     <% } %>
                                 </td>
                                 <td style="text-align: center;">
-                                    <% if (roleId == 1 || roleId == 2) { %>
+                                    <% if (roleId == 2) { %>
                                         <a href="<%= request.getContextPath() %>/employees?action=assign&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-assign" title="Điều chuyển / Thăng chức">
                                             <i class="fa-solid fa-arrows-rotate"></i> <span>Đổi vị trí</span>
                                         </a>
