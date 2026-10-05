@@ -119,7 +119,7 @@ public class DepartmentServlet extends HttpServlet {
                 departments.add(myDept);
             }
         } else {
-            // HR / Admin: Xem tất cả
+            // HR: Xem tất cả
             departments = departmentDAO.getAllDepartments();
         }
 

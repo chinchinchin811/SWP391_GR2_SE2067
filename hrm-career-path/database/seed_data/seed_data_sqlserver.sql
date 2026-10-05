@@ -36,20 +36,44 @@ GO
 -- 3. SEED DATA: BẢNG PHÒNG BAN (DEPARTMENTS)
 -- =======================================================
 INSERT INTO dbo.Departments (department_name, description, status, is_deleted) VALUES
-(N'Phòng Kỹ Thuật (IT)', N'Phát triển và vận hành hệ thống', 1, 0),
-(N'Phòng Nhân Sự (HR)', N'Tuyển dụng và quản lý nhân sự', 1, 0),
-(N'Phòng Kinh Doanh (Sales)', N'Kinh doanh và chăm sóc khách hàng', 1, 0);
+(N'Phòng Kỹ Thuật (IT)', N'Phát triển, bảo trì và vận hành hệ thống phần mềm', 1, 0),
+(N'Phòng Nhân Sự (HR)', N'Tuyển dụng, đào tạo và quản lý chế độ chính sách nhân sự', 1, 0),
+(N'Phòng Kinh Doanh (Sales)', N'Kinh doanh giải pháp, phát triển thị trường và chăm sóc khách hàng', 1, 0),
+(N'Phòng Marketing & Truyền Thông', N'Xây dựng thương hiệu, tiếp thị số và truyền thông doanh nghiệp', 1, 0),
+(N'Phòng Kế Toán - Tài Chính', N'Quản lý dòng tiền, kế toán tổng hợp và lập kế hoạch tài chính', 1, 0);
 GO
 
 -- =======================================================
 -- 4. SEED DATA: BẢNG VỊ TRÍ CÔNG VIỆC (POSITIONS)
 -- =======================================================
 INSERT INTO dbo.Positions (position_name, department_id, description, status, is_deleted) VALUES
-(N'Java Developer', 1, N'Lập trình viên Java backend', 1, 0),
-(N'Frontend Developer', 1, N'Lập trình viên giao diện web', 1, 0),
-(N'QA Tester', 1, N'Kiểm thử phần mềm', 1, 0),
-(N'HR Officer', 2, N'Chuyên viên nhân sự', 1, 0),
-(N'Sales Executive', 3, N'Chuyên viên kinh doanh', 1, 0);
+-- 1. Phòng Kỹ Thuật (IT - Department 1)
+(N'Java Developer', 1, N'Lập trình viên backend Java/Spring/Jakarta EE', 1, 0),
+(N'Frontend Developer', 1, N'Lập trình viên giao diện web React/Vue/HTML/CSS', 1, 0),
+(N'QA / Software Tester', 1, N'Kiểm thử tự động & kiểm thử thủ công phần mềm', 1, 0),
+-- 2. Phòng Nhân Sự (HR - Department 2)
+(N'HR Officer', 2, N'Chuyên viên nhân sự tổng hợp', 1, 0),
+-- 3. Phòng Kinh Doanh (Sales - Department 3)
+(N'Sales Executive', 3, N'Chuyên viên kinh doanh giải pháp doanh nghiệp B2B', 1, 0),
+-- Bổ sung tiếp cho Phòng Kỹ Thuật (IT - Department 1)
+(N'DevOps Engineer', 1, N'Kỹ sư hạ tầng, Cloud và quy trình CI/CD', 1, 0),
+(N'Business Analyst (BA)', 1, N'Chuyên viên phân tích nghiệp vụ và quy trình phần mềm', 1, 0),
+(N'Mobile App Developer', 1, N'Lập trình viên ứng dụng di động Flutter/iOS/Android', 1, 0),
+-- Bổ sung tiếp cho Phòng Nhân Sự (HR - Department 2)
+(N'Talent Acquisition Specialist', 2, N'Chuyên viên tuyển dụng nhân tài', 1, 0),
+(N'C&B Specialist', 2, N'Chuyên viên tiền lương, bảo hiểm và chính sách đãi ngộ', 1, 0),
+(N'Training & Development Executive', 2, N'Chuyên viên đào tạo và phát triển năng lực nhân viên', 1, 0),
+-- Bổ sung tiếp cho Phòng Kinh Doanh (Sales - Department 3)
+(N'Key Account Manager (KAM)', 3, N'Quản lý và chăm sóc khách hàng doanh nghiệp trọng điểm', 1, 0),
+(N'Business Development Rep (BDR)', 3, N'Chuyên viên tìm kiếm và mở rộng mạng lưới khách hàng mới', 1, 0),
+-- 4. Phòng Marketing & Truyền Thông (Marketing - Department 4)
+(N'Digital Marketing Specialist', 4, N'Chuyên viên tiếp thị số, SEO và quảng cáo trực tuyến', 1, 0),
+(N'Content Creator & Copywriter', 4, N'Chuyên viên sáng tạo nội dung, bài viết truyền thông', 1, 0),
+(N'UI/UX Product Designer', 4, N'Thiết kế trải nghiệm người dùng và giao diện sản phẩm số', 1, 0),
+-- 5. Phòng Kế Toán - Tài Chính (Department 5)
+(N'Kế Toán Tổng Hợp (General Accountant)', 5, N'Hạch toán chi phí, doanh thu và lập báo cáo tài chính', 1, 0),
+(N'Chuyên Viên Kiểm Toán Nội Bộ', 5, N'Kiểm soát rủi ro tài chính và tuân thủ quy chế chi tiêu', 1, 0),
+(N'Financial Planning & Analysis (FP&A)', 5, N'Chuyên viên phân tích và dự báo kế hoạch tài chính', 1, 0);
 GO
 
 -- =======================================================

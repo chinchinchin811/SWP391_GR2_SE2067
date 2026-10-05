@@ -15,6 +15,7 @@ import dal.FlashcardDAO;
 import model.Flashcard.Flashcard;
 import model.Flashcard.FlashcardDeck;
 import model.User;
+import jakarta.servlet.http.HttpSession;
 import java.util.List;
 
 /**
@@ -86,7 +87,7 @@ public class FlashcardServlet extends HttpServlet {
                 currentDeckId = -1;
             }
         }
-        
+
         if (currentDeckId == -1 && decks != null && !decks.isEmpty()) {
             currentDeckId = decks.get(0).getDeckId();
         }

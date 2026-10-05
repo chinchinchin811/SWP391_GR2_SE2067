@@ -137,35 +137,52 @@
                     <% if (!isEdit) { %>
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="departmentId">Phòng ban:</label>
-                            <select id="departmentId" name="departmentId" class="form-control">
-                                <option value="0">-- Chưa xếp phòng ban --</option>
+                            <label for="departmentId" id="deptLabel">Phòng ban:</label>
+                            <select id="departmentId" name="departmentId" class="form-control" onchange="onDepartmentChange()">
+                                <option value="0" data-has-manager="false">-- Chưa xếp phòng ban --</option>
                                 <%
                                     if (departments != null) {
                                         for (Department d : departments) {
+                                            boolean hasMgr = (d.getManagerName() != null && !d.getManagerName().trim().isEmpty());
+                                            String mgrInfo = hasMgr ? " (Đã có TP: " + d.getManagerName() + ")" : " (Chưa có TP)";
                                 %>
-                                    <option value="<%= d.getDepartmentId() %>"><%= d.getDepartmentName() %></option>
+                                    <option value="<%= d.getDepartmentId() %>" 
+                                            data-has-manager="<%= hasMgr %>" 
+                                            data-manager-name="<%= hasMgr ? d.getManagerName() : "" %>"
+                                            <%= (emp != null && emp.getDepartmentId() != null && emp.getDepartmentId().equals(d.getDepartmentId())) ? "selected" : "" %>>
+                                        <%= d.getDepartmentName() %><%= mgrInfo %>
+                                    </option>
                                 <%
                                         }
                                     }
                                 %>
                             </select>
+                            <small id="managerAlert" style="display: none; color: #e74c3c; font-weight: 500; margin-top: 4px;"></small>
                         </div>
 
                         <div class="form-group">
                             <label for="positionId">Vị trí chuyên môn:</label>
                             <select id="positionId" name="positionId" class="form-control">
-                                <option value="0">-- Chưa xếp vị trí --</option>
+                                <option value="0" data-dept="0">-- Chọn vị trí chuyên môn --</option>
                                 <%
                                     if (positions != null) {
                                         for (Position p : positions) {
+                                            int pDeptId = (p.getDepartmentId() != null) ? p.getDepartmentId() : 0;
+                                            boolean isSel = (emp != null && emp.getPositionId() != null && emp.getPositionId().equals(p.getPositionId()));
                                 %>
-                                    <option value="<%= p.getPositionId() %>"><%= p.getPositionName() %></option>
+                                    <option value="<%= p.getPositionId() %>" 
+                                            data-dept="<%= pDeptId %>" 
+                                            <%= isSel ? "selected" : "" %>>
+                                        <%= p.getPositionName() %>
+                                    </option>
                                 <%
                                         }
                                     }
                                 %>
                             </select>
+                            <small id="posHelp" style="color: #7f8c8d; font-size: 12px; display: block; margin-top: 3px;">
+                                Danh sách vị trí tự động lọc theo Phòng ban tương ứng.
+                            </small>
                         </div>
 
                         <div class="form-group">
@@ -202,5 +219,88 @@
         </div>
     </div>
 </main>
+
+<script>
+    function checkManagerWarning() {
+        var roleSelect = document.getElementById("roleId");
+        var deptSelect = document.getElementById("departmentId");
+        var deptLabel = document.getElementById("deptLabel");
+        var alertEl = document.getElementById("managerAlert");
+
+        if (!roleSelect || !deptSelect || !alertEl) return;
+
+        var selectedRole = roleSelect.value;
+        var selectedDeptOpt = deptSelect.options[deptSelect.selectedIndex];
+
+        if (selectedRole === "3") { // MANAGER
+            if (deptLabel) deptLabel.innerHTML = 'Phòng ban <span style="color:red;">(*)</span>:';
+            if (deptSelect.value === "0") {
+                alertEl.style.display = "block";
+                alertEl.style.color = "#e67e22";
+                alertEl.innerText = "⚠ Trưởng phòng bắt buộc phải chọn một phòng ban cụ thể!";
+            } else if (selectedDeptOpt && selectedDeptOpt.getAttribute("data-has-manager") === "true") {
+                alertEl.style.display = "block";
+                alertEl.style.color = "#e74c3c";
+                var mgrName = selectedDeptOpt.getAttribute("data-manager-name");
+                alertEl.innerText = "⚠ Phòng ban này đã có Trưởng phòng (" + mgrName + "). Mỗi phòng chỉ có tối đa 1 Trưởng phòng!";
+            } else {
+                alertEl.style.display = "none";
+            }
+        } else {
+            if (deptLabel) deptLabel.innerHTML = 'Phòng ban:';
+            alertEl.style.display = "none";
+        }
+    }
+
+    function filterPositionsByDepartment(preserveSelection) {
+        var deptSelect = document.getElementById("departmentId");
+        var posSelect = document.getElementById("positionId");
+        if (!deptSelect || !posSelect) return;
+
+        var selectedDept = deptSelect.value;
+        var currentPos = posSelect.value;
+        var hasMatchingOption = false;
+
+        for (var i = 0; i < posSelect.options.length; i++) {
+            var opt = posSelect.options[i];
+            var optDept = opt.getAttribute("data-dept");
+
+            if (opt.value === "0") {
+                opt.style.display = "";
+                opt.hidden = false;
+            } else if (selectedDept === "0" || selectedDept === "") {
+                opt.style.display = "none";
+                opt.hidden = true;
+            } else if (optDept === selectedDept || optDept === "0") {
+                opt.style.display = "";
+                opt.hidden = false;
+                if (opt.value === currentPos) {
+                    hasMatchingOption = true;
+                }
+            } else {
+                opt.style.display = "none";
+                opt.hidden = true;
+            }
+        }
+
+        if (!hasMatchingOption && !preserveSelection) {
+            posSelect.value = "0";
+        }
+    }
+
+    function onDepartmentChange() {
+        checkManagerWarning();
+        filterPositionsByDepartment(false);
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var roleSelect = document.getElementById("roleId");
+        if (roleSelect) {
+            roleSelect.addEventListener("change", checkManagerWarning);
+        }
+        checkManagerWarning();
+        filterPositionsByDepartment(true);
+    });
+</script>
 
 <jsp:include page="/views/common/footer.jsp" />

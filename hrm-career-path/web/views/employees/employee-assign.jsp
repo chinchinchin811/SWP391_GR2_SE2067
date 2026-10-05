@@ -64,8 +64,8 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="departmentId">Phòng ban mới:</label>
-                            <select id="departmentId" name="departmentId" class="form-control">
-                                <option value="0">-- Giữ nguyên hoặc Chưa phân --</option>
+                            <select id="departmentId" name="departmentId" class="form-control" onchange="filterAssignPositions(false)">
+                                <option value="0" <%= (emp.getDepartmentId() == null || emp.getDepartmentId() == 0) ? "selected" : "" %>>-- Giữ nguyên hoặc Chưa phân --</option>
                                 <%
                                     if (departments != null) {
                                         for (Department d : departments) {
@@ -82,18 +82,26 @@
                         <div class="form-group">
                             <label for="positionId">Vị trí chuyên môn mới:</label>
                             <select id="positionId" name="positionId" class="form-control">
-                                <option value="0">-- Giữ nguyên hoặc Chưa phân --</option>
+                                <option value="0" data-dept="0">-- Giữ nguyên hoặc Chưa phân --</option>
                                 <%
                                     if (positions != null) {
                                         for (Position p : positions) {
+                                            int pDeptId = (p.getDepartmentId() != null) ? p.getDepartmentId() : 0;
                                             boolean isSel = (emp.getPositionId() != null && emp.getPositionId().equals(p.getPositionId()));
                                 %>
-                                    <option value="<%= p.getPositionId() %>" <%= isSel ? "selected" : "" %>><%= p.getPositionName() %></option>
+                                    <option value="<%= p.getPositionId() %>" 
+                                            data-dept="<%= pDeptId %>" 
+                                            <%= isSel ? "selected" : "" %>>
+                                        <%= p.getPositionName() %>
+                                    </option>
                                 <%
                                         }
                                     }
                                 %>
                             </select>
+                            <small style="color: #7f8c8d; font-size: 12px; display: block; margin-top: 3px;">
+                                Vị trí tự động lọc theo Phòng ban mới được chọn.
+                            </small>
                         </div>
 
                         <div class="form-group">
@@ -131,5 +139,47 @@
         </div>
     </div>
 </main>
+
+<script>
+    function filterAssignPositions(preserveSelection) {
+        var deptSelect = document.getElementById("departmentId");
+        var posSelect = document.getElementById("positionId");
+        if (!deptSelect || !posSelect) return;
+
+        var selectedDept = deptSelect.value;
+        var currentPos = posSelect.value;
+        var hasMatching = false;
+
+        for (var i = 0; i < posSelect.options.length; i++) {
+            var opt = posSelect.options[i];
+            var optDept = opt.getAttribute("data-dept");
+
+            if (opt.value === "0") {
+                opt.style.display = "";
+                opt.hidden = false;
+            } else if (selectedDept === "0" || selectedDept === "") {
+                opt.style.display = "";
+                opt.hidden = false;
+            } else if (optDept === selectedDept || optDept === "0") {
+                opt.style.display = "";
+                opt.hidden = false;
+                if (opt.value === currentPos) {
+                    hasMatching = true;
+                }
+            } else {
+                opt.style.display = "none";
+                opt.hidden = true;
+            }
+        }
+
+        if (!hasMatching && !preserveSelection && selectedDept !== "0") {
+            posSelect.value = "0";
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        filterAssignPositions(true);
+    });
+</script>
 
 <jsp:include page="/views/common/footer.jsp" />

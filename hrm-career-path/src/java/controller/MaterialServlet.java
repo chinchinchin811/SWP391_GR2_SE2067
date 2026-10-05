@@ -317,7 +317,7 @@ public class MaterialServlet extends HttpServlet {
     }
 
     private boolean canManage(User u) {
-        return u.getRoleId() <= 3;
+        return u.getRoleId() >= 1 && u.getRoleId() <= 3;
     }
 
     private void deny(HttpServletResponse s, HttpServletRequest q) throws IOException {

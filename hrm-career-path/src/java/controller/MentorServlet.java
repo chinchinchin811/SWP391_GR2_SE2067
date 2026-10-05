@@ -92,7 +92,14 @@ public class MentorServlet extends HttpServlet {
 
         switch (action) {
             case "pair":
-                response.sendRedirect(request.getContextPath() + "/dashboard");
+                if (currentUser.getRoleId() != 2) {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
+                request.setAttribute("newEmployees", mentorDAO.getUnassignedNewEmployees());
+                request.setAttribute("mentors", mentorDAO.getAllMentorsWithSpecialty());
+                request.setAttribute("assignments", mentorDAO.getActiveAssignments());
+                request.getRequestDispatcher("mentor-pairing.jsp").forward(request, response);
                 break;
 
             case "evaluations":

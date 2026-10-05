@@ -113,6 +113,25 @@ ADD CONSTRAINT FK_Departments_Manager FOREIGN KEY (manager_id)
     REFERENCES dbo.Users(user_id);
 GO
 
+-- RÀNG BUỘC TOÀN VẸN NGHIỆP VỤ (UNIQUE FILTERED INDEXES)
+-- 1. Toàn bộ hệ thống chỉ có DUY NHẤT 1 Quản trị viên (ADMIN - role_id = 1)
+CREATE UNIQUE NONCLUSTERED INDEX UQ_Users_SingleAdmin 
+ON dbo.Users(role_id) 
+WHERE role_id = 1 AND is_deleted = 0;
+GO
+
+-- 2. Mỗi phòng ban chỉ có DUY NHẤT 1 Trưởng phòng (MANAGER - role_id = 3)
+CREATE UNIQUE NONCLUSTERED INDEX UQ_Users_SingleManagerPerDept 
+ON dbo.Users(department_id) 
+WHERE role_id = 3 AND is_deleted = 0 AND department_id IS NOT NULL;
+GO
+
+-- 3. Mỗi Trưởng phòng chỉ phụ trách tối đa 1 phòng ban
+CREATE UNIQUE NONCLUSTERED INDEX UQ_Departments_SingleManager 
+ON dbo.Departments(manager_id) 
+WHERE manager_id IS NOT NULL AND is_deleted = 0;
+GO
+
 -- =======================================================
 -- 6. BẢNG LỊCH SỬ BIẾN ĐỘNG (EMPLOYEE_HISTORY)
 -- =======================================================

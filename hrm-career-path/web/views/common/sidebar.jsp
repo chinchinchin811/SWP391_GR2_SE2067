@@ -29,6 +29,7 @@
 
     <nav class="sidebar-menu" aria-label="Điều hướng chính">
         <ul class="sidebar-menu-list">
+
             <% if (roleId == 1) { %>
             <li class="<%= currentURI.contains("/departments") ? "active" : "" %>">
                 <a href="<%= request.getContextPath() %>/departments"><i class="fa-regular fa-building nav-icon"></i> <span>Danh sách Phòng ban</span></a>
@@ -76,7 +77,7 @@
                     </li>
                 </ul>
             </li>
-
+           
             <% } else if (roleId == 3) { %>
             <li class="sidebar-section <%= (organizationActive || employeeActive) ? "has-active" : "" %>" data-sidebar-section="managed-department">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-managed-department">
