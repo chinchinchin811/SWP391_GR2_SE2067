@@ -43,6 +43,11 @@ public class EmployeeServlet extends HttpServlet {
             action = "list";
         }
 
+        if (currentUser.getRoleId() == 1 && !"list".equals(action) && !"detail".equals(action)) {
+            response.sendRedirect(request.getContextPath() + "/employees");
+            return;
+        }
+
         // Nhân viên thường (role 4): Chỉ được xem hồ sơ của chính mình
         if (currentUser.getRoleId() == 4) {
             if ("detail".equals(action)) {
@@ -99,6 +104,11 @@ public class EmployeeServlet extends HttpServlet {
         }
 
         User currentUser = (User) session.getAttribute("currentUser");
+
+        if (currentUser.getRoleId() == 1) {
+            response.sendRedirect(request.getContextPath() + "/flashcards");
+            return;
+        }
 
         // Nhân viên thường không có quyền thao tác dữ liệu
         if (currentUser.getRoleId() == 4) {

@@ -13,6 +13,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import dal.FlashcardDAO;
 import model.Flashcard.Flashcard;
 import model.Flashcard.FlashcardDeck;
+import model.User;
+import jakarta.servlet.http.HttpSession;
 import java.util.List;
 
 /**
@@ -59,10 +61,17 @@ public class FlashcardServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("currentUser") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        User currentUser = (User) session.getAttribute("currentUser");
         FlashcardDAO dao = new FlashcardDAO();
         List<FlashcardDeck> decks;
         try {
-            decks = dao.getAllDecks();
+            decks = currentUser.getRoleId() == 1 ? dao.getCultureDecks() : dao.getAllDecks();
         } catch (IllegalStateException e) {
             throw new ServletException("Khong the tai du lieu Flashcard. Hay tao bang bang create_tables_sqlserver.sql va nap du lieu bang seed_data_sqlserver.sql.", e);
         }

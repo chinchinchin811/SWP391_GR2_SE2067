@@ -30,6 +30,11 @@ public class PositionServlet extends HttpServlet {
 
         User currentUser = (User) session.getAttribute("currentUser");
 
+        if (currentUser.getRoleId() == 1) {
+            response.sendRedirect(request.getContextPath() + "/flashcards");
+            return;
+        }
+
         // Nhân viên không vào trang quản lý vị trí
         if (currentUser.getRoleId() == 4) {
             response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + currentUser.getUserId());
@@ -74,8 +79,8 @@ public class PositionServlet extends HttpServlet {
 
         User currentUser = (User) session.getAttribute("currentUser");
 
-        // Chỉ HR và Admin mới được thêm/sửa/xóa vị trí
-        if (currentUser.getRoleId() > 2) {
+        // Chỉ HR mới được thêm/sửa/xóa vị trí
+        if (currentUser.getRoleId() != 2) {
             response.sendRedirect(request.getContextPath() + "/positions");
             return;
         }

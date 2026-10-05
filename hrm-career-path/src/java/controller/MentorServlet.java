@@ -70,6 +70,10 @@ public class MentorServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
+        if (currentUser.getRoleId() == 1) {
+            response.sendRedirect(request.getContextPath() + "/flashcards");
+            return;
+        }
 
         String action = request.getParameter("action");
         if (action == null) {
@@ -87,7 +91,7 @@ public class MentorServlet extends HttpServlet {
 
         switch (action) {
             case "pair":
-                if (currentUser.getRoleId() != 1 && currentUser.getRoleId() != 2) {
+                if (currentUser.getRoleId() != 2) {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }
@@ -153,6 +157,10 @@ public class MentorServlet extends HttpServlet {
 
         if (currentUser == null) {
             response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        if (currentUser.getRoleId() == 1) {
+            response.sendRedirect(request.getContextPath() + "/flashcards");
             return;
         }
 
