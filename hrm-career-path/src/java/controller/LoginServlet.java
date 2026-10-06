@@ -41,12 +41,18 @@ public class LoginServlet extends HttpServlet {
 
         User user = userDAO.login(username.trim(), password.trim());
         if (user != null) {
+            if (!user.isStatus()) {
+                request.setAttribute("error", "Tài khoản đã bị khóa!");
+                request.setAttribute("enteredUsername", username);
+                request.getRequestDispatcher("/login.jsp").forward(request, response);
+                return;
+            }
             HttpSession session = request.getSession();
             session.setAttribute("currentUser", user);
             session.setAttribute("userRole", user.getRoleName());
             response.sendRedirect(request.getContextPath() + "/dashboard");
         } else {
-            request.setAttribute("error", "Tên đăng nhập hoặc mật khẩu không chính xác, hoặc tài khoản đã bị khóa!");
+            request.setAttribute("error", "Tên đăng nhập hoặc mật khẩu không chính xác.");
             request.setAttribute("enteredUsername", username);
             request.getRequestDispatcher("/login.jsp").forward(request, response);
         }
