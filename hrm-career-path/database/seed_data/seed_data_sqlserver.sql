@@ -85,7 +85,8 @@ INSERT INTO dbo.Users (username, password, full_name, email, phone, gender, role
 ('manager_it', '123', N'Trần Văn Minh', 'minh.tv@hrm.com', '0901000003', N'Nam', 3, 1, 1, 6, '2022-02-01', 1, 0),
 ('dev_fresher', '123', N'Phạm Đức Trọng', 'trong.pd@hrm.com', '0901000006', N'Nam', 4, 1, 1, 2, '2026-08-01', 1, 0),
 ('dev_tester', '123', N'Ngô Mai Phương', 'phuong.nm@hrm.com', '0901000007', N'Nữ', 4, 1, 3, 3, '2023-06-01', 1, 0),
-('mentor_java', '123', N'Lê Hữu Mentor', 'mentor.java@hrm.com', '0988888888', N'Nam', 5, 1, 1, 5, '2021-01-01', 1, 0);
+('mentor_java', '123', N'Lê Hữu Mentor', 'mentor.java@hrm.com', '0988888888', N'Nam', 5, 1, 1, 5, '2021-01-01', 1, 0),
+('locked_user', '123', N'Nguyễn Khóa Khoản', 'locked.user@hrm.com', '0901999999', N'Nam', 4, 1, 1, 2, '2026-01-01', 0, 0);
 GO
 
 -- Cập nhật Trưởng phòng cho các phòng ban
