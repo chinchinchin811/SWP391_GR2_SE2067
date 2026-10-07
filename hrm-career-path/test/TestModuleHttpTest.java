@@ -140,9 +140,15 @@ public class TestModuleHttpTest {
         String template = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", title, "description", "Yêu cầu <img src=x onerror=alert(1)>",
                 "type", "department", "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
+        HttpResponse<String> upcomingDetail = get(manager, "/hrm/tests?action=detail&id=" + template);
+        check(upcomingDetail.statusCode() == 200 && upcomingDetail.body().contains("Sắp tới")
+                && !upcomingDetail.body().contains("Công bố đề"),
+                "new template is upcoming immediately without draft or publish action");
+        check(get(member, "/hrm/tests?action=detail&id=" + template).statusCode() == 200,
+                "new template is visible immediately");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", template).statusCode() == 400,
+                "removed publish endpoint rejected");
         execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + template);
-        check(get(member, "/hrm/tests?action=detail&id=" + template).statusCode() == 404, "draft inaccessible to member");
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", template).statusCode() == 303, "publish form");
         HttpResponse<String> listPage = get(manager, "/hrm/tests");
         check(listPage.statusCode() == 200 && listPage.body().contains("&lt;script&gt;"), "title HTML escaped in list");
         check(!listPage.body().contains("<script>alert(1)</script>"), "no raw script in title");
@@ -155,15 +161,26 @@ public class TestModuleHttpTest {
                 "template archive action removed");
         check(post(manager, "/hrm/tests", "csrf", token, "action", "archive", "id", template).statusCode() == 400,
                 "removed archive endpoint rejected");
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", template, "assigneeId", "2").statusCode() == 303, "assign form");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", template,
+                "assigneeId", "2", "durationMinutes", "61").statusCode() == 400,
+                "duration above 60 minutes rejected");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", template,
+                "assigneeId", "2", "durationMinutes", "15").statusCode() == 303, "assign form");
         String assignment = assignmentId(conn, template);
         HttpResponse<String> pendingDetail = get(manager, "/hrm/tests?action=detail&id=" + template);
         check(pendingDetail.statusCode() == 200 && pendingDetail.body().contains("Member")
                 && pendingDetail.body().contains("Chưa làm")
                 && pendingDetail.body().contains("Đánh giá chuyên môn")
                 && pendingDetail.body().contains("Câu tình huống")
-                && pendingDetail.body().contains("Bắt đầu") && pendingDetail.body().contains("Kết thúc"),
+                && pendingDetail.body().contains("Mở đợt") && pendingDetail.body().contains("Đóng đợt")
+                && pendingDetail.body().contains("15 phút"),
                 "manager detail reports pending assignee with scope, content and schedule");
+        HttpResponse<String> assignmentFromList = get(member, "/hrm/tests?action=detail&id=" + template);
+        check(assignmentFromList.statusCode() == 200 && assignmentFromList.body().contains("Chưa làm")
+                && assignmentFromList.body().contains("Bắt đầu làm")
+                && assignmentFromList.body().contains("15 phút")
+                && assignmentFromList.body().contains("Câu tình huống"),
+                "assignee opening a template from the shared list sees assignment detail");
         HttpResponse<String> mine = get(member, "/hrm/tests?action=assignment&id=" + assignment);
         check(mine.statusCode() == 200 && mine.body().contains("Chưa làm")
                 && mine.body().contains("Bắt đầu làm") && !mine.body().contains("multipart/form-data"),
@@ -172,8 +189,11 @@ public class TestModuleHttpTest {
         check(post(member, "/hrm/tests", "csrf", memberToken, "action", "start", "id", assignment).statusCode() == 303,
                 "start assignment");
         mine = get(member, "/hrm/tests?action=assignment&id=" + assignment);
-        check(mine.body().contains("multipart/form-data") && !mine.body().contains("Bắt đầu làm")
-                && !mine.body().contains("Thu hồi bài chưa bắt đầu"), "started assignment only renders submission form");
+        check(mine.body().contains("multipart/form-data"), "started assignment renders submission form");
+        check(!mine.body().contains("name=\"action\" value=\"start\""), "started assignment hides start action");
+        check(!mine.body().contains("Thu hồi bài chưa bắt đầu"), "started assignment hides revoke action");
+        check(mine.body().contains("Thời gian còn lại") && mine.body().contains("data-deadline=")
+                && mine.body().contains("15 phút"), "started assignment renders selected duration countdown");
         check(get(outsider, "/hrm/tests?action=assignment&id=" + assignment).statusCode() == 404, "assignment IDOR blocked");
         check(get(member, "/hrm/WEB-INF/views/tests/index.jsp").statusCode() == 404, "JSP direct access blocked");
         String boundary = "hrm-boundary-" + UUID.randomUUID();
@@ -214,10 +234,10 @@ public class TestModuleHttpTest {
                 "contentId", String.valueOf(quizContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + qt);
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", qt).statusCode() == 303, "publish quiz event");
         String selection = get(manager, "/hrm/tests?action=detail&id=" + qt).body();
         check(selection.contains("name=\"contentId\"") && selection.contains("Bộ đề HTTP"), "assignment selector lists database content");
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", qt, "assigneeId", "2", "contentId", String.valueOf(quizContentId)).statusCode() == 303, "assign selected quiz");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", qt, "assigneeId", "2",
+                "contentId", String.valueOf(quizContentId), "durationMinutes", "20").statusCode() == 303, "assign selected quiz");
         String qa = assignmentId(conn, qt);
         HttpResponse<String> quizPage = get(member, "/hrm/tests?action=assignment&id=" + qa);
         check(quizPage.body().contains("Bắt đầu làm") && !quizPage.body().contains("type=\"radio\""),
@@ -246,8 +266,8 @@ public class TestModuleHttpTest {
                 "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + et);
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", et).statusCode() == 303, "publish essay event");
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", et, "assigneeId", "2", "contentId", String.valueOf(essayContentId)).statusCode() == 303, "assign selected essay question");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", et, "assigneeId", "2",
+                "contentId", String.valueOf(essayContentId), "durationMinutes", "30").statusCode() == 303, "assign selected essay question");
         String essayAssignment = assignmentId(conn, et);
         String essayPage = get(member, "/hrm/tests?action=assignment&id=" + essayAssignment).body();
         String essayToken = csrf(essayPage);

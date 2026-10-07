@@ -10,7 +10,8 @@ Seed mặc định cung cấp 10 câu Văn hóa và 10 câu Chuyên môn Java Ba
 - Loại bài gồm `culture` (Văn hóa chung) và `department` (Đánh giá chuyên môn).
 - ADMIN chỉ quản lý và giao đề Văn hóa. HR quản lý được cả Văn hóa và Chuyên
   môn. MANAGER chỉ quản lý đánh giá Chuyên môn của phòng mình.
-- Bài đã công bố hiển thị trong toàn công ty. Đề nháp chỉ người có quyền quản lý
+- Đợt giao bài hoạt động ngay sau khi tạo; trước giờ bắt đầu hiển thị “Sắp tới”,
+  trong khung giờ hiển thị “Đang diễn ra” và sau khi đóng hiển thị “Đã đóng”.
   nhìn thấy.
 - MANAGER chỉ được giao cho tài khoản EMPLOYEE đang hoạt động trong đúng phòng
   mình quản lý; không thể giao cho cấp trên hoặc người ngoài phòng. ADMIN không
@@ -28,6 +29,11 @@ Seed mặc định cung cấp 10 câu Văn hóa và 10 câu Chuyên môn Java Ba
   án đúng và chỉ được tính đúng khi tập lựa chọn khớp hoàn toàn.
 - Khi hết hạn, job tự đóng đợt giao nhưng giữ các assignment còn `pending` để
   bảng kết quả hiển thị trạng thái **Chưa làm**.
+- Khi giao bài, người giao nhập thời lượng linh hoạt từ 1 đến 60 phút. Đồng hồ
+  cá nhân bắt đầu khi người nhận bấm **Bắt đầu làm**; hạn nộp không vượt quá giờ
+  đóng chung của đợt.
+- Backend kiểm tra hạn cá nhân khi nộp; đồng hồ JavaScript chỉ hiển thị thời
+  gian còn lại và khóa biểu mẫu trên trình duyệt khi về 0.
 - Điểm dùng thang 0–10, tối đa hai chữ số thập phân. Một bài chỉ được nộp và
   chấm một lần.
 - File bài làm tối đa 5 MiB, lưu trong database và chỉ tải qua endpoint kiểm tra
@@ -37,8 +43,9 @@ Seed mặc định cung cấp 10 câu Văn hóa và 10 câu Chuyên môn Java Ba
 
 1. ADMIN, HR hoặc MANAGER mở **Tạo đợt giao bài**.
 2. Chọn hướng Văn hóa/Chuyên môn, chọn đề trong database và lịch theo GMT+7.
-3. Công bố đợt giao, chọn người nhận toàn công ty rồi giao bài.
-4. Người nhận mở **Bài của tôi**, làm bài trong khoảng `[start_time, end_time)`.
+3. Chọn người nhận và thời lượng rồi giao bài; không có bước lưu nháp/công bố.
+4. Người nhận mở **Bài của tôi**, bấm **Bắt đầu làm** để ghi nhận `started_at`
+   và chạy đồng hồ đếm ngược.
 5. Người quản lý mở kết quả, chấm điểm và ghi nhận xét.
 6. Worker chạy mỗi phút để đóng đợt hết hạn; bài chưa làm vẫn nằm trong kết quả.
 
@@ -73,7 +80,7 @@ Thời gian lưu bằng UTC trong database, còn form và lịch hiển thị th
 | Phương thức | Action | Chức năng |
 | --- | --- | --- |
 | GET | `list`, `new`, `detail` | Danh sách, form tạo và chi tiết đợt giao |
-| POST | `create`, `publish`, `close` | Tạo, công bố và đóng đợt giao bài |
+| POST | `create`, `close` | Tạo trực tiếp và đóng đợt giao bài |
 | POST | `assign` | Giao cho danh sách người nhận, loại trừ ADMIN |
 | GET | `mine`, `assignment`, `download` | Bài cá nhân, bài làm và file đính kèm |
 | POST | `start`, `submit`, `submitQuiz`, `evaluate`, `revoke` | Làm, nộp, chấm và thu hồi |
@@ -96,6 +103,8 @@ Các cột quan trọng:
 - `Test_Templates.default_content_id`: bộ đề mặc định của đợt giao.
 - `Test_Content.is_deleted`: xóa mềm nội dung trong ngân hàng.
 - `Test_Assignments.content_id`: tham chiếu nội dung đã giao.
+- `Test_Assignments.duration_minutes`: thời lượng được chọn lúc giao bài.
+- `Test_Assignments.started_at`: thời điểm người nhận thực sự bắt đầu làm.
 - `Test_Assignments.quiz_score`: điểm trắc nghiệm tính ở server.
 - `Test_Questions.question_type`: `true_false`, `single` hoặc `multiple`.
 - `Test_Question_Options`: danh sách lựa chọn linh hoạt và cờ `is_correct`.

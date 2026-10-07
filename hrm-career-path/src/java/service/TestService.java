@@ -16,6 +16,9 @@ import policy.TestPolicy;
 public final class TestService {
 
     public static final int MAX_FILE_BYTES = 5 * 1024 * 1024;
+    public static final int DEFAULT_DURATION_MINUTES = 30;
+    public static final int MIN_DURATION_MINUTES = 1;
+    public static final int MAX_DURATION_MINUTES = 60;
     private final ConnectionFactory connections;
     private final Clock clock;
     private final TestPolicy policy = new TestPolicy();
@@ -117,7 +120,8 @@ public final class TestService {
     }
 
     /**
-     * Tạo đợt giao bài nháp, có thể gắn sẵn một nội dung trong ngân hàng.
+     * Tạo đợt giao bài và kích hoạt ngay; thời gian bắt đầu quyết định đề đang
+     * sắp tới hay đã mở, không còn bước lưu nháp/công bố.
      */
     public int createTemplate(int userId, String title, String description, String type,
             Instant start, Instant end) throws SQLException {
@@ -171,51 +175,32 @@ public final class TestService {
         Integer department = templateDepartment(actor, type);
         if (contentId != null) {
             TestContent selected = dao.managedContent(actor, contentId);
+            if (!"ready".equals(selected.status())) {
+                throw new TestException(409, "Bộ đề chưa sẵn sàng để tạo đợt giao bài.");
+            }
             if (!type.equals(selected.type()) || (selected.departmentId() != null
                     && !Objects.equals(department, selected.departmentId()))) {
                 throw new TestException(400, "Bộ đề phải cùng loại với đợt giao bài.");
             }
         }
-        int id = dao.insertId("INSERT INTO Test_Templates(title,description,type,department_id,created_by,start_time,end_time,default_content_id) "
-                + "OUTPUT INSERTED.id VALUES (?,?,?,?,?,?,?,?)", title, description, type,
+        int id = dao.insertId("INSERT INTO Test_Templates(title,description,type,department_id,created_by,status,start_time,end_time,default_content_id) "
+                + "OUTPUT INSERTED.id VALUES (?,?,?,?,?,'published',?,?,?)", title, description, type,
                 department, actor.id(), start, end, contentId);
         return id;
     }
 
     /**
-     * Công bố draft hoặc đóng published; đóng đề vẫn giữ nguyên bài nộp và
-     * quyền chấm.
+     * Đóng đề đang hoạt động; bài nộp và quyền chấm vẫn được giữ nguyên.
      */
-    private void transition(int userId, int id, String from, String to) throws SQLException {
+    public void closeTemplate(int userId, int id) throws SQLException {
         transaction(dao -> {
             TestActor actor = dao.actor(userId);
             TestTemplate t = dao.template(actor, id);
             manage(actor, t);
-            if ("published".equals(to) && t.defaultContentId() != null
-                    && !"ready".equals(dao.managedContent(actor, t.defaultContentId()).status())) {
-                throw new TestException(409, "Hãy hoàn tất và chốt bộ trắc nghiệm trước khi công bố đợt giao bài.");
-            }
-            if ("published".equals(to) && !clock.instant().isBefore(t.endTime())) {
-                throw new TestException(409, "Đề đã hết hạn, không thể công bố.");
-            }
             changed(dao.execute("UPDATE Test_Templates SET status=?,updated_at=? WHERE id=? AND status=? AND is_deleted=0",
-                    to, clock.instant(), id, from));
+                    "closed", clock.instant(), id, "published"));
             return null;
         });
-    }
-
-    /**
-     * Chuyển draft sang published sau khi xác minh người quản lý.
-     */
-    public void publishTemplate(int userId, int id) throws SQLException {
-        transition(userId, id, "draft", "published");
-    }
-
-    /**
-     * Chuyển published sang closed, không nhận giao/nộp mới.
-     */
-    public void closeTemplate(int userId, int id) throws SQLException {
-        transition(userId, id, "published", "closed");
     }
 
     /**
@@ -253,8 +238,7 @@ public final class TestService {
     }
 
     /**
-     * Lịch không chứa đề draft, phân trang và giới hạn tối đa 366 ngày mỗi truy
-     * vấn.
+     * Lịch đề đã tạo, phân trang và giới hạn tối đa 366 ngày mỗi truy vấn.
      */
     public List<TestTemplate> getCalendar(int userId, Instant from, Instant to, int page, int size) throws SQLException {
         if (from == null || to == null || !from.isBefore(to) || Duration.between(from, to).compareTo(Duration.ofDays(366)) > 0) {
@@ -283,15 +267,23 @@ public final class TestService {
      * ID sai/trùng DB.
      */
     public void assignTest(int userId, int templateId, List<Integer> assigneeIds) throws SQLException {
-        assignTest(userId, templateId, assigneeIds, null);
+        assignTest(userId, templateId, assigneeIds, null, DEFAULT_DURATION_MINUTES);
     }
 
     /**
      * Chọn nội dung ready cùng loại/phạm vi quản lý cho toàn bộ người nhận.
      */
     public void assignTest(int userId, int templateId, List<Integer> assigneeIds, Integer contentId) throws SQLException {
+        assignTest(userId, templateId, assigneeIds, contentId, DEFAULT_DURATION_MINUTES);
+    }
+
+    public void assignTest(int userId, int templateId, List<Integer> assigneeIds,
+            Integer contentId, int durationMinutes) throws SQLException {
         if (assigneeIds == null || assigneeIds.isEmpty() || assigneeIds.size() > 500) {
             throw new TestException(400, "Chọn từ 1 đến 500 người nhận mỗi lần giao.");
+        }
+        if (durationMinutes < MIN_DURATION_MINUTES || durationMinutes > MAX_DURATION_MINUTES) {
+            throw new TestException(400, "Thời lượng làm bài phải từ 1 đến 60 phút.");
         }
         Set<Integer> ids = new TreeSet<>();
         for (Integer id : assigneeIds) {
@@ -326,8 +318,8 @@ public final class TestService {
                         || !Objects.equals(actor.managedDepartmentId(), recipient.departmentId()))) {
                     throw new TestException(403, "MANAGER chỉ được giao bài cho nhân viên trong phòng ban mình quản lý.");
                 }
-                int assignment = dao.insertId("INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id) "
-                        + "OUTPUT INSERTED.id VALUES (?,?,?,?)", templateId, id, actor.id(), selectedContentId);
+                dao.insertId("INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id,duration_minutes) "
+                        + "OUTPUT INSERTED.id VALUES (?,?,?,?,?)", templateId, id, actor.id(), selectedContentId, durationMinutes);
             }
             return null;
         });
@@ -357,6 +349,18 @@ public final class TestService {
                 throw new TestException(403, "ADMIN không thuộc đối tượng thực hiện bài đánh giá.");
             }
             return dao.assignments(actor, null, null, true, start, size);
+        });
+    }
+
+    /**
+     * Tìm bài của chính người đăng nhập theo đề. Dùng khi người làm mở một đề
+     * từ danh sách chung, nơi URL chỉ có template id chứ chưa có assignment id.
+     */
+    public Optional<TestAssignment> getMyAssignmentForTemplate(int userId, int templateId) throws SQLException {
+        return transaction(dao -> {
+            TestActor actor = dao.actor(userId);
+            List<TestAssignment> rows = dao.assignments(actor, null, templateId, true, 0, 1);
+            return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
         });
     }
 
@@ -392,12 +396,18 @@ public final class TestService {
             TestActor actor = dao.actor(userId);
             TestAssignment a = assignment(dao, actor, id);
             TestTemplate t = dao.template(actor, a.templateId());
-            if (!policy.canSubmit(actor, a, t, clock.instant())) {
+            if ("in_progress".equals(a.status())) {
+                if (a.assigneeId() != actor.id()) {
+                    throw new TestException(409, "Chỉ người được giao mới có thể bắt đầu bài này.");
+                }
+                return null;
+            }
+            Instant now = clock.instant();
+            if (!policy.canStart(actor, a, t, now)) {
                 throw new TestException(409, "Bạn không thể bắt đầu bài này lúc này.");
             }
-            if ("pending".equals(a.status())) {
-                changed(dao.execute("UPDATE Test_Assignments SET status='in_progress' WHERE id=? AND status='pending' AND is_deleted=0", id));
-            }
+            changed(dao.execute("UPDATE Test_Assignments SET status='in_progress',started_at=? "
+                    + "WHERE id=? AND status='pending' AND started_at IS NULL AND is_deleted=0", now, id));
             return null;
         });
     }
@@ -427,7 +437,7 @@ public final class TestService {
                 throw new TestException(400, "Bài trắc nghiệm phải nộp bằng các lựa chọn trả lời.");
             }
             changed(dao.execute("UPDATE Test_Assignments SET submission_content=?,file_name=?,file_data=?,submitted_at=?,status='submitted' "
-                    + "WHERE id=? AND assignee_id=? AND status IN ('pending','in_progress') AND is_deleted=0",
+                    + "WHERE id=? AND assignee_id=? AND status='in_progress' AND is_deleted=0",
                     body, safeName, new TestDAO.Binary(file), now, id, actor.id()));
             return null;
         });
@@ -568,7 +578,7 @@ public final class TestService {
             TestTemplate t = dao.template(actor, a.templateId());
             boolean manager = policy.canManage(actor, t);
             boolean ownAssignment = a.assigneeId() == actor.id();
-            if (ownAssignment && clock.instant().isBefore(t.startTime())) {
+            if (ownAssignment && (clock.instant().isBefore(t.startTime()) || "pending".equals(a.status()))) {
                 return null;
             }
             TestContent content = dao.assignedContent(actor, id);
@@ -627,7 +637,8 @@ public final class TestService {
                 }
             }
             BigDecimal score = BigDecimal.valueOf(correct * 10L).divide(BigDecimal.valueOf(questions.size()), 2, java.math.RoundingMode.HALF_UP);
-            changed(dao.execute("UPDATE Test_Assignments SET status='submitted',submitted_at=?,quiz_score=? WHERE id=? AND status IN ('pending','in_progress') AND is_deleted=0", now, score, id));
+            changed(dao.execute("UPDATE Test_Assignments SET status='submitted',submitted_at=?,quiz_score=? "
+                    + "WHERE id=? AND status='in_progress' AND is_deleted=0", now, score, id));
             return null;
         });
     }

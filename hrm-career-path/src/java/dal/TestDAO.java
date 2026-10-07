@@ -96,10 +96,9 @@ public final class TestDAO {
                 + ") OR (t.type='department' AND (" + ("HR".equals(actor.role()) ? "1=1" : "1=0") + " OR t.department_id=?)))";
     }
 
-    /** Lọc xóa mềm và giữ đề nháp trong phạm vi quản lý ngay tại SQL. */
+    /** Lọc xóa mềm và giới hạn ADMIN ở các bài văn hóa ngay tại SQL. */
     private String visible(TestActor actor, List<Object> args) {
-        return "t.is_deleted=0 AND " + ("ADMIN".equals(actor.role()) ? "t.type='culture' AND " : "")
-                + "(t.status<>'draft' OR " + management(actor, args) + ")";
+        return "t.is_deleted=0" + ("ADMIN".equals(actor.role()) ? " AND t.type='culture'" : "");
     }
 
     /**
@@ -138,8 +137,7 @@ public final class TestDAO {
     }
 
     /**
-     * Phân trang sau khi lọc quyền; lịch dùng điều kiện giao nhau, upcoming
-     * loại draft/closed.
+     * Phân trang sau khi lọc quyền; upcoming dựa trực tiếp vào giờ bắt đầu.
      */
     public List<TestTemplate> templates(TestActor actor, boolean upcoming, Instant now,
             Instant from, Instant to, int offset, int size) throws SQLException {
@@ -150,7 +148,7 @@ public final class TestDAO {
             args.add(now);
         }
         if (from != null) {
-            sql += " AND t.status<>'draft' AND t.start_time<? AND t.end_time>?";
+            sql += " AND t.start_time<? AND t.end_time>?";
             args.add(to);
             args.add(from);
         }
@@ -203,7 +201,8 @@ public final class TestDAO {
         args.add(offset);
         args.add(size);
         String sql = "SELECT a.id,a.test_template_id,a.assignee_id,assignee_role.role_name AS assignee_role,"
-                + "a.assigned_by,giver_role.role_name AS assigned_by_role,a.status,a.submitted_at,a.file_name,"
+                + "a.assigned_by,giver_role.role_name AS assigned_by_role,a.duration_minutes,a.started_at,"
+                + "a.status,a.submitted_at,a.file_name,"
                 + (id != null ? "a.submission_content" : "CAST(NULL AS NVARCHAR(MAX)) AS submission_content")
                 + ",t.title,t.type AS test_type,t.start_time,t.end_time,u.full_name,"
                 + "e.evaluator_id,e.score,e.comment,e.evaluated_at,a.content_id,a.quiz_score,"
@@ -220,7 +219,8 @@ public final class TestDAO {
                         rs.getString("full_name"), rs.getString("assignee_role"),
                         rs.getInt("assigned_by"), rs.getString("assigned_by_role"),
                         rs.getString("title"), rs.getString("test_type"), instant(rs, "start_time"),
-                        instant(rs, "end_time"), rs.getString("status"), instant(rs, "submitted_at"),
+                        instant(rs, "end_time"), rs.getInt("duration_minutes"), instant(rs, "started_at"),
+                        rs.getString("status"), instant(rs, "submitted_at"),
                         rs.getString("submission_content"), rs.getString("file_name"), evaluation,
                         (Integer) rs.getObject("content_id"), rs.getString("content_kind"),
                         rs.getString("content_title"), rs.getBigDecimal("quiz_score")));

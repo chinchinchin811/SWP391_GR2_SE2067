@@ -19,10 +19,9 @@ public final class TestPolicy {
                 || (actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId()));
     }
 
-    /** Đề nháp chỉ người quản lý xem; đề công bố/đóng hiển thị toàn công ty. */
+    /** Đề đã tạo hiển thị theo phạm vi; ADMIN chỉ xem đề văn hóa. */
     public boolean canView(TestActor actor, TestTemplate t) {
-        boolean scope = !"ADMIN".equals(actor.role()) || canManage(actor, t);
-        return scope && (!"draft".equals(t.status()) || canManage(actor, t));
+        return !"ADMIN".equals(actor.role()) || canManage(actor, t);
     }
 
     /**
@@ -55,13 +54,19 @@ public final class TestPolicy {
                 && roleRank(actor.role()) > roleRank(assignment.assigneeRole());
     }
 
-    /**
-     * Khoảng làm bài là [start, end); đúng giờ kết thúc thì không nhận bài mới.
-     */
+    /** Chỉ bắt đầu trong khoảng mở của đợt và khi bài vẫn đang chờ làm. */
+    public boolean canStart(TestActor actor, TestAssignment a, TestTemplate t, Instant now) {
+        return a.assigneeId() == actor.id() && canView(actor, t) && "published".equals(t.status())
+                && !now.isBefore(t.startTime()) && now.isBefore(t.endTime())
+                && "pending".equals(a.status());
+    }
+
+    /** Hạn nộp cá nhân không vượt quá giờ đóng chung của đợt. */
     public boolean canSubmit(TestActor actor, TestAssignment a, TestTemplate t, Instant now) {
         return a.assigneeId() == actor.id() && canView(actor, t) && "published".equals(t.status())
                 && !now.isBefore(t.startTime()) && now.isBefore(t.endTime())
-                && ("pending".equals(a.status()) || "in_progress".equals(a.status()));
+                && "in_progress".equals(a.status())
+                && (a.startedAt() == null || now.isBefore(a.submissionDeadline()));
     }
 
     /** Chỉ người giao hoặc vai trò cấp trên trong hệ thống được thu hồi. */

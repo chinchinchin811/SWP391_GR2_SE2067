@@ -148,13 +148,11 @@ public class TestModuleIntegrationTest {
         int dept = s.createTemplate(3, "Đề chuyên môn <script>", "Mô tả tự do", "department", NOW, NOW.plusSeconds(3600));
         int culture = s.createTemplate(2, "Văn hóa", "Bài viết văn hóa", "culture", NOW, NOW.plusSeconds(3600));
         int future = s.createTemplate(3, "Bài sắp tới", "Nội dung", "department", NOW.plusSeconds(3600), NOW.plusSeconds(7200));
-        rejects(404, () -> s.getTemplate(4, dept));
-        rejects(404, () -> s.getTemplate(6, culture));
-        check(s.listTemplates(4, "all", 1, 20).isEmpty(), "draft must be hidden");
-        check(s.getCalendar(3, NOW.minusSeconds(600), NOW.plusSeconds(8000), 1, 20).isEmpty(), "calendar excludes drafts even for creator");
-        s.publishTemplate(3, dept);
-        s.publishTemplate(2, culture);
-        s.publishTemplate(3, future);
+        check(s.getTemplate(4, dept).id() == dept, "new professional evaluation is active immediately");
+        check(s.getTemplate(6, culture).id() == culture, "new culture evaluation is active immediately");
+        check(s.listTemplates(4, "all", 1, 20).size() == 3, "new templates appear without a publish step");
+        check(s.getCalendar(3, NOW.minusSeconds(600), NOW.plusSeconds(8000), 1, 20).size() == 3,
+                "calendar includes newly created and upcoming templates");
         check(s.getTemplate(6, culture).id() == culture, "culture visible company wide");
         check(s.getTemplate(6, dept).id() == dept, "professional evaluation visible company wide");
         rejects(404, () -> s.getTemplate(1, dept));
@@ -195,6 +193,7 @@ public class TestModuleIntegrationTest {
         rejects(409, () -> s.submitAssignment(4, a, "again", null, null));
         rejects(400, () -> s.evaluateAssignment(3, a, new BigDecimal("10.01"), "invalid score"));
         rejects(403, () -> s.evaluateAssignment(4, a, new BigDecimal("9"), "self grading"));
+        s.startAssignment(7, other);
         s.submitAssignment(7, other, "text only", null, null);
         s.closeTemplate(3, dept);
         s.evaluateAssignment(3, a, new BigDecimal("8.75"), "Đạt yêu cầu");
@@ -243,7 +242,6 @@ public class TestModuleIntegrationTest {
         check(s.getMyAssignments(4, 1, 20).size() == 1, "HR superior can revoke assignment created by MANAGER");
         int expiring = s.createTemplate(2, "Đợt sắp hết hạn", "Thu hồi bài chưa làm",
                 "culture", NOW, NOW.plusSeconds(10));
-        s.publishTemplate(2, expiring);
         s.assignTest(2, expiring, List.of(8));
         int expiringAssignment = assignment(expiring, 8);
         s.closeExpiredTests(NOW.plusSeconds(20));
@@ -269,11 +267,13 @@ public class TestModuleIntegrationTest {
         int ca = assignment(culture, 6);
         rejects(404, () -> s.getAssignment(4, ca));
         rejects(403, () -> s.assignTest(5, culture, List.of(6)));
+        s.startAssignment(6, ca);
         s.submitAssignment(6, ca, "culture response", null, null);
         s.evaluateAssignment(1, ca, new BigDecimal("10"), "ADMIN may grade culture");
         check(s.getAssignment(6, ca).evaluation() != null, "culture full flow");
         s.assignTest(2, culture, List.of(2));
         int hrOwn = assignment(culture, 2);
+        s.startAssignment(2, hrOwn);
         s.submitAssignment(2, hrOwn, "HR self response", null, null);
         rejects(403, () -> s.evaluateAssignment(2, hrOwn, new BigDecimal("9"), "self grade forbidden"));
         s.evaluateAssignment(1, hrOwn, new BigDecimal("9"), "ADMIN grades HR");
@@ -321,20 +321,29 @@ public class TestModuleIntegrationTest {
         rejects(404, () -> s.getContent(5, quiz));
 
         int t = s.createTemplate(3, "Đợt quiz", "Hướng dẫn", "department", NOW, NOW.plusSeconds(3600), quiz);
-        s.publishTemplate(3, t);
         check(s.getContentChoices(3, t).size() == 1, "only ready professional content shown");
         rejects(409, () -> s.assignTest(3, t, List.of(7), draft));
         rejects(404, () -> s.assignTest(3, t, List.of(7), culture));
-        s.assignTest(3, t, List.of(7), quiz);
+        rejects(400, () -> s.assignTest(3, t, List.of(7), quiz, 0));
+        rejects(400, () -> s.assignTest(3, t, List.of(7), quiz, 61));
+        s.assignTest(3, t, List.of(7), quiz, 15);
         int a = assignment(t, 7);
+        check(s.getAssignmentContent(7, a) == null, "student content stays hidden until start");
+        check(s.getAssignmentContent(3, a).questions().stream().allMatch(q -> !q.correctOptionIds().isEmpty()),
+                "manager can inspect answer keys");
+        s.startAssignment(7, a);
+        TestAssignment started = s.getAssignment(7, a);
+        check(started.durationMinutes() == 15 && NOW.equals(started.startedAt())
+                && NOW.plusSeconds(900).equals(started.submissionDeadline()), "start stores duration and personal deadline");
         TestService.ContentDetail student = s.getAssignmentContent(7, a);
         check(student.questions().stream().flatMap(q -> q.options().stream()).allMatch(o -> o.correct() == null),
                 "student DTO has no answer keys");
-        check(s.getAssignmentContent(3, a).questions().stream().allMatch(q -> !q.correctOptionIds().isEmpty()),
-                "manager can inspect answer keys");
         rejects(403, () -> s.assignTest(3, t, List.of(3), quiz));
         int managerOwnAssignment = insertId("INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id) "
                 + "OUTPUT INSERTED.id VALUES (" + t + ",3,3," + quiz + ")");
+        check(s.getAssignmentContent(3, managerOwnAssignment) == null,
+                "manager taking own test must start before content is visible");
+        s.startAssignment(3, managerOwnAssignment);
         check(s.getAssignmentContent(3, managerOwnAssignment).questions().stream()
                 .flatMap(q -> q.options().stream()).allMatch(o -> o.correct() == null),
                 "manager taking own test cannot inspect answer keys");
@@ -349,6 +358,7 @@ public class TestModuleIntegrationTest {
         check(count("SELECT COUNT(*) FROM Test_Answer_Options WHERE assignment_id=" + a) == 0,
                 "invalid submission rolls back all selected options");
 
+        rejects(409, () -> service(NOW.plusSeconds(900)).submitQuiz(7, a, answers));
         s.submitQuiz(7, a, answers);
         check(s.getAssignment(7, a).quizScore().compareTo(new BigDecimal("6.67")) == 0,
                 "server scores exact answer sets");

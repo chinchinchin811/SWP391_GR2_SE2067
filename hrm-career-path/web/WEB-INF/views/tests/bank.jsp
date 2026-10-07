@@ -115,7 +115,6 @@
             <% } %>
         </section>
         <% } %>
-        <p>Đề và đáp án được nạp từ database; muốn thay đổi cần cập nhật migration/seed để mọi môi trường dùng cùng dữ liệu.</p>
         <a href="<%= bankBase %>?action=bank">← Về kho đề thi</a>
     </div></section>
     <% } %>

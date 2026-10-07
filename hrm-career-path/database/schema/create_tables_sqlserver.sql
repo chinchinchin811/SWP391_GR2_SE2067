@@ -438,7 +438,7 @@ BEGIN
         type VARCHAR(20) NOT NULL,
         department_id INT NULL REFERENCES dbo.Departments(department_id),
         created_by INT NOT NULL REFERENCES dbo.Users(user_id),
-        status VARCHAR(20) NOT NULL DEFAULT 'draft',
+        status VARCHAR(20) NOT NULL CONSTRAINT DF_Test_Template_Status DEFAULT 'published',
         start_time DATETIME2 NOT NULL,
         end_time DATETIME2 NOT NULL,
         default_content_id INT NULL REFERENCES dbo.Test_Content(id),
@@ -446,7 +446,7 @@ BEGIN
         updated_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
         is_deleted BIT NOT NULL DEFAULT 0,
         CONSTRAINT CK_Test_Type CHECK (type IN ('culture','department')),
-        CONSTRAINT CK_Test_Status CHECK (status IN ('draft','published','closed')),
+        CONSTRAINT CK_Test_Status CHECK (status IN ('published','closed')),
         CONSTRAINT CK_Test_Time CHECK (start_time < end_time)
     );
     CREATE INDEX IX_Test_Scope ON dbo.Test_Templates(department_id, status, start_time);
@@ -463,6 +463,8 @@ BEGIN
         status VARCHAR(20) NOT NULL DEFAULT 'pending',
         quiz_score DECIMAL(4,2) NULL CHECK (quiz_score BETWEEN 0 AND 10),
         assigned_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        duration_minutes INT NOT NULL CONSTRAINT DF_Test_Assignment_Duration DEFAULT 30,
+        started_at DATETIME2 NULL,
         submitted_at DATETIME2 NULL,
         submission_content NVARCHAR(MAX) NULL,
         file_name NVARCHAR(200) NULL,
@@ -470,6 +472,7 @@ BEGIN
         is_deleted BIT NOT NULL DEFAULT 0,
         CONSTRAINT UQ_Test_Assignee UNIQUE (test_template_id, assignee_id),
         CONSTRAINT CK_Assignment_Status CHECK (status IN ('pending','in_progress','submitted','evaluated')),
+        CONSTRAINT CK_Assignment_Duration CHECK (duration_minutes BETWEEN 1 AND 60),
         CONSTRAINT CK_Submission_Time CHECK ((status IN ('pending','in_progress') AND submitted_at IS NULL)
             OR (status IN ('submitted','evaluated') AND submitted_at IS NOT NULL)),
         CONSTRAINT CK_Submission_File CHECK ((file_name IS NULL AND file_data IS NULL)
@@ -477,6 +480,46 @@ BEGIN
     );
     CREATE INDEX IX_Assignment_Owner ON dbo.Test_Assignments(assignee_id, status);
 END;
+
+-- Bỏ vòng đời bản nháp của đợt giao bài. Các bản nháp cũ được kích hoạt để
+-- trạng thái hiển thị tự động theo start_time: Sắp tới hoặc Đang diễn ra.
+IF OBJECT_ID('dbo.Test_Templates', 'U') IS NOT NULL
+BEGIN
+    UPDATE dbo.Test_Templates
+    SET status=CASE WHEN end_time<=SYSUTCDATETIME() THEN 'closed' ELSE 'published' END,
+        updated_at=SYSUTCDATETIME()
+    WHERE status='draft';
+
+    DECLARE @TestStatusDefault SYSNAME;
+    SELECT @TestStatusDefault = dc.name
+    FROM sys.default_constraints dc
+    JOIN sys.columns c ON c.default_object_id=dc.object_id
+    WHERE dc.parent_object_id=OBJECT_ID('dbo.Test_Templates') AND c.name='status';
+    IF @TestStatusDefault IS NOT NULL AND @TestStatusDefault <> 'DF_Test_Template_Status'
+        EXEC(N'ALTER TABLE dbo.Test_Templates DROP CONSTRAINT [' + @TestStatusDefault + N']');
+    IF NOT EXISTS (SELECT 1 FROM sys.default_constraints WHERE parent_object_id=OBJECT_ID('dbo.Test_Templates') AND name='DF_Test_Template_Status')
+        ALTER TABLE dbo.Test_Templates ADD CONSTRAINT DF_Test_Template_Status DEFAULT 'published' FOR status;
+
+    IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID('dbo.Test_Templates') AND name='CK_Test_Status')
+        ALTER TABLE dbo.Test_Templates DROP CONSTRAINT CK_Test_Status;
+    ALTER TABLE dbo.Test_Templates WITH CHECK ADD CONSTRAINT CK_Test_Status CHECK (status IN ('published','closed'));
+END;
+
+-- Nâng cấp database đã tồn tại mà không xóa dữ liệu bài được giao.
+IF COL_LENGTH('dbo.Test_Assignments', 'duration_minutes') IS NULL
+    EXEC(N'ALTER TABLE dbo.Test_Assignments ADD duration_minutes INT NOT NULL
+        CONSTRAINT DF_Test_Assignment_Duration DEFAULT 30 WITH VALUES');
+
+IF COL_LENGTH('dbo.Test_Assignments', 'started_at') IS NULL
+    EXEC(N'ALTER TABLE dbo.Test_Assignments ADD started_at DATETIME2 NULL');
+
+-- Thay constraint danh sách phút cũ bằng khoảng linh hoạt 1–60. WITH NOCHECK
+-- giữ nguyên dữ liệu lịch sử nếu trước đây từng có bài dài hơn 60 phút.
+IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Assignment_Duration')
+    EXEC(N'ALTER TABLE dbo.Test_Assignments DROP CONSTRAINT CK_Assignment_Duration');
+
+EXEC(N'ALTER TABLE dbo.Test_Assignments WITH NOCHECK ADD CONSTRAINT CK_Assignment_Duration
+    CHECK (duration_minutes BETWEEN 1 AND 60)');
 
 -- Một câu có thể được chọn nhiều đáp án; mỗi lựa chọn là một dòng.
 IF OBJECT_ID('dbo.Test_Answer_Options', 'U') IS NULL

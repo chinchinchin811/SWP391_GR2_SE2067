@@ -298,6 +298,31 @@
     outline-offset: 2px;
 }
 
+.test-countdown {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 18px 0;
+    padding: 14px 18px;
+    border: 1px solid #c7d2fe;
+    border-radius: 10px;
+    background: #eef2ff;
+    color: #3730a3;
+    font-weight: 600;
+}
+
+.test-countdown strong {
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.test-countdown.expired {
+    border-color: #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
 /* ==========================================================================
    BANK MODULE - SECTIONED TABLES, FIXED WIDTHS & EVEN SPACING
    ========================================================================== */

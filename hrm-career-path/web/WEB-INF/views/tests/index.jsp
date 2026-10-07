@@ -46,7 +46,6 @@
 
         <% if ("new".equals(view)) { %>
         <section class="card"><div class="card-header"><h2>Tạo bài test</h2></div><div class="card-body">
-            <p>Chọn riêng đề thi Văn hóa hoặc Chuyên môn đã được lưu trong database. Không tạo câu hỏi thủ công trên giao diện.</p>
             <form method="post" action="<%= base %>" class="test-form" id="testCreateForm">
                 <input type="hidden" name="csrf" value="<%= h(csrf) %>">
                 <input type="hidden" name="action" value="create">
@@ -58,14 +57,14 @@
                     </select>
                 </label>
                 <label>Nội dung yêu cầu <textarea name="description" rows="9" required maxlength="20000"></textarea></label>
-                <label>Đề thi trong database <select name="contentId" id="contentMode" onchange="syncTestCreateForm()" required>
+                <label>Đề thi <select name="contentId" id="contentMode" onchange="syncTestCreateForm()" required>
                     <option value="" disabled selected>-- Chọn đề thi --</option>
                     <% List<TestContent> newChoices=(List<TestContent>)request.getAttribute("contentChoices");if(newChoices!=null)for(TestContent item:newChoices){if("quiz".equals(item.kind())&&"ready".equals(item.status())){%><option value="<%= item.id() %>" data-test-type="<%= h(item.type()) %>"><%= "culture".equals(item.type()) ? "Văn hóa: " : "Chuyên môn: " %><%= h(item.title()) %></option><% }} %>
                 </select></label>
                 <div class="test-columns">
                     <label>Thời gian bắt đầu (GMT+7) <input type="date" name="startDate" id="testStartDate" required min="<%= minimumTestDate %>" max="2099-12-31"><input type="time" name="startTime" id="testStartTime" required></label>
                     <label>Thời gian kết thúc (GMT+7) <input type="date" name="endDate" id="testEndDate" required min="<%= minimumTestDate %>" max="2099-12-31"><input type="time" name="endTime" id="testEndTime" required></label></div>
-                <button class="btn btn-primary">Lưu bản nháp</button>
+                <button class="btn btn-primary">Tạo đề</button>
             </form>
         </div></section>
         <% } %>
@@ -89,7 +88,7 @@
                 <% for (TestTemplate t : templates) { %>
                 <tr><td><a href="<%= base %>?action=detail&amp;id=<%= t.id() %>"><%= h(t.title()) %></a></td>
                     <td><%= "culture".equals(t.type()) ? "Văn hóa chung" : "Đánh giá chuyên môn" %></td>
-                    <td><%= time(t.startTime()) %></td><td><%= time(t.endTime()) %></td><td><%= h(status(t.status())) %></td></tr>
+                    <td><%= time(t.startTime()) %></td><td><%= time(t.endTime()) %></td><td><%= h(templateStatus(t, now)) %></td></tr>
                 <% } %>
             </tbody></table><% } %>
             <%
@@ -105,18 +104,13 @@
         <% } %>
 
         <% if ("detail".equals(view)) { %>
-        <% if (policy.canManage(actor, template)
-                && ("draft".equals(template.status()) || "published".equals(template.status()))) { %>
-        <section class="card"><div class="card-header"><h2>Thao tác đợt giao bài</h2></div>
+        <% if (policy.canManage(actor, template) && "published".equals(template.status())) { %>
+        <section class="card"><div class="card-header"><h2>Thao tác đợt giao bài</h2><span><%= h(templateStatus(template, now)) %></span></div>
             <div class="card-body">
                 <div class="test-actions">
                     <form method="post" action="<%= base %>">
                         <input type="hidden" name="csrf" value="<%= h(csrf) %>"><input type="hidden" name="id" value="<%= template.id() %>">
-                        <% if ("draft".equals(template.status())) { %>
-                        <button class="btn btn-primary" name="action" value="publish">Công bố đề</button>
-                        <% } else if ("published".equals(template.status())) { %>
                         <button class="btn btn-primary" name="action" value="close">Đóng đề, ngừng nhận bài</button>
-                        <% } %>
                     </form>
                 </div>
             </div>
@@ -132,13 +126,19 @@
                     <select name="contentId" required>
                         <% List<TestContent> choices=(List<TestContent>)request.getAttribute("contentChoices");
                            for (String kind : List.of("quiz","question")) { %>
-                        <optgroup label="<%= "quiz".equals(kind) ? "Đề trắc nghiệm trong database" : "Đề tự luận trong database" %>">
+                        <optgroup label="<%= "quiz".equals(kind) ? "Đề trắc nghiệm" : "Đề tự luận" %>">
                             <% for (TestContent item:choices) { if (kind.equals(item.kind())) { %>
                             <option value="<%= item.id() %>" <%= Objects.equals(template.defaultContentId(),item.id())?"selected":"" %>><%= h(item.title()) %></option>
                             <% } } %>
                         </optgroup><% } %>
                     </select>
                 </label>
+                <label>Thời lượng làm bài sau khi bấm bắt đầu
+                    <input type="number" name="durationMinutes" min="<%= TestService.MIN_DURATION_MINUTES %>"
+                           max="<%= TestService.MAX_DURATION_MINUTES %>" step="1"
+                           value="<%= TestService.DEFAULT_DURATION_MINUTES %>" required>
+                </label>
+                <p>Đồng hồ sẽ chạy khi nhân viên bấm “Bắt đầu làm”. Hạn cá nhân không vượt quá giờ kết thúc chung của đợt.</p>
                 <p>Chỉ hiển thị đề đã chốt đúng hướng Văn hóa/Chuyên môn. <a href="<%= base %>?action=bank">Xem kho đề</a></p>
                 <fieldset class="test-candidates"><legend>Chọn người nhận toàn công ty, ngoại trừ ADMIN (tối đa 500 mỗi lần)</legend>
                     <% for (TestActor candidate : candidates) { %>
@@ -154,12 +154,13 @@
         <section class="card"><div class="card-header"><h2><%= "mine".equals(view) ? "Bài được giao cho tôi" : "Người được giao & Kết quả" %></h2></div>
             <div class="card-body test-table">
                 <% if (assignments.isEmpty()) { %><p>Chưa có bài được giao trong trang này.</p><% } else { %>
-                <table class="data-table"><thead><tr><th>Bài test</th><th>Phạm vi</th><th>Bộ đề</th><th>Người làm</th><th>Bắt đầu</th><th>Kết thúc</th><th>Trạng thái</th><th>Nộp lúc</th><th>Điểm / 10</th><th></th></tr></thead><tbody>
+                <table class="data-table"><thead><tr><th>Bài test</th><th>Phạm vi</th><th>Bộ đề</th><th>Người làm</th><th>Mở đợt</th><th>Đóng đợt</th><th>Thời lượng</th><th>Trạng thái</th><th>Nộp lúc</th><th>Điểm / 10</th><th></th></tr></thead><tbody>
                     <% for (TestAssignment a : assignments) { %>
                     <tr><td><%= h(a.title()) %></td>
                         <td><%= "culture".equals(a.testType()) ? "Văn hóa chung" : "Đánh giá chuyên môn" %></td>
                         <td><%= a.contentId()==null ? "—" : h(a.contentTitle()) %><% if(a.contentId()!=null) { %><br><small><%= "quiz".equals(a.contentKind()) ? "Trắc nghiệm" : "Câu hỏi" %></small><% } %></td>
-                        <td><%= h(a.assigneeName()) %></td><td><%= time(a.startTime()) %></td><td><%= time(a.endTime()) %></td><td><%= h(status(a.status())) %></td>
+                        <td><%= h(a.assigneeName()) %></td><td><%= time(a.startTime()) %></td><td><%= time(a.endTime()) %></td>
+                        <td><%= a.durationMinutes() %> phút</td><td><%= a.timeExpired(now) ? "Hết giờ" : h(status(a.status())) %></td>
                         <td><%= time(a.submittedAt()) %></td><td><%= a.evaluation() == null ? "—" : h(a.evaluation().score()) %></td>
                         <td><a href="<%= base %>?action=assignment&amp;id=<%= a.id() %>">Mở bài</a></td></tr>
                     <% } %>
@@ -176,11 +177,22 @@
 
         <% if ("assignment".equals(view)) { %>
         <% boolean ownAssignment = assignment.assigneeId() == actor.id();
-           boolean canUseTestWindow = policy.canSubmit(actor, assignment, template, now);
-           boolean startedAssignment = "in_progress".equals(assignment.status()); %>
-        <section class="card"><div class="card-header"><h2><%= h(template.title()) %></h2><span><%= h(status(assignment.status())) %></span></div><div class="card-body">
+           boolean canStartTest = policy.canStart(actor, assignment, template, now);
+           boolean canSubmitTest = policy.canSubmit(actor, assignment, template, now);
+           boolean startedAssignment = "in_progress".equals(assignment.status());
+           Instant submissionDeadline = assignment.submissionDeadline(); %>
+        <section class="card"><div class="card-header"><h2><%= h(template.title()) %></h2><span><%= assignment.timeExpired(now) ? "Hết giờ" : h(status(assignment.status())) %></span></div><div class="card-body">
             <p>Người làm: <strong><%= h(assignment.assigneeName()) %></strong></p>
-            <p>Thời gian: <%= time(template.startTime()) %> — <%= time(template.endTime()) %> (giờ Việt Nam)</p>
+            <p>Thời gian mở đợt: <%= time(template.startTime()) %> — <%= time(template.endTime()) %> (giờ Việt Nam)</p>
+            <p>Thời lượng làm bài: <strong><%= assignment.durationMinutes() %> phút</strong></p>
+            <% if (assignment.startedAt()!=null) { %>
+            <p>Bắt đầu làm: <%= time(assignment.startedAt()) %> · Hạn nộp cá nhân: <strong><%= time(submissionDeadline) %></strong></p>
+            <% } %>
+            <% if (ownAssignment && startedAssignment && submissionDeadline!=null && now.isBefore(submissionDeadline)) { %>
+            <div class="test-countdown" id="testCountdown" data-deadline="<%= submissionDeadline.toEpochMilli() %>" role="timer" aria-live="polite">
+                <span>Thời gian còn lại</span><strong id="testCountdownValue">--:--</strong>
+            </div>
+            <% } %>
             <div class="test-prose"><%= h(template.description()) %></div>
             <% if (assignment.contentId()!=null) { %>
                 <h3><%= "quiz".equals(assignment.contentKind()) ? "Bộ đề trắc nghiệm: " : "Câu hỏi tự luận: " %><%= h(assignment.contentTitle()) %></h3>
@@ -190,8 +202,8 @@
             <% } %>
             <% if ("quiz".equals(assignment.contentKind()) && assignedContent!=null
                     && (!ownAssignment || !"pending".equals(assignment.status()))) {
-                boolean canAnswer=canUseTestWindow && ownAssignment && startedAssignment; %>
-                <form method="post" action="<%= base %>" class="test-form">
+                boolean canAnswer=canSubmitTest && ownAssignment && startedAssignment; %>
+                <form method="post" action="<%= base %>" class="test-form" <%= canAnswer ? "data-timed-submission" : "" %>>
                     <input type="hidden" name="csrf" value="<%= h(csrf) %>"><input type="hidden" name="action" value="submitQuiz">
                     <input type="hidden" name="id" value="<%= assignment.id() %>">
                     <% int number=0; for (TestQuestion q:assignedContent.questions()) { %>
@@ -211,15 +223,15 @@
                 </form>
                 <% if (assignment.quizScore()!=null) { %><p><strong>Điểm trắc nghiệm tự tính: <%= h(assignment.quizScore()) %> / 10.</strong> Người quản lý sẽ xác nhận đánh giá.</p><% } %>
             <% } %>
-            <% if (canUseTestWindow && ownAssignment && "pending".equals(assignment.status())) { %>
+            <% if (canStartTest && ownAssignment) { %>
                 <form method="post" action="<%= base %>" class="test-actions">
                     <input type="hidden" name="csrf" value="<%= h(csrf) %>"><input type="hidden" name="action" value="start">
                     <input type="hidden" name="id" value="<%= assignment.id() %>"><button class="btn btn-secondary">Bắt đầu làm</button>
                 </form>
                 <p>Hãy bấm “Bắt đầu làm” để mở nội dung trả lời.</p>
             <% } %>
-                <% if (canUseTestWindow && ownAssignment && startedAssignment && !"quiz".equals(assignment.contentKind())) { %>
-                <form method="post" action="<%= base %>" enctype="multipart/form-data" class="test-form">
+                <% if (canSubmitTest && ownAssignment && startedAssignment && !"quiz".equals(assignment.contentKind())) { %>
+                <form method="post" action="<%= base %>" enctype="multipart/form-data" class="test-form" data-timed-submission>
                     <input type="hidden" name="csrf" value="<%= h(csrf) %>"><input type="hidden" name="action" value="submit">
                     <input type="hidden" name="id" value="<%= assignment.id() %>">
                     <label>Nội dung bài làm <textarea name="content" rows="10" maxlength="50000"></textarea></label>
@@ -229,8 +241,10 @@
                 </form>
                 <% } %>
             <% if (ownAssignment && ("pending".equals(assignment.status()) || "in_progress".equals(assignment.status()))
-                    && !canUseTestWindow) { %>
-                <p class="alert">Hiện không thể nộp: bài chưa đến giờ bắt đầu, đã hết hạn hoặc đề đã đóng.</p>
+                    && !canStartTest && !canSubmitTest) { %>
+                <p class="alert"><%= assignment.timeExpired(now)
+                        ? "Đã hết thời gian làm bài. Hệ thống không nhận thêm câu trả lời."
+                        : "Hiện không thể làm bài: bài chưa đến giờ bắt đầu, đã hết hạn hoặc đề đã đóng." %></p>
             <% } %>
             <% if (assignment.submittedAt() != null) { %>
                 <h3>Bài đã nộp · <%= time(assignment.submittedAt()) %></h3>
@@ -270,6 +284,25 @@ function syncTestCreateForm(){
     if(!type||!mode)return;
     Array.prototype.forEach.call(mode.options,function(option){if(option.dataset.testType)option.disabled=option.dataset.testType!==type.value;});
     if(mode.selectedOptions.length&&mode.selectedOptions[0].disabled)mode.value='';
+}
+function initTestCountdown(){
+    var box=document.getElementById('testCountdown'),value=document.getElementById('testCountdownValue');
+    if(!box||!value)return;
+    var deadline=Number(box.dataset.deadline),timer;
+    function update(){
+        var remaining=Math.max(0,deadline-Date.now()),seconds=Math.ceil(remaining/1000);
+        var hours=Math.floor(seconds/3600),minutes=Math.floor((seconds%3600)/60),secs=seconds%60;
+        value.textContent=(hours>0?String(hours).padStart(2,'0')+':':'')+String(minutes).padStart(2,'0')+':'+String(secs).padStart(2,'0');
+        if(remaining<=0){
+            value.textContent='Đã hết giờ';
+            box.classList.add('expired');
+            document.querySelectorAll('form[data-timed-submission] input, form[data-timed-submission] textarea, form[data-timed-submission] button')
+                    .forEach(function(control){control.disabled=true;});
+            if(timer)clearInterval(timer);
+        }
+    }
+    update();
+    timer=setInterval(update,1000);
 }
 function validateTestSchedule(){
     var startDate=document.getElementById('testStartDate'),startTime=document.getElementById('testStartTime');
@@ -321,6 +354,7 @@ function updateTestEndConstraints(clearInvalid){
 }
 document.addEventListener('DOMContentLoaded',function(){
     syncTestCreateForm();
+    initTestCountdown();
     var form=document.getElementById('testCreateForm');
     if(form){
         form.addEventListener('submit',validateTestSchedule);

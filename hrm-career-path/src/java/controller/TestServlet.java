@@ -103,10 +103,20 @@ public class TestServlet extends HttpServlet {
                     int id = integer(req.getParameter("id"));
                     TestTemplate t = service.getTemplate(userId, id);
                     req.setAttribute("template", t);
-                    if (policy.canManage(actor, t)) req.setAttribute("assignments", service.getTemplateAssignments(userId, id, page, 20));
-                    if (policy.canAssign(actor, t, Instant.now())) {
-                        req.setAttribute("candidates", service.getCandidates(userId, id));
-                        req.setAttribute("contentChoices", service.getContentChoices(userId,id));
+                    if (policy.canManage(actor, t)) {
+                        req.setAttribute("assignments", service.getTemplateAssignments(userId, id, page, 20));
+                        if (policy.canAssign(actor, t, Instant.now())) {
+                            req.setAttribute("candidates", service.getCandidates(userId, id));
+                            req.setAttribute("contentChoices", service.getContentChoices(userId,id));
+                        }
+                    } else {
+                        Optional<TestAssignment> ownAssignment = service.getMyAssignmentForTemplate(userId, id);
+                        if (ownAssignment.isPresent()) {
+                            TestAssignment a = ownAssignment.get();
+                            req.setAttribute("assignment", a);
+                            req.setAttribute("assignedContent", service.getAssignmentContent(userId, a.id()));
+                            req.setAttribute("testView", "assignment");
+                        }
                     }
                     break;
                 }
@@ -177,7 +187,6 @@ public class TestServlet extends HttpServlet {
                 int id = integer(req.getParameter("id"));
                 next = "detail&id=" + id;
                 switch (action) {
-                    case "publish": service.publishTemplate(userId, id); break;
                     case "close": service.closeTemplate(userId, id); break;
                     case "assign": {
                         String[] selected = req.getParameterValues("assigneeId");
@@ -185,7 +194,8 @@ public class TestServlet extends HttpServlet {
                         if (selected != null) for (String value : selected) ids.add(integer(value));
                         String selectedContent=req.getParameter("contentId");
                         Integer contentId=selectedContent==null || selectedContent.isBlank() ? null : integer(selectedContent);
-                        service.assignTest(userId, id, ids, contentId);
+                        int durationMinutes=integer(req.getParameter("durationMinutes"));
+                        service.assignTest(userId, id, ids, contentId, durationMinutes);
                         break;
                     }
                     case "start": service.startAssignment(userId, id); next = "assignment&id=" + id; break;
