@@ -125,8 +125,9 @@ public class TestModuleHttpTest {
         HttpResponse<String> hrOwnPage = get(hrClient, "/hrm/tests?action=assignment&id=" + hrAssignment);
         check(hrOwnPage.statusCode() == 200 && !hrOwnPage.body().contains("Đánh giá bài làm"),
                 "HR self assignment does not render evaluation form");
-        String hrToken = csrf(get(hrClient, "/hrm/tests?action=new").body());
-        check(post(hrClient, "/hrm/tests", "csrf", hrToken, "action", "evaluate", "id", String.valueOf(hrAssignment),
+        check(get(hrClient, "/hrm/tests?action=new").statusCode() == 403, "HR cannot open create form");
+        check(get(hrClient, "/hrm/tests?action=bank").statusCode() == 403, "HR cannot browse bank");
+        check(post(hrClient, "/hrm/tests", "csrf", "bad-token", "action", "evaluate", "id", String.valueOf(hrAssignment),
                 "score", "9", "comment", "Tự chấm").statusCode() == 403, "HR self evaluation rejected by server");
         HttpResponse<String> form = get(manager, "/hrm/tests?action=new");
         check(form.statusCode() == 200, "render create form");

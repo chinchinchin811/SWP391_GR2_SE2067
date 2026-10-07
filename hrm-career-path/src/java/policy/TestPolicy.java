@@ -12,11 +12,10 @@ import model.TestTemplate;
  */
 public final class TestPolicy {
 
-    /** ADMIN chỉ quản lý Văn hóa; HR quản lý cả hai; MANAGER quản lý Chuyên môn đúng phòng. */
+    /** ADMIN quản lý Văn hóa; MANAGER quản lý Chuyên môn đúng phòng. HR làm bài như EMPLOYEE. */
     public boolean canManage(TestActor actor, TestTemplate t) {
         return "culture".equals(t.type()) ? actor.cultureManager()
-                : "HR".equals(actor.role())
-                || (actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId()));
+                : actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId());
     }
 
     /** Đề nháp chỉ người quản lý xem; đề công bố/đóng hiển thị toàn công ty. */
@@ -73,7 +72,6 @@ public final class TestPolicy {
 
     private int roleRank(String role) {
         if ("ADMIN".equals(role)) return 4;
-        if ("HR".equals(role)) return 3;
         if ("MANAGER".equals(role)) return 2;
         return 1;
     }

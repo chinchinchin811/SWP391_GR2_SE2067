@@ -6,9 +6,9 @@ package model;
  */
 public record TestActor(int id, String name, String role, Integer departmentId, Integer managedDepartmentId) {
 
-    /** ADMIN/HR có quyền quản lý đánh giá toàn công ty. */
+    /** ADMIN quản lý bài văn hóa; HR làm bài như nhân viên thường. */
     public boolean cultureManager() {
-        return "ADMIN".equals(role) || "HR".equals(role);
+        return "ADMIN".equals(role);
     }
 
     /**
@@ -19,8 +19,8 @@ public record TestActor(int id, String name, String role, Integer departmentId, 
         return "MANAGER".equals(role) && managedDepartmentId != null;
     }
 
-    /** HR quản lý chuyên môn toàn công ty; MANAGER chỉ quản lý phòng được giao. */
+    /** MANAGER chỉ quản lý bài chuyên môn của phòng được giao. */
     public boolean professionalManager() {
-        return "HR".equals(role) || departmentManager();
+        return departmentManager();
     }
 }

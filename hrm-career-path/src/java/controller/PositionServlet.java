@@ -29,12 +29,7 @@ public class PositionServlet extends HttpServlet {
         }
 
         User currentUser = (User) session.getAttribute("currentUser");
-
-        if (currentUser.getRoleId() == 1) {
-            response.sendRedirect(request.getContextPath() + "/flashcards");
-            return;
-        }
-
+        
         // Nhân viên không vào trang quản lý vị trí
         if (currentUser.getRoleId() == 4) {
             response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + currentUser.getUserId());
@@ -46,8 +41,8 @@ public class PositionServlet extends HttpServlet {
             action = "list";
         }
 
-        // Manager chỉ xem, không được tạo/sửa vị trí công ty
-        if (currentUser.getRoleId() == 3 && ("create".equals(action) || "edit".equals(action))) {
+        // Chỉ Admin được mở form tạo/sửa vị trí công ty
+        if (currentUser.getRoleId() != 1 && ("create".equals(action) || "edit".equals(action))) {
             response.sendRedirect(request.getContextPath() + "/positions");
             return;
         }
@@ -79,8 +74,8 @@ public class PositionServlet extends HttpServlet {
 
         User currentUser = (User) session.getAttribute("currentUser");
 
-        // Chỉ HR mới được thêm/sửa/xóa vị trí
-        if (currentUser.getRoleId() != 2) {
+        // Chỉ Admin mới được thêm/sửa/xóa vị trí
+        if (currentUser.getRoleId() != 1) {
             response.sendRedirect(request.getContextPath() + "/positions");
             return;
         }

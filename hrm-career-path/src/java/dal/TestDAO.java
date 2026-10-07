@@ -93,7 +93,7 @@ public final class TestDAO {
     private String management(TestActor actor, List<Object> args) {
         args.add(actor.departmentManager() ? actor.managedDepartmentId() : null);
         return "((t.type='culture' AND " + (actor.cultureManager() ? "1=1" : "1=0")
-                + ") OR (t.type='department' AND (" + ("HR".equals(actor.role()) ? "1=1" : "1=0") + " OR t.department_id=?)))";
+                + ") OR (t.type='department' AND t.department_id=?))";
     }
 
     /** Lọc xóa mềm và giữ đề nháp trong phạm vi quản lý ngay tại SQL. */

@@ -156,14 +156,14 @@ public final class TestService {
     private Integer templateDepartment(TestActor actor, String type) {
         if ("culture".equals(type)) {
             if (!actor.cultureManager()) {
-                throw new TestException(403, "Chỉ ADMIN/HR tạo bài văn hóa.");
+                throw new TestException(403, "Chỉ ADMIN tạo bài văn hóa.");
             }
             return null;
         }
         if (!actor.professionalManager()) {
             throw new TestException(403, "Bạn chưa được gán quyền tạo đánh giá chuyên môn.");
         }
-        return "HR".equals(actor.role()) ? null : actor.managedDepartmentId();
+        return actor.managedDepartmentId();
     }
 
     private int insertTemplate(TestDAO dao, TestActor actor, String title, String description,
@@ -506,7 +506,7 @@ public final class TestService {
     }
 
     /**
-     * Kho nội dung chỉ mở cho ADMIN/HR hoặc MANAGER đang quản lý một phòng.
+     * Kho nội dung chỉ mở cho ADMIN hoặc MANAGER đang quản lý một phòng.
      */
     private void bankManager(TestActor actor) {
         if (!actor.cultureManager() && !actor.departmentManager()) {

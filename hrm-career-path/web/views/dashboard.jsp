@@ -21,11 +21,6 @@
              ========================================================= -->
         <div class="topbar">
             <h1>Báo Cáo Tổng Quan Hệ Thống (HR / Admin)</h1>
-            <div>
-                <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
-                    + Khai Báo Nhân Viên Mới
-                </a>
-            </div>
         </div>
 
         <div class="content-body">

@@ -146,14 +146,15 @@ public class TestModuleIntegrationTest {
         rejects(400, () -> s.createTemplate(3, "x", "y", "department", NOW.minusSeconds(1), NOW.plusSeconds(10)));
         rejects(400, () -> s.createTemplate(3, " ", "y", "department", NOW, NOW.plusSeconds(10)));
         int dept = s.createTemplate(3, "Đề chuyên môn <script>", "Mô tả tự do", "department", NOW, NOW.plusSeconds(3600));
-        int culture = s.createTemplate(2, "Văn hóa", "Bài viết văn hóa", "culture", NOW, NOW.plusSeconds(3600));
+        rejects(403, () -> s.createTemplate(2, "x", "y", "culture", NOW, NOW.plusSeconds(3600)));
+        int culture = s.createTemplate(1, "Văn hóa", "Bài viết văn hóa", "culture", NOW, NOW.plusSeconds(3600));
         int future = s.createTemplate(3, "Bài sắp tới", "Nội dung", "department", NOW.plusSeconds(3600), NOW.plusSeconds(7200));
         rejects(404, () -> s.getTemplate(4, dept));
         rejects(404, () -> s.getTemplate(6, culture));
         check(s.listTemplates(4, "all", 1, 20).isEmpty(), "draft must be hidden");
         check(s.getCalendar(3, NOW.minusSeconds(600), NOW.plusSeconds(8000), 1, 20).isEmpty(), "calendar excludes drafts even for creator");
         s.publishTemplate(3, dept);
-        s.publishTemplate(2, culture);
+        s.publishTemplate(1, culture);
         s.publishTemplate(3, future);
         check(s.getTemplate(6, culture).id() == culture, "culture visible company wide");
         check(s.getTemplate(6, dept).id() == dept, "professional evaluation visible company wide");
@@ -239,12 +240,13 @@ public class TestModuleIntegrationTest {
         int pending = assignment(future, 4);
         rejects(409, () -> s.startAssignment(4, pending));
         rejects(409, () -> s.submitAssignment(4, pending, "early", null, null));
-        s.revokeAssignment(2, pending);
-        check(s.getMyAssignments(4, 1, 20).size() == 1, "HR superior can revoke assignment created by MANAGER");
-        int expiring = s.createTemplate(2, "Đợt sắp hết hạn", "Thu hồi bài chưa làm",
+        rejects(403, () -> s.revokeAssignment(2, pending));
+        s.revokeAssignment(3, pending);
+        check(s.getMyAssignments(4, 1, 20).size() == 1, "manager can revoke assignment they created");
+        int expiring = s.createTemplate(1, "Đợt sắp hết hạn", "Thu hồi bài chưa làm",
                 "culture", NOW, NOW.plusSeconds(10));
-        s.publishTemplate(2, expiring);
-        s.assignTest(2, expiring, List.of(8));
+        s.publishTemplate(1, expiring);
+        s.assignTest(1, expiring, List.of(8));
         int expiringAssignment = assignment(expiring, 8);
         s.closeExpiredTests(NOW.plusSeconds(20));
         check(count("SELECT COUNT(*) FROM Test_Templates WHERE id=" + expiring + " AND status='closed'") == 1,
@@ -265,14 +267,14 @@ public class TestModuleIntegrationTest {
         check(s.getTemplate(7, dept).id() == dept, "closed template remains available without archive feature");
         check(count("SELECT COUNT(*) FROM Test_Evaluations") == 2, "closing template preserves grades");
 
-        s.assignTest(2, culture, List.of(6));
+        s.assignTest(1, culture, List.of(6));
         int ca = assignment(culture, 6);
         rejects(404, () -> s.getAssignment(4, ca));
         rejects(403, () -> s.assignTest(5, culture, List.of(6)));
         s.submitAssignment(6, ca, "culture response", null, null);
         s.evaluateAssignment(1, ca, new BigDecimal("10"), "ADMIN may grade culture");
         check(s.getAssignment(6, ca).evaluation() != null, "culture full flow");
-        s.assignTest(2, culture, List.of(2));
+        s.assignTest(1, culture, List.of(2));
         int hrOwn = assignment(culture, 2);
         s.submitAssignment(2, hrOwn, "HR self response", null, null);
         rejects(403, () -> s.evaluateAssignment(2, hrOwn, new BigDecimal("9"), "self grade forbidden"));

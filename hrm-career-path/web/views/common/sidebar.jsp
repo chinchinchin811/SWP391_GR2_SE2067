@@ -30,15 +30,7 @@
     <nav class="sidebar-menu" aria-label="Điều hướng chính">
         <ul class="sidebar-menu-list">
 
-            <% if (roleId == 1) { %>
-            <li class="<%= currentURI.contains("/departments") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/departments"><i class="fa-regular fa-building nav-icon"></i> <span>Danh sách Phòng ban</span></a>
-            </li>
-            <li class="<%= currentURI.contains("/employees") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/employees"><i class="fa-solid fa-address-book nav-icon"></i> <span>Danh sách Nhân viên</span></a>
-            </li>
-            <% } %>
-
+            
             <% if (loggedInUser != null && loggedInUser.getRoleId() == 4) { %>
             <li class="nav-item">
                 <a class="nav-link" href="<%= request.getContextPath() %>/mentors?action=myMentor">
@@ -47,7 +39,7 @@
             </li>
             <% } %>
 
-            <% if (roleId == 2) { %>
+            <% if (roleId == 2 || roleId == 1) { %>
             <li class="sidebar-section <%= organizationActive ? "has-active" : "" %>" data-sidebar-section="organization">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-organization">
                     <span><i class="fa-solid fa-sitemap nav-cat-icon"></i> Quản trị Tổ chức</span>
@@ -72,9 +64,11 @@
                     <li class="<%= currentURI.contains("/employees") && action == null ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/employees"><i class="fa-solid fa-address-book nav-icon"></i> <span>Danh sách Nhân viên</span></a>
                     </li>
+                    <% if (roleId == 2) { %>
                     <li class="<%= currentURI.contains("/employees") && "create".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/employees?action=create"><i class="fa-solid fa-user-plus nav-icon"></i> <span>Khai báo Nhân viên mới</span></a>
                     </li>
+                    <% } %>
                 </ul>
             </li>
            
@@ -154,7 +148,7 @@
                         <a href="<%= request.getContextPath() %>/tests?action=calendar"><i class="fa-regular fa-calendar-days nav-icon"></i> <span>Lịch bài test</span></a>
                     </li>
                     <% } %>
-                    <% if (roleId == 1 || roleId == 2 || roleId == 3) { %>
+                    <% if (roleId == 1 || roleId == 3) { %>
                     <li class="<%= currentURI.contains("/tests") && ("bank".equals(action) || "bankDetail".equals(action)) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/tests?action=bank"><i class="fa-solid fa-box-archive nav-icon"></i> <span>Bộ đề &amp; Câu hỏi</span></a>
                     </li>
