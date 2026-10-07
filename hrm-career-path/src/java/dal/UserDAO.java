@@ -22,7 +22,7 @@ public class UserDAO {
             LEFT JOIN Departments d ON u.department_id = d.department_id
             LEFT JOIN Positions p ON u.position_id = p.position_id
             LEFT JOIN Job_Levels l ON u.level_id = l.level_id
-            WHERE (u.username = ? OR u.email = ?) AND u.password = ? AND u.is_deleted = 0 AND u.status = 1
+            WHERE (u.username = ? OR u.email = ?) AND u.password = ? AND u.is_deleted = 0
             """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
