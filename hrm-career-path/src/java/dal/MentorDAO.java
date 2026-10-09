@@ -54,7 +54,11 @@ public class MentorDAO {
                 + "LEFT JOIN Departments d ON u.department_id = d.department_id "
                 + "LEFT JOIN Job_Levels jl ON u.level_id = jl.level_id "
                 + "INNER JOIN Roles r ON u.role_id = r.role_id "
-                + "WHERE r.role_name = 'MENTOR' AND (u.is_deleted = 0 OR u.is_deleted IS NULL)";
+                + "WHERE u.role_id IN (3, 4) "
+                + "AND (jl.rank_order >= 3 OR jl.rank_order IS NULL) "
+                + "AND (u.is_deleted = 0 OR u.is_deleted IS NULL) "
+                + "AND (u.status = 1 OR u.status IS NULL) "
+                + "ORDER BY d.department_id ASC, jl.rank_order DESC, u.full_name ASC";
 
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
 
@@ -251,6 +255,34 @@ public class MentorDAO {
             ps.setInt(3, score);
             ps.setString(4, feedback);
             return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean isMentor(int userId) {
+        String sql = "SELECT COUNT(*) FROM MentorAssignments WHERE mentor_id = ? AND status = 'ACTIVE'";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean hasMentor(int userId) {
+        String sql = "SELECT COUNT(*) FROM MentorAssignments WHERE mentee_id = ? AND status = 'ACTIVE'";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }

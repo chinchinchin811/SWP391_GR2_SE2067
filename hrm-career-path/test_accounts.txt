@@ -69,4 +69,18 @@ Mat khau chung cho tat ca tai khoan: 123
 - Quyen han  :
   + Xem ho so ca nhan cua chinh minh.
 
+--------------------------------------------------------------------------------
+6. TAI KHOAN: SENIOR DEVELOPER / MENTOR (EMPLOYEE - SENIOR)
+--------------------------------------------------------------------------------
+- Username   : mentor_java
+- Password   : 123
+- Ho va ten  : Le Huu Mentor
+- Email      : mentor.java@hrm.com
+- Role       : EMPLOYEE
+- Vi tri     : Java Developer (Cap bac: Senior)
+- Nhiem vu   : Mentor huong dan & danh gia nhan vien moi (Mentee)
+- Quyen han  :
+  + Xem ho so ca nhan cua chinh minh.
+  + Truy cap Mentor Workspace: Danh sach Mentee phu trach & Viet danh gia Mentee.
+
 ================================================================================

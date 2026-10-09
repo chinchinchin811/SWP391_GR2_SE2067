@@ -2,10 +2,13 @@
 <%@ page import="java.util.List" %>
 <%@ page import="model.User" %>
 <%@ page import="model.Mentor.MentorEvaluation" %>
+<%@ page import="dal.MentorDAO" %>
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-    if (roleId == 4) {
+    MentorDAO evalMentorDAO = new MentorDAO();
+    boolean isMentorUser = (currentUser != null) && evalMentorDAO.isMentor(currentUser.getUserId());
+    if (roleId == 4 && !isMentorUser) {
         response.sendRedirect(request.getContextPath() + "/dashboard");
         return;
     }

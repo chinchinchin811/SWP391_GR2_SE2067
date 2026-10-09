@@ -1,13 +1,18 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="model.User" %>
+<%@ page import="dal.MentorDAO" %>
 <%
     User user = (User) session.getAttribute("currentUser");
     String currentURI = request.getRequestURI();
     String action = request.getParameter("action");
     int roleId = (user != null) ? user.getRoleId() : 4;
 
+    MentorDAO sidebarMentorDAO = new MentorDAO();
+    boolean isUserMentor = (user != null) && sidebarMentorDAO.isMentor(user.getUserId());
+    boolean isUserMentee = (user != null) && sidebarMentorDAO.hasMentor(user.getUserId());
+
     boolean organizationActive = currentURI.contains("/departments") || currentURI.contains("/positions");
-    boolean employeeActive = currentURI.contains("/employees");
+    boolean employeeActive = currentURI.contains("/employees") || (currentURI.contains("/mentors") && ("pair".equals(action) || "evaluations".equals(action)));
     boolean mentorAdminActive = currentURI.contains("/mentors")
             && ("pair".equals(action) || "evaluations".equals(action));
      
@@ -78,6 +83,12 @@
                     <li class="<%= currentURI.contains("/employees") && "create".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/employees?action=create"><i class="fa-solid fa-user-plus nav-icon"></i> <span>Khai báo Nhân viên mới</span></a>
                     </li>
+                    <li class="<%= currentURI.contains("/mentors") && "pair".equals(action) ? "active" : "" %>">
+                        <a href="<%= request.getContextPath() %>/mentors?action=pair"><i class="fa-solid fa-handshake nav-icon"></i> <span>Ghép Nối Mentor</span></a>
+                    </li>
+                    <li class="<%= currentURI.contains("/mentors") && "evaluations".equals(action) ? "active" : "" %>">
+                        <a href="<%= request.getContextPath() %>/mentors?action=evaluations"><i class="fa-solid fa-clipboard-check nav-icon"></i> <span>Tổng hợp Đánh giá</span></a>
+                    </li>
                 </ul>
             </li>
            
@@ -101,16 +112,14 @@
             </li>
             <% } %>
 
-            <%-- [SỬA TẠI ĐÂY 2]: Tổ chức lại khu vực Mentor Workspace --%>
-            <% if (roleId == 5) { %>
+            <%-- Mentor Workspace: Hiển thị cho nhân sự đang phụ trách kèm cặp Mentee --%>
+            <% if (isUserMentor) { %>
             <li class="sidebar-section <%= mentorWorkspaceActive ? "has-active" : "" %>" data-sidebar-section="mentor-workspace">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-mentor-workspace">
-                    
                     <span><i class="fa-solid fa-user-tie nav-cat-icon"></i> Mentor Workspace</span>
                     <span class="sidebar-menu-category-icon" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
                 </button>
                 <ul class="sidebar-submenu" id="sidebar-mentor-workspace">
-                   
                     <li class="<%= currentURI.contains("/mentors") && "myMentees".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/mentors?action=myMentees">
                             <i class="fa-solid fa-user-graduate nav-icon"></i> <span>Danh sách Mentee của tôi</span>

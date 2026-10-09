@@ -16,8 +16,7 @@ INSERT INTO dbo.Roles (role_name, description) VALUES
 ('ADMIN', N'Quản trị viên hệ thống'),
 ('HR', N'Nhân sự quản lý phòng ban, vị trí và nhân viên'),
 ('MANAGER', N'Trưởng phòng quản lý nhân viên trong phòng ban của mình'),
-('EMPLOYEE', N'Nhân viên công ty'),
-('MENTOR', N'Người hướng dẫn và đánh giá nhân viên mới');
+('EMPLOYEE', N'Nhân viên công ty');
 GO
 
 -- =======================================================
@@ -85,7 +84,7 @@ INSERT INTO dbo.Users (username, password, full_name, email, phone, gender, role
 ('manager_it', '123', N'Trần Văn Minh', 'minh.tv@hrm.com', '0901000003', N'Nam', 3, 1, 1, 6, '2022-02-01', 1, 0),
 ('dev_fresher', '123', N'Phạm Đức Trọng', 'trong.pd@hrm.com', '0901000006', N'Nam', 4, 1, 1, 2, '2026-08-01', 1, 0),
 ('dev_tester', '123', N'Ngô Mai Phương', 'phuong.nm@hrm.com', '0901000007', N'Nữ', 4, 1, 3, 3, '2023-06-01', 1, 0),
-('mentor_java', '123', N'Lê Hữu Mentor', 'mentor.java@hrm.com', '0988888888', N'Nam', 5, 1, 1, 5, '2021-01-01', 1, 0),
+('mentor_java', '123', N'Lê Hữu Mentor', 'mentor.java@hrm.com', '0988888888', N'Nam', 4, 1, 1, 5, '2021-01-01', 1, 0),
 ('locked_user', '123', N'Nguyễn Khóa Khoản', 'locked.user@hrm.com', '0901999999', N'Nam', 4, 1, 1, 2, '2026-01-01', 0, 0);
 GO
 
@@ -548,6 +547,23 @@ END;
 GO
 
 -- =======================================================
+-- 8. SEED DATA: GHÉP NỐI MENTOR & ĐÁNH GIÁ (MENTOR_ASSIGNMENTS & MENTOR_EVALUATIONS)
+-- =======================================================
+-- Ghép nối Mentor Lê Hữu Mentor (Senior - User 6) cho Mentee Phạm Đức Trọng (Fresher - User 4)
+INSERT INTO dbo.MentorAssignments (mentee_id, mentor_id, position_id, status, assigned_by, created_at) VALUES
+(4, 6, 1, 'ACTIVE', 2, DATEADD(DAY, -15, GETDATE()));
+GO
+
+-- Tạo đánh giá mẫu của Mentor dành cho Mentee
+DECLARE @assign_id INT = (SELECT TOP 1 assignment_id FROM dbo.MentorAssignments WHERE mentee_id = 4 AND mentor_id = 6);
+IF @assign_id IS NOT NULL
+BEGIN
+    INSERT INTO dbo.MentorEvaluations (assignment_id, evaluator_id, performance_score, feedback, approval_status, evaluation_date) VALUES
+    (@assign_id, 6, 9, N'Nhân sự nắm bắt nhanh quy trình phát triển Java backend, tiếp thu tốt các tài liệu và có tinh thần tự học cao.', 'APPROVED', DATEADD(DAY, -2, GETDATE()));
+END;
+GO
+
+-- =======================================================
 -- 10. KIỂM TRA DỮ LIỆU ĐÃ NẠP: SELECT * FROM TẤT CẢ CÁC BẢNG
 -- =======================================================
 SELECT * FROM dbo.Roles;
@@ -558,6 +574,8 @@ SELECT * FROM dbo.Users;
 SELECT * FROM dbo.Employee_History;
 SELECT * FROM dbo.FlashcardDecks;
 SELECT * FROM dbo.Flashcards;
+SELECT * FROM dbo.MentorAssignments;
+SELECT * FROM dbo.MentorEvaluations;
 SELECT * FROM dbo.Learning_Materials;
 SELECT * FROM dbo.Training_Classes;
 SELECT * FROM dbo.Class_Materials;
