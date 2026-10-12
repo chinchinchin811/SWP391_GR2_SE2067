@@ -85,7 +85,12 @@ public class MentorServlet extends HttpServlet {
             } else if (currentUser.getRoleId() == 2) {
                 action = "pair";
             } else if (currentUser.getRoleId() == 4) {
-                action = "myMentor";
+                if (mentorDAO.hasMentor(currentUser.getUserId())) {
+                    action = "myMentor";
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
             } else {
                 action = "evaluations";
             }
@@ -132,6 +137,10 @@ public class MentorServlet extends HttpServlet {
             case "myMentor":
                 // Dành riêng cho Employee (Mentee) xem Mentor phụ trách mình
                 MentorAssignment myMentor = mentorDAO.getMentorByMentee(currentUser.getUserId());
+                if (myMentor == null) {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
                 request.setAttribute("myMentor", myMentor);
                 request.getRequestDispatcher("my-mentor.jsp").forward(request, response);
                 break;

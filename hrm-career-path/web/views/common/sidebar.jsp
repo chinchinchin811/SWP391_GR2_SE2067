@@ -47,7 +47,8 @@
             </li>
             <% } %>
 
-            <% if (loggedInUser != null && loggedInUser.getRoleId() == 4) { %>
+            <%-- Chỉ hiển thị mục này khi nhân viên thực sự đang được ghép cặp có Mentor hướng dẫn (đang là Mentee) --%>
+            <% if (isUserMentee) { %>
             <li class="nav-item">
                 <a class="nav-link" href="<%= request.getContextPath() %>/mentors?action=myMentor">
                     <i class="fa-solid fa-user-tie nav-icon"></i> <span>Mentor Hướng Dẫn Của Tôi</span>
