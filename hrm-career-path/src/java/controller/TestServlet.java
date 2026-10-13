@@ -52,6 +52,39 @@ public class TestServlet extends HttpServlet {
         } catch (NumberFormatException e) { throw new TestException(400, "ID hoặc số trang không hợp lệ."); }
     }
 
+    private int nonNegativeInteger(String value, String message) {
+        try {
+            int number = Integer.parseInt(value);
+            if (number < 0) throw new NumberFormatException();
+            return number;
+        } catch (NumberFormatException e) {
+            throw new TestException(400, message);
+        }
+    }
+
+    /** Parse cấu trúc câu hỏi động nhưng vẫn giới hạn số câu và số đáp án. */
+    private List<TestService.QuestionDraft> questionDrafts(HttpServletRequest req) {
+        int questionCount = nonNegativeInteger(req.getParameter("questionCount"), "Số câu hỏi không hợp lệ.");
+        if (questionCount > 100) throw new TestException(400, "Mỗi bộ đề chỉ được có tối đa 100 câu hỏi.");
+        List<TestService.QuestionDraft> questions = new ArrayList<>();
+        for (int i = 0; i < questionCount; i++) {
+            String type = req.getParameter("questionType_" + i);
+            int optionCount = nonNegativeInteger(req.getParameter("optionCount_" + i), "Số đáp án không hợp lệ.");
+            if (optionCount > 20) throw new TestException(400, "Mỗi câu chỉ được có tối đa 20 đáp án.");
+            Set<Integer> correctIndexes = new HashSet<>();
+            String[] correct = req.getParameterValues("correct_" + i);
+            if (correct != null) {
+                for (String value : correct) correctIndexes.add(nonNegativeInteger(value, "Đáp án đúng không hợp lệ."));
+            }
+            List<TestService.OptionDraft> options = new ArrayList<>();
+            for (int j = 0; j < optionCount; j++) {
+                options.add(new TestService.OptionDraft(req.getParameter("option_" + i + "_" + j), correctIndexes.contains(j)));
+            }
+            questions.add(new TestService.QuestionDraft(req.getParameter("questionPrompt_" + i), type, options));
+        }
+        return questions;
+    }
+
     /** Ghép ngày và giờ Việt Nam thành Instant UTC để lưu trong DB. */
     private Instant inputTime(String date, String time) {
         try {
@@ -96,6 +129,13 @@ public class TestServlet extends HttpServlet {
                 case "bank":
                     req.setAttribute("bankItems", service.listContent(userId,page,20));
                     break;
+                case "newSet":
+                    if (!actor.cultureManager() && !actor.departmentManager())
+                        throw new TestException(403, "Bạn không có quyền tạo bộ đề.");
+                    break;
+                case "editSet":
+                    req.setAttribute("editingSet", service.getEditableContent(userId, integer(req.getParameter("id"))));
+                    break;
                 case "bankDetail":
                     req.setAttribute("bankDetail", service.getContent(userId,integer(req.getParameter("id"))));
                     break;
@@ -104,6 +144,7 @@ public class TestServlet extends HttpServlet {
                     TestTemplate t = service.getTemplate(userId, id);
                     req.setAttribute("template", t);
                     if (policy.canManage(actor, t)) {
+                        req.setAttribute("templateAssignments", service.getTemplateAssignments(userId, id, page, 20));
                         if (policy.canAssign(actor, t, Instant.now())) {
                             req.setAttribute("candidates", service.getCandidates(userId, id));
                             req.setAttribute("contentChoices", service.getContentChoices(userId,id));
@@ -172,7 +213,17 @@ public class TestServlet extends HttpServlet {
                 throw new TestException(403, "Phiên biểu mẫu không hợp lệ. Hãy tải lại trang rồi thử lại.");
             String action = action(req);
             String next;
-            if ("create".equals(action)) {
+            if ("createSet".equals(action)) {
+                int contentId = service.createContentSet(userId, req.getParameter("title"),
+                        req.getParameter("description"), req.getParameter("type"),
+                        "ready", questionDrafts(req));
+                next = "bankDetail&id=" + contentId;
+            } else if ("updateSet".equals(action)) {
+                int contentId = integer(req.getParameter("id"));
+                service.updateContentSet(userId, contentId, req.getParameter("title"),
+                        req.getParameter("description"), req.getParameter("type"), questionDrafts(req));
+                next = "bankDetail&id=" + contentId;
+            } else if ("create".equals(action)) {
                 String selected = req.getParameter("contentId");
                 Instant start = inputTime(req.getParameter("startDate"), req.getParameter("startTime"));
                 Instant end = inputTime(req.getParameter("endDate"), req.getParameter("endTime"));

@@ -540,6 +540,148 @@ public final class TestService {
 
     }
 
+    /** Dữ liệu đáp án khi người quản lý tạo một câu hỏi mới. */
+    public record OptionDraft(String text, boolean correct) {
+    }
+
+    /** Dữ liệu câu hỏi nhận từ form tạo bộ đề; ID và chủ sở hữu do server tạo. */
+    public record QuestionDraft(String prompt, String type, List<OptionDraft> options) {
+        public QuestionDraft {
+            options = options == null ? List.of() : List.copyOf(options);
+        }
+    }
+
+    private List<QuestionDraft> validateQuestionDrafts(List<QuestionDraft> questionDrafts, boolean required) {
+        List<QuestionDraft> questions = questionDrafts == null ? List.of() : List.copyOf(questionDrafts);
+        if (questions.size() > 100) {
+            throw new TestException(400, "Mỗi bộ đề chỉ được có tối đa 100 câu hỏi.");
+        }
+        if (required && questions.isEmpty()) {
+            throw new TestException(400, "Bộ đề sẵn sàng phải có ít nhất một câu hỏi.");
+        }
+
+        List<QuestionDraft> checkedQuestions = new ArrayList<>();
+        for (QuestionDraft question : questions) {
+            String prompt = text(question.prompt(), 4000, true);
+            String questionType = question.type();
+            if (!"single".equals(questionType) && !"multiple".equals(questionType)
+                    && !"true_false".equals(questionType)) {
+                throw new TestException(400, "Loại câu hỏi không hợp lệ.");
+            }
+            if (question.options().size() < 2 || question.options().size() > 20) {
+                throw new TestException(400, "Mỗi câu trắc nghiệm phải có từ 2 đến 20 đáp án.");
+            }
+            if ("true_false".equals(questionType) && question.options().size() != 2) {
+                throw new TestException(400, "Câu Đúng/Sai phải có đúng hai đáp án.");
+            }
+            int correct = 0;
+            Set<String> normalized = new HashSet<>();
+            List<OptionDraft> checkedOptions = new ArrayList<>();
+            for (OptionDraft option : question.options()) {
+                String optionText = text(option.text(), 1000, true);
+                if (!normalized.add(optionText.toLowerCase(Locale.ROOT))) {
+                    throw new TestException(400, "Các đáp án trong cùng một câu không được trùng nhau.");
+                }
+                if (option.correct()) correct++;
+                checkedOptions.add(new OptionDraft(optionText, option.correct()));
+            }
+            if (("single".equals(questionType) || "true_false".equals(questionType)) && correct != 1) {
+                throw new TestException(400, "Câu chọn một hoặc Đúng/Sai phải có đúng một đáp án đúng.");
+            }
+            if ("multiple".equals(questionType) && correct < 1) {
+                throw new TestException(400, "Câu chọn nhiều phải có ít nhất một đáp án đúng.");
+            }
+            checkedQuestions.add(new QuestionDraft(prompt, questionType, checkedOptions));
+        }
+        return checkedQuestions;
+    }
+
+    private void insertQuestions(TestDAO dao, int contentId, List<QuestionDraft> questions) throws SQLException {
+        for (QuestionDraft question : questions) {
+            int questionId = dao.insertId("INSERT INTO Test_Questions(content_id,prompt,question_type) "
+                    + "OUTPUT INSERTED.id VALUES (?,?,?)", contentId, question.prompt(), question.type());
+            int order = 1;
+            for (OptionDraft option : question.options()) {
+                dao.insertId("INSERT INTO Test_Question_Options(question_id,option_text,is_correct,display_order) "
+                        + "OUTPUT INSERTED.id VALUES (?,?,?,?)", questionId, option.text(), option.correct(), order++);
+            }
+        }
+    }
+
+    /**
+     * Tạo bộ đề cùng toàn bộ câu hỏi/đáp án trong một transaction. Bản nháp có
+     * thể chưa có câu hỏi; bộ đề sẵn sàng phải vượt qua toàn bộ validation.
+     */
+    public int createContentSet(int userId, String title, String description, String type,
+            String status, List<QuestionDraft> questionDrafts) throws SQLException {
+        final String checkedTitle = text(title, 200, true);
+        final String checkedDescription = text(description, 20000, false);
+        if (!"culture".equals(type) && !"department".equals(type)) {
+            throw new TestException(400, "Loại bộ đề không hợp lệ.");
+        }
+        if (!"draft".equals(status) && !"ready".equals(status)) {
+            throw new TestException(400, "Trạng thái bộ đề không hợp lệ.");
+        }
+        List<QuestionDraft> checkedQuestions = validateQuestionDrafts(questionDrafts, "ready".equals(status));
+
+        return transaction(dao -> {
+            TestActor actor = dao.actor(userId);
+            bankManager(actor);
+            Integer department = templateDepartment(actor, type);
+            int contentId = dao.insertId("INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by,status,is_deleted) "
+                    + "OUTPUT INSERTED.id VALUES (?,?,?,?,?,?,?,0)", checkedTitle, checkedDescription,
+                    "quiz", type, department, actor.id(), status);
+            insertQuestions(dao, contentId, checkedQuestions);
+            return contentId;
+        });
+    }
+
+    /** Tải đầy đủ đáp án cho biểu mẫu sửa, đồng thời kiểm tra đúng chủ sở hữu. */
+    public ContentDetail getEditableContent(int userId, int id) throws SQLException {
+        return transaction(dao -> {
+            TestActor actor = dao.actor(userId);
+            bankManager(actor);
+            TestContent content = dao.managedContent(actor, id);
+            if (!policy.canEditContent(actor, content)) {
+                throw new TestException(403, "Bạn chỉ có thể sửa bộ đề do mình tạo.");
+            }
+            if (dao.contentAssigned(id)) {
+                throw new TestException(409, "Bộ đề đã được giao nên không thể sửa nội dung.");
+            }
+            return new ContentDetail(content, dao.questions(id, true), Map.of());
+        });
+    }
+
+    /** Cập nhật nguyên tử bộ đề chưa được giao; sau khi lưu luôn ở trạng thái ready. */
+    public void updateContentSet(int userId, int id, String title, String description, String type,
+            List<QuestionDraft> questionDrafts) throws SQLException {
+        final String checkedTitle = text(title, 200, true);
+        final String checkedDescription = text(description, 20000, false);
+        if (!"culture".equals(type) && !"department".equals(type)) {
+            throw new TestException(400, "Loại bộ đề không hợp lệ.");
+        }
+        List<QuestionDraft> checkedQuestions = validateQuestionDrafts(questionDrafts, true);
+        transaction(dao -> {
+            TestActor actor = dao.actor(userId);
+            bankManager(actor);
+            TestContent content = dao.managedContent(actor, id);
+            if (!policy.canEditContent(actor, content)) {
+                throw new TestException(403, "Bạn chỉ có thể sửa bộ đề do mình tạo.");
+            }
+            if (dao.contentAssigned(id)) {
+                throw new TestException(409, "Bộ đề đã được giao nên không thể sửa nội dung.");
+            }
+            Integer department = templateDepartment(actor, type);
+            dao.execute("UPDATE Test_Content SET title=?,prompt=?,type=?,department_id=?,status='ready' "
+                    + "WHERE id=? AND is_deleted=0", checkedTitle, checkedDescription, type, department, id);
+            dao.execute("DELETE FROM Test_Question_Options WHERE question_id IN "
+                    + "(SELECT id FROM Test_Questions WHERE content_id=?)", id);
+            dao.execute("DELETE FROM Test_Questions WHERE content_id=?", id);
+            insertQuestions(dao, id, checkedQuestions);
+            return null;
+        });
+    }
+
     /**
      * Người quản lý xem đề nháp/ready và đáp án đúng để kiểm tra trước khi
      * giao.

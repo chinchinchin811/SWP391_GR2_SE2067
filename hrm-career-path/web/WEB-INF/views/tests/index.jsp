@@ -13,6 +13,7 @@
     TestAssignment assignment = (TestAssignment) request.getAttribute("assignment");
     List<TestTemplate> templates = (List<TestTemplate>) request.getAttribute("templates");
     List<TestAssignment> assignments = (List<TestAssignment>) request.getAttribute("assignments");
+    List<TestAssignment> templateAssignments = (List<TestAssignment>) request.getAttribute("templateAssignments");
     List<TestActor> candidates = (List<TestActor>) request.getAttribute("candidates");
     TestService.ContentDetail assignedContent = (TestService.ContentDetail) request.getAttribute("assignedContent");
     String flash = (String) session.getAttribute("testSuccess");
@@ -26,7 +27,9 @@
     <link rel="stylesheet" href="<%= request.getContextPath() %>/assets/css/tests.css">
     <div class="topbar"><h1>Bài test & Đánh giá</h1>
         <% if (actor.cultureManager() || actor.departmentManager()) { %>
-        <a class="btn btn-primary" href="<%= base %>?action=new">+ Tạo đợt giao bài</a>
+        <a class="btn btn-primary" href="<%= base %>?action=<%= ("bank".equals(view) || "bankDetail".equals(view) || "newSet".equals(view) || "editSet".equals(view)) ? "newSet" : "new" %>">
+            <%= ("bank".equals(view) || "bankDetail".equals(view) || "newSet".equals(view) || "editSet".equals(view)) ? "+ Tạo bộ đề" : "+ Tạo đợt giao bài" %>
+        </a>
         <% } %>
     </div>
     <div class="content-body">
@@ -37,11 +40,17 @@
             <a href="<%= base %>?action=mine" class="<%= "mine".equals(view) ? "active" : "" %>">Bài của tôi</a>
             <a href="<%= base %>?action=calendar" class="<%= "calendar".equals(view) ? "active" : "" %>">Lịch</a>
             <% } %>
-            <% if (actor.cultureManager() || actor.departmentManager()) { %><a href="<%= base %>?action=bank" class="<%= ("bank".equals(view) || "bankDetail".equals(view)) ? "active" : "" %>">Kho đề</a><% } %>
+            <% if (actor.cultureManager() || actor.departmentManager()) { %>
+            <a href="<%= base %>?action=bank" class="<%= ("bank".equals(view) || "bankDetail".equals(view) || "newSet".equals(view) || "editSet".equals(view)) ? "active" : "" %>">Kho đề</a>
+            <% } %>
         </nav>
         <% if (flash != null) { %><div class="alert alert-success" role="status"><%= h(flash) %></div><% } %>
         <% if ("bank".equals(view) || "bankDetail".equals(view)) { %>
         <jsp:include page="/WEB-INF/views/tests/bank.jsp" />
+        <% } %>
+
+        <% if ("newSet".equals(view) || "editSet".equals(view)) { %>
+        <jsp:include page="/WEB-INF/views/tests/set-form.jsp" />
         <% } %>
 
         <% if ("new".equals(view)) { %>
@@ -104,6 +113,24 @@
         <% } %>
 
         <% if ("detail".equals(view)) { %>
+        <section class="card test-template-summary">
+            <div class="card-header">
+                <h2><%= h(template.title()) %></h2>
+                <span class="badge <%= "Đã đóng".equals(templateStatus(template,now)) ? "badge-status-inactive" : "badge-status-active" %>"><%= h(templateStatus(template,now)) %></span>
+            </div>
+            <div class="card-body">
+                <div class="test-summary-grid">
+                    <div><span>Phạm vi</span><strong><%= "culture".equals(template.type()) ? "Văn hóa chung" : "Đánh giá chuyên môn" %></strong></div>
+                    <div><span>Bắt đầu</span><strong><%= time(template.startTime()) %></strong></div>
+                    <div><span>Kết thúc</span><strong><%= time(template.endTime()) %></strong></div>
+                </div>
+                <h3>Thông tin bài test</h3>
+                <div class="test-prose"><%= h(template.description()) %></div>
+                <% if(templateAssignments==null) { %>
+                <p class="text-secondary">Nội dung câu hỏi chỉ hiển thị sau khi bạn bắt đầu làm bài được giao.</p>
+                <% } %>
+            </div>
+        </section>
         <% if (candidates != null) { %>
         <section class="card"><div class="card-header"><h2>Giao bài</h2></div><div class="card-body">
             <form method="post" action="<%= base %>" class="test-form">
@@ -135,6 +162,50 @@
                 </div>
             </form>
         </div></section><% } %>
+
+        <% if (templateAssignments != null) { %>
+        <section class="card">
+            <div class="card-header">
+                <h2>Người được giao &amp; Kết quả</h2>
+                <span class="text-secondary">Tổng trên trang: <%= templateAssignments.size() %> người</span>
+            </div>
+            <div class="card-body test-table">
+                <% if(templateAssignments.isEmpty()) { %>
+                <p class="empty-state">Chưa giao bài test này cho người nào.</p>
+                <% } else { %>
+                <table class="data-table test-result-table">
+                    <thead><tr>
+                        <th>Người làm</th><th>Bộ đề</th><th>Thời lượng</th><th>Bắt đầu làm</th>
+                        <th>Nộp bài</th><th>Tham gia</th><th>Trạng thái</th><th>Điểm / 10</th><th></th>
+                    </tr></thead>
+                    <tbody>
+                    <% for(TestAssignment row:templateAssignments) {
+                        Object resultScore=row.evaluation()!=null ? row.evaluation().score() : row.quizScore(); %>
+                    <tr>
+                        <td><strong><%= h(row.assigneeName()) %></strong><br><small>#<%= row.assigneeId() %></small></td>
+                        <td><%= row.contentTitle()==null ? "—" : h(row.contentTitle()) %></td>
+                        <td><%= row.durationMinutes() %> phút</td>
+                        <td><%= time(row.startedAt()) %></td>
+                        <td><%= time(row.submittedAt()) %></td>
+                        <td><span class="badge <%= row.startedAt()==null ? "badge-status-inactive" : "badge-status-active" %>"><%= row.startedAt()==null ? "Chưa tham gia" : "Đã tham gia" %></span></td>
+                        <td><%= row.timeExpired(now) ? "Hết giờ" : h(status(row.status())) %></td>
+                        <td><%= resultScore==null ? "—" : h(resultScore) %></td>
+                        <td><a href="<%= base %>?action=assignment&amp;id=<%= row.id() %>">Xem chi tiết</a></td>
+                    </tr>
+                    <% } %>
+                    </tbody>
+                </table>
+                <% } %>
+                <% if(pageNo>1 || templateAssignments.size()==20) { %>
+                <nav class="test-nav" aria-label="Phân trang kết quả">
+                    <% if(pageNo>1) { %><a href="<%= base %>?action=detail&amp;id=<%= template.id() %>&amp;page=<%= pageNo-1 %>">← Trang trước</a><% } %>
+                    <span>Trang <%= pageNo %></span>
+                    <% if(templateAssignments.size()==20) { %><a href="<%= base %>?action=detail&amp;id=<%= template.id() %>&amp;page=<%= pageNo+1 %>">Trang tiếp →</a><% } %>
+                </nav>
+                <% } %>
+            </div>
+        </section>
+        <% } %>
         <% } %>
 
         <% if (assignments != null && "mine".equals(view)) { %>
@@ -185,7 +256,9 @@
                 <h3><%= "quiz".equals(assignment.contentKind()) ? "Bộ đề trắc nghiệm: " : "Câu hỏi tự luận: " %><%= h(assignment.contentTitle()) %></h3>
                 <% if (assignedContent!=null) { %>
                 <div class="test-prose"><%= h(assignedContent.content().prompt()) %></div>
-                <% } else { %><p>Nội dung sẽ mở khi đến giờ bắt đầu.</p><% } %>
+                <% } else if("pending".equals(assignment.status()) && !now.isBefore(template.endTime())) { %>
+                <p>Bạn chưa tham gia và đợt làm bài này đã kết thúc.</p>
+                <% } else { %><p>Nội dung câu hỏi sẽ mở sau khi bạn bấm “Bắt đầu làm”.</p><% } %>
             <% } %>
             <% if ("quiz".equals(assignment.contentKind()) && assignedContent!=null
                     && (!ownAssignment || !"pending".equals(assignment.status()))) {

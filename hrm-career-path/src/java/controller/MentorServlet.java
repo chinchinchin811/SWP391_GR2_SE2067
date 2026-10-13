@@ -75,19 +75,26 @@ public class MentorServlet extends HttpServlet {
             return;
         }
 
+        MentorDAO mentorDAO = new MentorDAO();
+
         String action = request.getParameter("action");
         if (action == null) {
-            // Tự động chọn action mặc định theo Role
-            if (currentUser.getRoleId() == 4) {
-                action = "myMentor";
-            } else if (currentUser.getRoleId() == 5) {
+            // Tự động chọn action mặc định theo quyền và trạng thái phân công
+            if (mentorDAO.isMentor(currentUser.getUserId())) {
                 action = "myMentees";
+            } else if (currentUser.getRoleId() == 2) {
+                action = "pair";
+            } else if (currentUser.getRoleId() == 4) {
+                if (mentorDAO.hasMentor(currentUser.getUserId())) {
+                    action = "myMentor";
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
             } else {
                 action = "evaluations";
             }
         }
-
-        MentorDAO mentorDAO = new MentorDAO();
 
         switch (action) {
             case "pair":
@@ -102,7 +109,7 @@ public class MentorServlet extends HttpServlet {
                 break;
 
             case "evaluations":
-                if (currentUser.getRoleId() == 4) {
+                if (currentUser.getRoleId() == 4 && !mentorDAO.isMentor(currentUser.getUserId())) {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }
@@ -130,6 +137,10 @@ public class MentorServlet extends HttpServlet {
             case "myMentor":
                 // Dành riêng cho Employee (Mentee) xem Mentor phụ trách mình
                 MentorAssignment myMentor = mentorDAO.getMentorByMentee(currentUser.getUserId());
+                if (myMentor == null) {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
                 request.setAttribute("myMentor", myMentor);
                 request.getRequestDispatcher("my-mentor.jsp").forward(request, response);
                 break;

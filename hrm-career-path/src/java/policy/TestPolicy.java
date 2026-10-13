@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Objects;
 import model.TestActor;
 import model.TestAssignment;
+import model.TestContent;
 import model.TestTemplate;
 
 /**
@@ -17,6 +18,11 @@ public final class TestPolicy {
         return "culture".equals(t.type()) ? actor.cultureManager()
                 : "HR".equals(actor.role())
                 || (actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId()));
+    }
+
+    /** Chỉ chủ sở hữu hoặc ADMIN được thay đổi nội dung bộ đề trong đúng scope. */
+    public boolean canEditContent(TestActor actor, TestContent content) {
+        return "ADMIN".equals(actor.role()) || actor.id() == content.createdBy();
     }
 
     /** Đề đã tạo hiển thị theo phạm vi; ADMIN chỉ xem đề văn hóa. */

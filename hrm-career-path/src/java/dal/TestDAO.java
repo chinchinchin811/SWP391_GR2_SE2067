@@ -232,7 +232,8 @@ public final class TestDAO {
     /** Ánh xạ bộ đề/câu hỏi, không chứa đáp án đúng trong đối tượng metadata. */
     private TestContent content(ResultSet rs) throws SQLException {
         return new TestContent(rs.getInt("id"), rs.getString("title"), rs.getString("prompt"),
-                rs.getString("kind"), rs.getString("type"), (Integer) rs.getObject("department_id"), rs.getString("status"));
+                rs.getString("kind"), rs.getString("type"), (Integer) rs.getObject("department_id"),
+                rs.getInt("created_by"), rs.getString("status"));
     }
 
     /** Kho chỉ dành cho người quản lý đúng phạm vi; lấy theo ID cũng áp điều kiện SQL. */
@@ -249,7 +250,7 @@ public final class TestDAO {
     /** Danh sách kho có phân trang; selector chỉ trả nội dung ready cùng phạm vi của đợt giao. */
     public List<TestContent> contents(TestActor actor, TestTemplate target, int offset, int size) throws SQLException {
         List<Object> args = new ArrayList<>();
-        String sql = "SELECT t.id,t.title,CAST('' AS NVARCHAR(MAX)) AS prompt,t.kind,t.type,t.department_id,t.status FROM Test_Content t WHERE t.is_deleted=0 AND " + management(actor, args);
+        String sql = "SELECT t.id,t.title,CAST('' AS NVARCHAR(MAX)) AS prompt,t.kind,t.type,t.department_id,t.created_by,t.status FROM Test_Content t WHERE t.is_deleted=0 AND " + management(actor, args);
         if (target != null) {
             sql += " AND t.status='ready' AND t.type=? AND (t.department_id IS NULL OR t.department_id=?)";
             args.add(target.type()); args.add(target.departmentId());
@@ -261,6 +262,14 @@ public final class TestDAO {
             while (rs.next()) result.add(content(rs));
         }
         return result;
+    }
+
+    /** Nội dung đã gắn vào assignment phải được giữ bất biến để bảo toàn bài cũ. */
+    public boolean contentAssigned(int contentId) throws SQLException {
+        try (PreparedStatement ps = prepare("SELECT TOP 1 1 FROM Test_Assignments WHERE content_id=?", contentId);
+                ResultSet rs = ps.executeQuery()) {
+            return rs.next();
+        }
     }
 
     /** Nội dung được giao chỉ tải qua assignment còn quyền; không mở kho cho người làm. */

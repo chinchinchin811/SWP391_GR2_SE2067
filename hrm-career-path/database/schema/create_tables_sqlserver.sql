@@ -30,7 +30,7 @@ GO
 -- =======================================================
 CREATE TABLE dbo.Roles (
     role_id INT IDENTITY(1,1) PRIMARY KEY,
-    role_name VARCHAR(50) NOT NULL UNIQUE, -- 'ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'MENTOR'
+    role_name VARCHAR(50) NOT NULL UNIQUE, -- 'ADMIN', 'HR', 'MANAGER', 'EMPLOYEE'
     description NVARCHAR(255) NULL
 );
 GO

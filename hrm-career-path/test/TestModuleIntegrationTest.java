@@ -296,6 +296,35 @@ public class TestModuleIntegrationTest {
         int draft = content("Đề nháp", "department", 1, 3, "draft");
         int culture = content("Đề văn hóa", "culture", null, 2, "ready");
 
+        rejects(403, () -> s.createContentSet(4, "Không hợp lệ", "", "department", "draft", List.of()));
+        int customDraft = s.createContentSet(3, "Bộ đề tự tạo nháp", "Mô tả", "department", "draft", List.of());
+        check(s.getContent(3, customDraft).content().status().equals("draft"), "manager creates an empty custom draft");
+        rejects(400, () -> s.createContentSet(3, "Bộ đề rỗng", "", "department", "ready", List.of()));
+        List<TestService.QuestionDraft> customQuestions = List.of(
+                new TestService.QuestionDraft("HTTP status nào là Created?", "single", List.of(
+                        new TestService.OptionDraft("200", false),
+                        new TestService.OptionDraft("201", true),
+                        new TestService.OptionDraft("204", false))),
+                new TestService.QuestionDraft("Chọn các thực hành an toàn.", "multiple", List.of(
+                        new TestService.OptionDraft("PreparedStatement", true),
+                        new TestService.OptionDraft("Mã hóa mật khẩu", true),
+                        new TestService.OptionDraft("Nối chuỗi SQL", false))));
+        int customReady = s.createContentSet(3, "Bộ đề tự tạo", "Tạo trực tiếp từ giao diện", "department", "ready", customQuestions);
+        check(s.getContent(3, customReady).questions().size() == 2, "custom set stores all questions");
+        check(count("SELECT COUNT(*) FROM Test_Question_Options q JOIN Test_Questions t ON t.id=q.question_id WHERE t.content_id=" + customReady) == 6,
+                "custom set stores all answer options atomically");
+        rejects(403, () -> s.getEditableContent(2, customReady));
+        s.updateContentSet(3, customReady, "Bộ đề tự tạo đã sửa", "Nội dung mới", "department", List.of(
+                new TestService.QuestionDraft("Java chạy trên JVM?", "single", List.of(
+                        new TestService.OptionDraft("Đúng", true), new TestService.OptionDraft("Sai", false)))));
+        TestService.ContentDetail updatedSet = s.getEditableContent(3, customReady);
+        check(updatedSet.content().title().equals("Bộ đề tự tạo đã sửa")
+                && updatedSet.content().status().equals("ready") && updatedSet.questions().size() == 1,
+                "owner edits custom set and update always keeps it ready");
+        rejects(400, () -> s.createContentSet(3, "Đáp án trùng", "", "department", "ready", List.of(
+                new TestService.QuestionDraft("Câu lỗi", "single", List.of(
+                        new TestService.OptionDraft("Trùng", true), new TestService.OptionDraft(" trùng ", false))))));
+
         int trueFalse = question(quiz, "PreparedStatement giúp chống SQL Injection.", "true_false");
         int tfTrue = option(trueFalse, "Đúng", true, 1);
         option(trueFalse, "Sai", false, 2);
@@ -321,7 +350,8 @@ public class TestModuleIntegrationTest {
         rejects(404, () -> s.getContent(5, quiz));
 
         int t = s.createTemplate(3, "Đợt quiz", "Hướng dẫn", "department", NOW, NOW.plusSeconds(3600), quiz);
-        check(s.getContentChoices(3, t).size() == 1, "only ready professional content shown");
+        check(s.getContentChoices(3, t).stream().map(TestContent::id).collect(java.util.stream.Collectors.toSet())
+                .equals(Set.of(quiz, customReady)), "only ready professional content shown");
         rejects(409, () -> s.assignTest(3, t, List.of(7), draft));
         rejects(404, () -> s.assignTest(3, t, List.of(7), culture));
         rejects(400, () -> s.assignTest(3, t, List.of(7), quiz, 0));

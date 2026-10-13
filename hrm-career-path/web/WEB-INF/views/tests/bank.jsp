@@ -1,5 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="java.util.*,model.*,service.TestService" %>
+<%@ page import="java.util.*,model.*,policy.TestPolicy,service.TestService" %>
 <%@ page import="static utils.TestView.*" %>
 <%!
     private String questionType(String type) {
@@ -13,6 +13,7 @@
     TestService.ContentDetail detail=(TestService.ContentDetail)request.getAttribute("bankDetail");
     List<TestContent> items=(List<TestContent>)request.getAttribute("bankItems");
     TestActor bankActor=(TestActor)request.getAttribute("testActor");
+    TestPolicy bankPolicy=(TestPolicy)request.getAttribute("testPolicy");
     List<String> bankScopes="ADMIN".equals(bankActor.role()) ? List.of("culture")
             : ("HR".equals(bankActor.role()) ? List.of("culture", "department") : List.of("department"));
 %>
@@ -103,7 +104,12 @@
 
 <% if(detail!=null) { TestContent item=detail.content(); %>
 <section class="card"><div class="card-header"><h2><%= h(item.title()) %></h2>
-        <span><%= "culture".equals(item.type()) ? "Đề Văn hóa" : "Đề Chuyên môn" %> · Chỉ đọc</span>
+        <div class="test-card-header-actions">
+            <span><%= "culture".equals(item.type()) ? "Đề Văn hóa" : "Đề Chuyên môn" %> · <%= "ready".equals(item.status()) ? "Sẵn sàng" : "Bản nháp" %></span>
+            <% if(bankPolicy.canEditContent(bankActor,item)) { %>
+            <a class="btn btn-secondary" href="<%= bankBase %>?action=editSet&amp;id=<%= item.id() %>">Chỉnh sửa bộ đề</a>
+            <% } %>
+        </div>
     </div><div class="card-body">
         <div class="test-prose"><%= h(item.prompt()) %></div>
         <% int number=0; for(TestQuestion q:detail.questions()) { %>
