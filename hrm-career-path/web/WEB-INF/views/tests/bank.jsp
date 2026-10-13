@@ -110,8 +110,14 @@
         <section class="test-question">
             <h3>Câu <%= ++number %>: <%= h(q.prompt()) %></h3>
             <p><small><%= questionType(q.type()) %></small></p>
-            <% int optionNumber=0; for(TestQuestionOption option:q.options()) { %>
-            <p><%= (char)('A'+optionNumber++) %>. <%= h(option.text()) %><%= Boolean.TRUE.equals(option.correct()) ? " ✓ Đáp án đúng" : "" %></p>
+            <% int optionNumber=0; for(TestQuestionOption option:q.options()) {
+               boolean isCorrect = Boolean.TRUE.equals(option.correct());
+            %>
+            <p class="test-option-line">
+                <% if(isCorrect) { %><span class="correct-answer-highlight"><% } %>
+                <%= (char)('A'+optionNumber++) %>. <%= h(option.text()) %>
+                <% if(isCorrect) { %> <i class="fa-solid fa-check"></i> Đáp án đúng</span><% } %>
+            </p>
             <% } %>
         </section>
         <% } %>

@@ -163,6 +163,25 @@
     margin: 16px 0;
 }
 
+.test-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.test-cancel-button {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #ffffff;
+}
+
+.test-cancel-button:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    color: #ffffff;
+}
+
 .test-prose {
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -461,4 +480,102 @@
         align-items: flex-start;
         gap: 12px;
     }
+}
+
+/* Read-only Question Options (Bank Detail) */
+.test-question h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.test-question-meta {
+    font-size: 13px;
+    color: var(--text-muted, #94a3b8);
+    margin-bottom: 16px;
+    font-weight: 500;
+}
+
+.question-options-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.option-readonly {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color, #cbd5e1);
+    border-radius: var(--radius-sm, 6px);
+    background-color: #f8fafc;
+    color: var(--text-secondary, #475569);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.option-readonly:hover {
+    border-color: #cbd5e1;
+    background-color: #f1f5f9;
+}
+
+.option-readonly.is-correct {
+    background-color: var(--success-bg, #ecfdf5);
+    border-color: var(--success-border, #a7f3d0);
+    color: var(--success-text, #059669);
+}
+
+.option-readonly-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.option-letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: #e2e8f0;
+    color: #475569;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.option-readonly.is-correct .option-letter {
+    background-color: #d1fae5;
+    color: var(--success-text, #059669);
+}
+
+.option-correct-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--success-text, #059669);
+    background: #ffffff;
+    padding: 4px 10px;
+    border-radius: 20px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+
+.test-option-line {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.correct-answer-highlight {
+    background-color: var(--success-bg, #ecfdf5);
+    border: 1px solid var(--success-border, #a7f3d0);
+    color: var(--success-text, #059669);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    font-weight: 500;
 }

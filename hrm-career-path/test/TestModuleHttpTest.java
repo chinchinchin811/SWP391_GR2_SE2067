@@ -141,9 +141,14 @@ public class TestModuleHttpTest {
                 "type", "department", "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         HttpResponse<String> upcomingDetail = get(manager, "/hrm/tests?action=detail&id=" + template);
-        check(upcomingDetail.statusCode() == 200 && upcomingDetail.body().contains("Sắp tới")
-                && !upcomingDetail.body().contains("Công bố đề"),
-                "new template is upcoming immediately without draft or publish action");
+        check(upcomingDetail.statusCode() == 200
+                && upcomingDetail.body().contains("Giao bài")
+                && upcomingDetail.body().contains("Hủy đợt thi")
+                && upcomingDetail.body().contains("Giao cho người đã chọn")
+                && !upcomingDetail.body().contains("Công bố đề")
+                && !upcomingDetail.body().contains("Thao tác đợt giao bài")
+                && !upcomingDetail.body().contains("Người được giao &amp; Kết quả"),
+                "new template immediately renders only the assignment form and its actions");
         check(get(member, "/hrm/tests?action=detail&id=" + template).statusCode() == 200,
                 "new template is visible immediately");
         check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", template).statusCode() == 400,
@@ -157,6 +162,12 @@ public class TestModuleHttpTest {
                 && !detail.body().contains("Yêu cầu &lt;img"), "template summary block removed from detail page");
         check(detail.body().contains("Member") && !detail.body().contains("Outsider") && !detail.body().contains("Administrator"),
                 "MANAGER candidate list only contains employees in managed department");
+        check(!detail.body().contains("Thao tác đợt giao bài")
+                && !detail.body().contains("Người được giao &amp; Kết quả")
+                && detail.body().contains("test-cancel-button")
+                && detail.body().contains("Hủy đợt thi")
+                && detail.body().contains("Giao cho người đã chọn"),
+                "detail only renders assignment content, recipients, cancel and assign buttons");
         check(!detail.body().contains("value=\"archive\"") && !detail.body().contains("Lưu trữ đề"),
                 "template archive action removed");
         check(post(manager, "/hrm/tests", "csrf", token, "action", "archive", "id", template).statusCode() == 400,
@@ -168,13 +179,12 @@ public class TestModuleHttpTest {
                 "assigneeId", "2", "durationMinutes", "15").statusCode() == 303, "assign form");
         String assignment = assignmentId(conn, template);
         HttpResponse<String> pendingDetail = get(manager, "/hrm/tests?action=detail&id=" + template);
-        check(pendingDetail.statusCode() == 200 && pendingDetail.body().contains("Member")
-                && pendingDetail.body().contains("Chưa làm")
-                && pendingDetail.body().contains("Đánh giá chuyên môn")
-                && pendingDetail.body().contains("Câu tình huống")
-                && pendingDetail.body().contains("Mở đợt") && pendingDetail.body().contains("Đóng đợt")
-                && pendingDetail.body().contains("15 phút"),
-                "manager detail reports pending assignee with scope, content and schedule");
+        check(pendingDetail.statusCode() == 200
+                && !pendingDetail.body().contains("Người được giao &amp; Kết quả")
+                && !pendingDetail.body().contains("Mở đợt")
+                && !pendingDetail.body().contains("Đóng đợt")
+                && !pendingDetail.body().contains("Chưa làm"),
+                "manager detail does not render assigned-result table");
         HttpResponse<String> assignmentFromList = get(member, "/hrm/tests?action=detail&id=" + template);
         check(assignmentFromList.statusCode() == 200 && assignmentFromList.body().contains("Chưa làm")
                 && assignmentFromList.body().contains("Bắt đầu làm")

@@ -104,24 +104,12 @@
         <% } %>
 
         <% if ("detail".equals(view)) { %>
-        <% if (policy.canManage(actor, template) && "published".equals(template.status())) { %>
-        <section class="card"><div class="card-header"><h2>Thao tác đợt giao bài</h2><span><%= h(templateStatus(template, now)) %></span></div>
-            <div class="card-body">
-                <div class="test-actions">
-                    <form method="post" action="<%= base %>">
-                        <input type="hidden" name="csrf" value="<%= h(csrf) %>"><input type="hidden" name="id" value="<%= template.id() %>">
-                        <button class="btn btn-primary" name="action" value="close">Đóng đề, ngừng nhận bài</button>
-                    </form>
-                </div>
-            </div>
-        </section>
-        <% } %>
         <% if (candidates != null) { %>
         <section class="card"><div class="card-header"><h2>Giao bài</h2></div><div class="card-body">
-            <% if (candidates.isEmpty()) { %><p>Không còn người nhận phù hợp chưa được giao.</p><% } else { %>
             <form method="post" action="<%= base %>" class="test-form">
-                <input type="hidden" name="csrf" value="<%= h(csrf) %>"><input type="hidden" name="action" value="assign">
+                <input type="hidden" name="csrf" value="<%= h(csrf) %>">
                 <input type="hidden" name="id" value="<%= template.id() %>">
+                <input type="hidden" name="durationMinutes" value="<%= TestService.DEFAULT_DURATION_MINUTES %>">
                 <label>Nội dung giao
                     <select name="contentId" required>
                         <% List<TestContent> choices=(List<TestContent>)request.getAttribute("contentChoices");
@@ -133,25 +121,24 @@
                         </optgroup><% } %>
                     </select>
                 </label>
-                <label>Thời lượng làm bài sau khi bấm bắt đầu
-                    <input type="number" name="durationMinutes" min="<%= TestService.MIN_DURATION_MINUTES %>"
-                           max="<%= TestService.MAX_DURATION_MINUTES %>" step="1"
-                           value="<%= TestService.DEFAULT_DURATION_MINUTES %>" required>
-                </label>
-                <p>Đồng hồ sẽ chạy khi nhân viên bấm “Bắt đầu làm”. Hạn cá nhân không vượt quá giờ kết thúc chung của đợt.</p>
-                <p>Chỉ hiển thị đề đã chốt đúng hướng Văn hóa/Chuyên môn. <a href="<%= base %>?action=bank">Xem kho đề</a></p>
-                <fieldset class="test-candidates"><legend>Chọn người nhận toàn công ty, ngoại trừ ADMIN (tối đa 500 mỗi lần)</legend>
+                <fieldset class="test-candidates"><legend>Người được giao</legend>
+                    <% if (candidates.isEmpty()) { %><p>Không còn người phù hợp chưa được giao.</p><% } %>
                     <% for (TestActor candidate : candidates) { %>
                     <label><input type="checkbox" name="assigneeId" value="<%= candidate.id() %>">
                         <%= h(candidate.name()) %> · #<%= candidate.id() %><%= candidate.departmentId() == null ? "" : " · Phòng #" + candidate.departmentId() %></label>
                     <% } %>
-                </fieldset><button class="btn btn-primary">Giao cho người đã chọn</button>
-            </form><% } %>
+                </fieldset>
+                <div class="test-form-actions">
+                    <button type="submit" class="btn btn-danger test-cancel-button" name="action" value="close" formnovalidate
+                            onclick="return confirm('Bạn có chắc muốn hủy đợt thi này?');">Hủy đợt thi</button>
+                    <button type="submit" class="btn btn-primary" name="action" value="assign" <%= candidates.isEmpty() ? "disabled" : "" %>>Giao cho người đã chọn</button>
+                </div>
+            </form>
         </div></section><% } %>
         <% } %>
 
-        <% if (assignments != null) { %>
-        <section class="card"><div class="card-header"><h2><%= "mine".equals(view) ? "Bài được giao cho tôi" : "Người được giao & Kết quả" %></h2></div>
+        <% if (assignments != null && "mine".equals(view)) { %>
+        <section class="card"><div class="card-header"><h2>Bài được giao cho tôi</h2></div>
             <div class="card-body test-table">
                 <% if (assignments.isEmpty()) { %><p>Chưa có bài được giao trong trang này.</p><% } else { %>
                 <table class="data-table"><thead><tr><th>Bài test</th><th>Phạm vi</th><th>Bộ đề</th><th>Người làm</th><th>Mở đợt</th><th>Đóng đợt</th><th>Thời lượng</th><th>Trạng thái</th><th>Nộp lúc</th><th>Điểm / 10</th><th></th></tr></thead><tbody>
@@ -165,7 +152,7 @@
                         <td><a href="<%= base %>?action=assignment&amp;id=<%= a.id() %>">Mở bài</a></td></tr>
                     <% } %>
                 </tbody></table><% } %>
-                <% String query = "mine".equals(view) ? "action=mine" : "action=detail&id=" + template.id(); %>
+                <% String query = "action=mine"; %>
                 <% if(pageNo>1 || assignments.size()==20) { %><nav class="test-nav" aria-label="Phân trang bài được giao">
                     <% if (pageNo > 1) { %><a href="<%= base %>?<%= h(query) %>&amp;page=<%= pageNo - 1 %>">← Trang trước</a><% } %>
                     <span>Trang <%= pageNo %></span>
@@ -280,10 +267,24 @@
 </main>
 <script>
 function syncTestCreateForm(){
-    var type=document.getElementById('testType'),mode=document.getElementById('contentMode');
-    if(!type||!mode)return;
-    Array.prototype.forEach.call(mode.options,function(option){if(option.dataset.testType)option.disabled=option.dataset.testType!==type.value;});
-    if(mode.selectedOptions.length&&mode.selectedOptions[0].disabled)mode.value='';
+    var type = document.getElementById('testType'), mode = document.getElementById('contentMode');
+    if (!type || !mode) return;
+    var currentVal = mode.value;
+    var hasValidSelection = false;
+    Array.prototype.forEach.call(mode.options, function(option){
+        if (option.dataset.testType) {
+            var match = (option.dataset.testType === type.value);
+            option.disabled = !match;
+            option.hidden = !match;
+            option.style.display = match ? '' : 'none';
+            if (match && option.value === currentVal) {
+                hasValidSelection = true;
+            }
+        }
+    });
+    if (!hasValidSelection && mode.value !== '') {
+        mode.value = '';
+    }
 }
 function initTestCountdown(){
     var box=document.getElementById('testCountdown'),value=document.getElementById('testCountdownValue');

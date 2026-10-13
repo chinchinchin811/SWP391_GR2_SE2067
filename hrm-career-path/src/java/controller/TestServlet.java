@@ -104,7 +104,6 @@ public class TestServlet extends HttpServlet {
                     TestTemplate t = service.getTemplate(userId, id);
                     req.setAttribute("template", t);
                     if (policy.canManage(actor, t)) {
-                        req.setAttribute("assignments", service.getTemplateAssignments(userId, id, page, 20));
                         if (policy.canAssign(actor, t, Instant.now())) {
                             req.setAttribute("candidates", service.getCandidates(userId, id));
                             req.setAttribute("contentChoices", service.getContentChoices(userId,id));
