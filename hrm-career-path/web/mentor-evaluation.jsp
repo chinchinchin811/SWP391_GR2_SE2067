@@ -80,11 +80,11 @@
                             </tr>
                         <%  }
                         } else { %>
-                            <tr>
-                                <td colspan="6" style="padding: 20px; text-align: center; border: 1px solid #000;">
-                                    Chưa có ghi nhận đánh giá nào từ Mentor.
-                                </td>
-                            </tr>
+                        <tr>
+                            <td colspan="6" style="padding: 20px; text-align: center; border: 1px solid #000;">
+                                Chưa có ghi nhận đánh giá nào từ Mentor.
+                            </td>
+                        </tr>
                         <% } %>
                     </tbody>
                 </table>

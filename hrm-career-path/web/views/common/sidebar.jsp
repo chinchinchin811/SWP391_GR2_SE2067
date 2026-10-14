@@ -118,7 +118,7 @@
                     </li>
                 </ul>
             </li>
-           
+
             <% } else if (roleId == 3) { %>
             <li class="sidebar-section <%= (organizationActive || employeeActive || currentURI.contains("/transfer")) ? "has-active" : "" %>" data-sidebar-section="managed-department">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-managed-department">
@@ -241,19 +241,21 @@
         sections.forEach(function (section) {
             var button = section.querySelector('.sidebar-menu-category');
             var submenu = section.querySelector('.sidebar-submenu');
-            if (!button || !submenu) return;
+            if (!button || !submenu)
+                return;
 
             var sectionName = section.getAttribute('data-sidebar-section');
             var storageKey = 'hrm.sidebar.' + sectionName + '.open';
             var isCurrentActive = section.classList.contains('has-active');
-            
+
             var isOpen = isCurrentActive;
             try {
                 var saved = localStorage.getItem(storageKey);
                 if (saved !== null) {
                     isOpen = (saved === 'true');
                 }
-            } catch (e) {}
+            } catch (e) {
+            }
 
             if (isCurrentActive) {
                 isOpen = true;
@@ -295,7 +297,8 @@
                 setDropdownState(isOpen, true);
                 try {
                     localStorage.setItem(storageKey, String(isOpen));
-                } catch (ignored) {}
+                } catch (ignored) {
+                }
             });
         });
     }());

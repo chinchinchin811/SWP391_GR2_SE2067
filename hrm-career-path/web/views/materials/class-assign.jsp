@@ -33,7 +33,9 @@
                     <input type="hidden" name="classId" value="<%= trainingClass.getClassId() %>">
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
                         <button type="button" class="btn btn-secondary"
-                                onclick="document.querySelectorAll('.smart-recommended').forEach(function(item){item.checked=true;})">
+                                onclick="document.querySelectorAll('.smart-recommended').forEach(function (item) {
+                                            item.checked = true;
+                                        })">
                             ✓ Chọn gợi ý
                         </button>
                         <button class="btn btn-primary">Ghi danh đã chọn</button>

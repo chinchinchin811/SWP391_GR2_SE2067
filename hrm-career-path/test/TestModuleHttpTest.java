@@ -81,7 +81,9 @@ public class TestModuleHttpTest {
 
     private static int insertId(Connection conn, String sql, Object... values) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            for (int i = 0; i < values.length; i++) ps.setObject(i + 1, values[i]);
+            for (int i = 0; i < values.length; i++) {
+                ps.setObject(i + 1, values[i]);
+            }
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
                 return rs.getInt(1);
@@ -117,6 +119,42 @@ public class TestModuleHttpTest {
         String adminBank = get(adminClient, "/hrm/tests?action=bank").body();
         check(adminBank.contains("Đề Văn hóa HTTP") && !adminBank.contains("Bộ đề HTTP")
                 && !adminBank.contains("Đề thi Chuyên môn"), "ADMIN bank only shows culture content");
+        HttpResponse<String> newSetPage = get(adminClient, "/hrm/tests?action=newSet");
+        check(newSetPage.statusCode() == 200 && newSetPage.body().contains("Tạo bộ đề kiểm tra riêng")
+                && newSetPage.body().contains("action=newSet"), "ADMIN sees the custom set form and navigation");
+        check(get(member, "/hrm/tests?action=newSet").statusCode() == 403, "EMPLOYEE cannot open custom set form");
+        check(post(adminClient, "/hrm/tests", "action", "createSet").statusCode() == 403,
+                "custom set creation requires CSRF");
+        String customSetId = newId(post(adminClient, "/hrm/tests",
+                "csrf", csrf(newSetPage.body()), "action", "createSet",
+                "title", "Bộ đề văn hóa tự tạo", "description", "Tạo qua HTTP",
+                "type", "culture", "questionCount", "1",
+                "questionPrompt_0", "Thông tin nội bộ có được đăng công khai không?",
+                "questionType_0", "single", "optionCount_0", "2",
+                "option_0_0", "Không", "option_0_1", "Có", "correct_0", "0"));
+        String customSetDetail = get(adminClient, "/hrm/tests?action=bankDetail&id=" + customSetId).body();
+        check(customSetDetail.contains("Bộ đề văn hóa tự tạo")
+                && customSetDetail.contains("Thông tin nội bộ có được đăng công khai không?")
+                && customSetDetail.contains("Sẵn sàng") && customSetDetail.contains("Chỉnh sửa bộ đề"),
+                "created custom set is ready and can be edited");
+        HttpResponse<String> editSetPage = get(adminClient, "/hrm/tests?action=editSet&id=" + customSetId);
+        check(editSetPage.statusCode() == 200 && editSetPage.body().contains("Chỉnh sửa bộ đề")
+                && editSetPage.body().contains("Bộ đề văn hóa tự tạo")
+                && editSetPage.body().contains("Thông tin nội bộ có được đăng công khai không?"),
+                "edit form loads saved custom set");
+        check(newId(post(adminClient, "/hrm/tests",
+                "csrf", csrf(editSetPage.body()), "action", "updateSet", "id", customSetId,
+                "title", "Bộ đề văn hóa đã chỉnh sửa", "description", "Nội dung đã cập nhật",
+                "type", "culture", "questionCount", "1",
+                "questionPrompt_0", "Dữ liệu nội bộ cần được bảo mật?",
+                "questionType_0", "single", "optionCount_0", "2",
+                "option_0_0", "Có", "option_0_1", "Không", "correct_0", "0")).equals(customSetId),
+                "custom set update redirects to the same set");
+        String updatedSetDetail = get(adminClient, "/hrm/tests?action=bankDetail&id=" + customSetId).body();
+        check(updatedSetDetail.contains("Bộ đề văn hóa đã chỉnh sửa")
+                && updatedSetDetail.contains("Dữ liệu nội bộ cần được bảo mật?")
+                && !updatedSetDetail.contains("Thông tin nội bộ có được đăng công khai không?"),
+                "edited custom set is persisted");
         int hrTemplate = insertId(conn, "INSERT INTO Test_Templates(title,description,type,department_id,created_by,status,start_time,end_time,default_content_id) "
                 + "OUTPUT INSERTED.id VALUES (N'Bài cho HR',N'Kiểm tra quyền chấm','culture',NULL,4,'published',DATEADD(MINUTE,-1,SYSUTCDATETIME()),DATEADD(HOUR,1,SYSUTCDATETIME()),?)",
                 cultureContentId);
@@ -128,6 +166,22 @@ public class TestModuleHttpTest {
         String hrToken = csrf(get(hrClient, "/hrm/tests?action=new").body());
         check(post(hrClient, "/hrm/tests", "csrf", hrToken, "action", "evaluate", "id", String.valueOf(hrAssignment),
                 "score", "9", "comment", "Tự chấm").statusCode() == 403, "HR self evaluation rejected by server");
+        int closedCultureTemplate = insertId(conn, "INSERT INTO Test_Templates(title,description,type,department_id,created_by,status,start_time,end_time,default_content_id) "
+                + "OUTPUT INSERTED.id VALUES (N'Đợt văn hóa đã đóng',N'Thông tin đợt kiểm tra','culture',NULL,4,'closed',DATEADD(HOUR,-2,SYSUTCDATETIME()),DATEADD(HOUR,-1,SYSUTCDATETIME()),?)",
+                cultureContentId);
+        insertId(conn, "INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id,duration_minutes,status) "
+                + "OUTPUT INSERTED.id VALUES (?,2,4,?,20,'pending')", closedCultureTemplate, cultureContentId);
+        String closedAdminDetail = get(adminClient, "/hrm/tests?action=detail&id=" + closedCultureTemplate).body();
+        check(closedAdminDetail.contains("Đợt văn hóa đã đóng")
+                && closedAdminDetail.contains("Người được giao &amp; Kết quả")
+                && closedAdminDetail.contains("Member") && closedAdminDetail.contains("Chưa tham gia")
+                && closedAdminDetail.contains("Chưa làm"),
+                "ADMIN sees participant status on a closed template instead of a blank page");
+        String pendingWorkerDetail = get(member, "/hrm/tests?action=detail&id=" + closedCultureTemplate).body();
+        check(pendingWorkerDetail.contains("Đợt văn hóa đã đóng")
+                && pendingWorkerDetail.contains("Thông tin đợt kiểm tra")
+                && pendingWorkerDetail.contains("Bạn chưa tham gia và đợt làm bài này đã kết thúc."),
+                "pending worker sees template information without question content");
         HttpResponse<String> form = get(manager, "/hrm/tests?action=new");
         check(form.statusCode() == 200, "render create form");
         String token = csrf(form.body());
@@ -138,32 +192,65 @@ public class TestModuleHttpTest {
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
         String title = "Đề tiếng Việt <script>alert(1)</script>";
         String template = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", title, "description", "Yêu cầu <img src=x onerror=alert(1)>",
-                "type", "department", "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
+                "type", "department", "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(10).format(dateFmt), "startTime", now.plusMinutes(10).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
+        HttpResponse<String> upcomingDetail = get(manager, "/hrm/tests?action=detail&id=" + template);
+        check(upcomingDetail.statusCode() == 200
+                && upcomingDetail.body().contains("Đề tiếng Việt &lt;script&gt;")
+                && upcomingDetail.body().contains("Yêu cầu &lt;img")
+                && upcomingDetail.body().contains("Giao bài")
+                && upcomingDetail.body().contains("Hủy đợt thi")
+                && upcomingDetail.body().contains("Giao cho người đã chọn")
+                && !upcomingDetail.body().contains("Công bố đề")
+                && !upcomingDetail.body().contains("Thao tác đợt giao bài")
+                && upcomingDetail.body().contains("Người được giao &amp; Kết quả"),
+                "new template renders summary, assignment form and empty result table");
+        String unassignedMemberDetail = get(member, "/hrm/tests?action=detail&id=" + template).body();
+        check(unassignedMemberDetail.contains("Đề tiếng Việt &lt;script&gt;")
+                && unassignedMemberDetail.contains("Nội dung câu hỏi chỉ hiển thị sau khi bạn bắt đầu")
+                && !unassignedMemberDetail.contains("Giao bài"),
+                "unassigned worker only sees template information");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", template).statusCode() == 400,
+                "removed publish endpoint rejected");
         execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + template);
-        check(get(member, "/hrm/tests?action=detail&id=" + template).statusCode() == 404, "draft inaccessible to member");
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", template).statusCode() == 303, "publish form");
         HttpResponse<String> listPage = get(manager, "/hrm/tests");
         check(listPage.statusCode() == 200 && listPage.body().contains("&lt;script&gt;"), "title HTML escaped in list");
         check(!listPage.body().contains("<script>alert(1)</script>"), "no raw script in title");
         HttpResponse<String> detail = get(manager, "/hrm/tests?action=detail&id=" + template);
-        check(detail.statusCode() == 200 && !detail.body().contains("&lt;script&gt;")
-                && !detail.body().contains("Yêu cầu &lt;img"), "template summary block removed from detail page");
+        check(detail.statusCode() == 200 && detail.body().contains("&lt;script&gt;")
+                && detail.body().contains("Yêu cầu &lt;img")
+                && !detail.body().contains("<script>alert(1)</script>"), "template summary is displayed and escaped");
         check(detail.body().contains("Member") && !detail.body().contains("Outsider") && !detail.body().contains("Administrator"),
                 "MANAGER candidate list only contains employees in managed department");
+        check(!detail.body().contains("Thao tác đợt giao bài")
+                && detail.body().contains("Người được giao &amp; Kết quả")
+                && detail.body().contains("test-cancel-button")
+                && detail.body().contains("Hủy đợt thi")
+                && detail.body().contains("Giao cho người đã chọn"),
+                "detail renders summary, assignment controls and participant results");
         check(!detail.body().contains("value=\"archive\"") && !detail.body().contains("Lưu trữ đề"),
                 "template archive action removed");
         check(post(manager, "/hrm/tests", "csrf", token, "action", "archive", "id", template).statusCode() == 400,
                 "removed archive endpoint rejected");
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", template, "assigneeId", "2").statusCode() == 303, "assign form");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", template,
+                "assigneeId", "2", "durationMinutes", "61").statusCode() == 400,
+                "duration above 60 minutes rejected");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", template,
+                "assigneeId", "2", "durationMinutes", "15").statusCode() == 303, "assign form");
         String assignment = assignmentId(conn, template);
         HttpResponse<String> pendingDetail = get(manager, "/hrm/tests?action=detail&id=" + template);
-        check(pendingDetail.statusCode() == 200 && pendingDetail.body().contains("Member")
-                && pendingDetail.body().contains("Chưa làm")
-                && pendingDetail.body().contains("Đánh giá chuyên môn")
-                && pendingDetail.body().contains("Câu tình huống")
-                && pendingDetail.body().contains("Bắt đầu") && pendingDetail.body().contains("Kết thúc"),
-                "manager detail reports pending assignee with scope, content and schedule");
+        check(pendingDetail.statusCode() == 200
+                && pendingDetail.body().contains("Người được giao &amp; Kết quả")
+                && pendingDetail.body().contains("Member")
+                && pendingDetail.body().contains("Chưa tham gia")
+                && pendingDetail.body().contains("Chưa làm"),
+                "manager detail renders assigned participant status");
+        HttpResponse<String> assignmentFromList = get(member, "/hrm/tests?action=detail&id=" + template);
+        check(assignmentFromList.statusCode() == 200 && assignmentFromList.body().contains("Chưa làm")
+                && assignmentFromList.body().contains("Bắt đầu làm")
+                && assignmentFromList.body().contains("15 phút")
+                && assignmentFromList.body().contains("Câu tình huống"),
+                "assignee opening a template from the shared list sees assignment detail");
         HttpResponse<String> mine = get(member, "/hrm/tests?action=assignment&id=" + assignment);
         check(mine.statusCode() == 200 && mine.body().contains("Chưa làm")
                 && mine.body().contains("Bắt đầu làm") && !mine.body().contains("multipart/form-data"),
@@ -172,8 +259,11 @@ public class TestModuleHttpTest {
         check(post(member, "/hrm/tests", "csrf", memberToken, "action", "start", "id", assignment).statusCode() == 303,
                 "start assignment");
         mine = get(member, "/hrm/tests?action=assignment&id=" + assignment);
-        check(mine.body().contains("multipart/form-data") && !mine.body().contains("Bắt đầu làm")
-                && !mine.body().contains("Thu hồi bài chưa bắt đầu"), "started assignment only renders submission form");
+        check(mine.body().contains("multipart/form-data"), "started assignment renders submission form");
+        check(!mine.body().contains("name=\"action\" value=\"start\""), "started assignment hides start action");
+        check(!mine.body().contains("Thu hồi bài chưa bắt đầu"), "started assignment hides revoke action");
+        check(mine.body().contains("Thời gian còn lại") && mine.body().contains("data-deadline=")
+                && mine.body().contains("15 phút"), "started assignment renders selected duration countdown");
         check(get(outsider, "/hrm/tests?action=assignment&id=" + assignment).statusCode() == 404, "assignment IDOR blocked");
         check(get(member, "/hrm/WEB-INF/views/tests/index.jsp").statusCode() == 404, "JSP direct access blocked");
         String boundary = "hrm-boundary-" + UUID.randomUUID();
@@ -211,13 +301,13 @@ public class TestModuleHttpTest {
                 "manual question endpoint removed");
         check(get(member, "/hrm/tests?action=bankDetail&id=" + quizContentId).statusCode() == 404, "member cannot read answer key page");
         String qt = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", "Đợt giao trắc nghiệm", "description", "Giao bộ đề", "type", "department",
-                "contentId", String.valueOf(quizContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
+                "contentId", String.valueOf(quizContentId), "startDate", now.plusMinutes(10).format(dateFmt), "startTime", now.plusMinutes(10).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + qt);
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", qt).statusCode() == 303, "publish quiz event");
         String selection = get(manager, "/hrm/tests?action=detail&id=" + qt).body();
         check(selection.contains("name=\"contentId\"") && selection.contains("Bộ đề HTTP"), "assignment selector lists database content");
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", qt, "assigneeId", "2", "contentId", String.valueOf(quizContentId)).statusCode() == 303, "assign selected quiz");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", qt, "assigneeId", "2",
+                "contentId", String.valueOf(quizContentId), "durationMinutes", "20").statusCode() == 303, "assign selected quiz");
         String qa = assignmentId(conn, qt);
         HttpResponse<String> quizPage = get(member, "/hrm/tests?action=assignment&id=" + qa);
         check(quizPage.body().contains("Bắt đầu làm") && !quizPage.body().contains("type=\"radio\""),
@@ -243,11 +333,11 @@ public class TestModuleHttpTest {
         check(scored.contains("10.00") && scored.contains("checked"), "server score ignores client and retains selected choice");
         check(!scored.contains("Đáp án đúng"), "answer key stays private after submission");
         String et = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", "Đợt câu hỏi", "description", "Giao câu hỏi", "type", "department",
-                "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
+                "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(10).format(dateFmt), "startTime", now.plusMinutes(10).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + et);
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", et).statusCode() == 303, "publish essay event");
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", et, "assigneeId", "2", "contentId", String.valueOf(essayContentId)).statusCode() == 303, "assign selected essay question");
+        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", et, "assigneeId", "2",
+                "contentId", String.valueOf(essayContentId), "durationMinutes", "30").statusCode() == 303, "assign selected essay question");
         String essayAssignment = assignmentId(conn, et);
         String essayPage = get(member, "/hrm/tests?action=assignment&id=" + essayAssignment).body();
         String essayToken = csrf(essayPage);
@@ -275,7 +365,9 @@ public class TestModuleHttpTest {
                 admin.setCatalog(database);
                 String schema = Files.readString(Path.of("database/schema/create_tables_sqlserver.sql"), StandardCharsets.UTF_8);
                 int moduleStart = schema.indexOf("-- BEGIN TEST MODULE");
-                if (moduleStart < 0) throw new IllegalStateException("Missing test module schema section");
+                if (moduleStart < 0) {
+                    throw new IllegalStateException("Missing test module schema section");
+                }
                 String moduleSchema = schema.substring(moduleStart);
                 schema = schema.substring(schema.indexOf("CREATE TABLE dbo.Roles"), moduleStart);
                 for (String batch : schema.split("(?m)^GO\\s*$")) {

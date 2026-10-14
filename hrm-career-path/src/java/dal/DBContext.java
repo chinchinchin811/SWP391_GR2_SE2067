@@ -27,7 +27,6 @@ public class DBContext {
         return instance;
     }
 
-
     public void checkAndReconnect() {
         try (Connection conn = getConnection()) {
             if (!conn.isValid(3)) {

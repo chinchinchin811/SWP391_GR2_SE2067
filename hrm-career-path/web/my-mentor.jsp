@@ -25,10 +25,10 @@
                 <p><b>Phòng ban:</b> <%= myMentor.getDepartmentName() != null ? myMentor.getDepartmentName() : "N/A" %></p>
                 <p><b>Trạng thái:</b> <span style="background: #e8f5e9; padding: 3px 8px; border: 1px solid #000; font-size: 12px; font-weight: bold;">Đang đồng hành</span></p>
             <% } else { %>
-                <div style="text-align: center; padding: 20px;">
-                    <p style="font-size: 15px; color: #666;">Hiện tại bạn chưa được ghép nối với Mentor nào.</p>
-                    <p style="font-size: 13px; color: #888;">Vui lòng liên hệ bộ phận HR để được hỗ trợ ghép nối Mentor.</p>
-                </div>
+            <div style="text-align: center; padding: 20px;">
+                <p style="font-size: 15px; color: #666;">Hiện tại bạn chưa được ghép nối với Mentor nào.</p>
+                <p style="font-size: 13px; color: #888;">Vui lòng liên hệ bộ phận HR để được hỗ trợ ghép nối Mentor.</p>
+            </div>
             <% } %>
         </div>
 

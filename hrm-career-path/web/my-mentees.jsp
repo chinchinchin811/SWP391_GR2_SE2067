@@ -17,15 +17,15 @@
                 </tr>
                 <% if (assignments != null && !assignments.isEmpty()) { 
                     for (MentorAssignment a : assignments) { %>
-                    <tr>
-                        <td style="padding: 8px; border: 1px solid #000;"><b><%= a.getMenteeName() %></b> (<%= a.getMenteeLevel() != null ? a.getMenteeLevel() : "Chưa có cấp" %>)</td>
-                        <td style="padding: 8px; border: 1px solid #000;"><%= a.getPositionName() != null ? a.getPositionName() : "" %></td>
-                        <td style="padding: 8px; border: 1px solid #000; text-align: center;">
-                            <a href="<%= request.getContextPath() %>/mentors?action=evaluateForm&assignmentId=<%= a.getAssignmentId() %>" class="btn btn-sm btn-primary" style="background: #000; color: #fff; padding: 5px 10px; text-decoration: none;">Viết Đánh Giá</a>
-                        </td>
-                    </tr>
+                <tr>
+                    <td style="padding: 8px; border: 1px solid #000;"><b><%= a.getMenteeName() %></b> (<%= a.getMenteeLevel() != null ? a.getMenteeLevel() : "Chưa có cấp" %>)</td>
+                    <td style="padding: 8px; border: 1px solid #000;"><%= a.getPositionName() != null ? a.getPositionName() : "" %></td>
+                    <td style="padding: 8px; border: 1px solid #000; text-align: center;">
+                        <a href="<%= request.getContextPath() %>/mentors?action=evaluateForm&assignmentId=<%= a.getAssignmentId() %>" class="btn btn-sm btn-primary" style="background: #000; color: #fff; padding: 5px 10px; text-decoration: none;">Viết Đánh Giá</a>
+                    </td>
+                </tr>
                 <% }} else { %>
-                    <tr><td colspan="3" style="text-align: center; padding: 15px; border: 1px solid #000;">Bạn chưa được phân công hướng dẫn Mentee nào.</td></tr>
+                <tr><td colspan="3" style="text-align: center; padding: 15px; border: 1px solid #000;">Bạn chưa được phân công hướng dẫn Mentee nào.</td></tr>
                 <% } %>
             </table>
         </div>

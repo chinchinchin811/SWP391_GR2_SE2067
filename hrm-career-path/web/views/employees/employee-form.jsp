@@ -40,7 +40,7 @@
 
     <div class="content-body">
         <% if (request.getAttribute("error") != null) { %>
-            <div class="alert alert-danger"><%= request.getAttribute("error") %></div>
+        <div class="alert alert-danger"><%= request.getAttribute("error") %></div>
         <% } %>
 
         <div class="card" style="max-width: 750px; margin: 0 auto;">
@@ -51,7 +51,7 @@
                 <form action="<%= request.getContextPath() %>/employees" method="POST">
                     <input type="hidden" name="action" value="<%= isEdit ? "edit" : "create" %>">
                     <% if (isEdit) { %>
-                        <input type="hidden" name="userId" value="<%= emp.getUserId() %>">
+                    <input type="hidden" name="userId" value="<%= emp.getUserId() %>">
                     <% } %>
 
                     <div style="font-weight: bold; margin-bottom: 10px; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 5px;">
@@ -161,7 +161,7 @@
                                         for (Role r : roles) {
                                             boolean isSel = (emp != null && emp.getRoleId() == r.getRoleId()) || (emp == null && r.getRoleId() == 4);
                                 %>
-                                    <option value="<%= r.getRoleId() %>" <%= isSel ? "selected" : "" %>><%= r.getRoleName() %></option>
+                                <option value="<%= r.getRoleId() %>" <%= isSel ? "selected" : "" %>><%= r.getRoleName() %></option>
                                 <%
                                         }
                                     }
@@ -193,12 +193,12 @@
                                             boolean hasMgr = (d.getManagerName() != null && !d.getManagerName().trim().isEmpty());
                                             String mgrInfo = hasMgr ? " (Đã có TP: " + d.getManagerName() + ")" : " (Chưa có TP)";
                                 %>
-                                    <option value="<%= d.getDepartmentId() %>" 
-                                            data-has-manager="<%= hasMgr %>" 
-                                            data-manager-name="<%= hasMgr ? d.getManagerName() : "" %>"
-                                            <%= (emp != null && emp.getDepartmentId() != null && emp.getDepartmentId().equals(d.getDepartmentId())) ? "selected" : "" %>>
-                                        <%= d.getDepartmentName() %><%= mgrInfo %>
-                                    </option>
+                                <option value="<%= d.getDepartmentId() %>" 
+                                        data-has-manager="<%= hasMgr %>" 
+                                        data-manager-name="<%= hasMgr ? d.getManagerName() : "" %>"
+                                        <%= (emp != null && emp.getDepartmentId() != null && emp.getDepartmentId().equals(d.getDepartmentId())) ? "selected" : "" %>>
+                                    <%= d.getDepartmentName() %><%= mgrInfo %>
+                                </option>
                                 <%
                                         }
                                     }
@@ -217,11 +217,11 @@
                                             int pDeptId = (p.getDepartmentId() != null) ? p.getDepartmentId() : 0;
                                             boolean isSel = (emp != null && emp.getPositionId() != null && emp.getPositionId().equals(p.getPositionId()));
                                 %>
-                                    <option value="<%= p.getPositionId() %>" 
-                                            data-dept="<%= pDeptId %>" 
-                                            <%= isSel ? "selected" : "" %>>
-                                        <%= p.getPositionName() %>
-                                    </option>
+                                <option value="<%= p.getPositionId() %>" 
+                                        data-dept="<%= pDeptId %>" 
+                                        <%= isSel ? "selected" : "" %>>
+                                    <%= p.getPositionName() %>
+                                </option>
                                 <%
                                         }
                                     }
@@ -240,7 +240,7 @@
                                     if (jobLevels != null) {
                                         for (JobLevel lvl : jobLevels) {
                                 %>
-                                    <option value="<%= lvl.getLevelId() %>"><%= lvl.getLevelName() %></option>
+                                <option value="<%= lvl.getLevelId() %>"><%= lvl.getLevelName() %></option>
                                 <%
                                         }
                                     }
@@ -274,13 +274,15 @@
         var deptLabel = document.getElementById("deptLabel");
         var alertEl = document.getElementById("managerAlert");
 
-        if (!roleSelect || !deptSelect || !alertEl) return;
+        if (!roleSelect || !deptSelect || !alertEl)
+            return;
 
         var selectedRole = roleSelect.value;
         var selectedDeptOpt = deptSelect.options[deptSelect.selectedIndex];
 
         if (selectedRole === "3") { // MANAGER
-            if (deptLabel) deptLabel.innerHTML = 'Phòng ban <span style="color:red;">(*)</span>:';
+            if (deptLabel)
+                deptLabel.innerHTML = 'Phòng ban <span style="color:red;">(*)</span>:';
             if (deptSelect.value === "0") {
                 alertEl.style.display = "block";
                 alertEl.style.color = "#e67e22";
@@ -294,7 +296,8 @@
                 alertEl.style.display = "none";
             }
         } else {
-            if (deptLabel) deptLabel.innerHTML = 'Phòng ban:';
+            if (deptLabel)
+                deptLabel.innerHTML = 'Phòng ban:';
             alertEl.style.display = "none";
         }
     }
@@ -302,7 +305,8 @@
     function filterPositionsByDepartment(preserveSelection) {
         var deptSelect = document.getElementById("departmentId");
         var posSelect = document.getElementById("positionId");
-        if (!deptSelect || !posSelect) return;
+        if (!deptSelect || !posSelect)
+            return;
 
         var selectedDept = deptSelect.value;
         var currentPos = posSelect.value;
@@ -340,7 +344,7 @@
         filterPositionsByDepartment(false);
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
         var roleSelect = document.getElementById("roleId");
         if (roleSelect) {
             roleSelect.addEventListener("change", checkManagerWarning);

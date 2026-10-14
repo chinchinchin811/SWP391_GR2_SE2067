@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller;
 
 import java.io.IOException;
@@ -60,7 +56,7 @@ public class MentorServlet extends HttpServlet {
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
-    @Override    
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession();
@@ -199,7 +195,7 @@ public class MentorServlet extends HttpServlet {
                 }
             }
             response.sendRedirect(request.getContextPath() + "/mentors?action=pair");
-        }else if ("saveEvaluation".equals(action)) {
+        } else if ("saveEvaluation".equals(action)) {
             String assignmentIdStr = request.getParameter("assignmentId");
             String scoreStr = request.getParameter("performanceScore");
             String publicFeedback = request.getParameter("publicFeedback");

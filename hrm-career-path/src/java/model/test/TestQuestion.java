@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
  */
 public record TestQuestion(int id, String prompt, String type, List<TestQuestionOption> options) {
 
-    public TestQuestion {
+    public TestQuestion    {
         options = List.copyOf(options);
     }
 

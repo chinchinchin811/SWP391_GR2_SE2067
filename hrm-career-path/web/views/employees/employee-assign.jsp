@@ -27,7 +27,7 @@
 
     <div class="content-body">
         <% if (request.getAttribute("error") != null) { %>
-            <div class="alert alert-danger"><%= request.getAttribute("error") %></div>
+        <div class="alert alert-danger"><%= request.getAttribute("error") %></div>
         <% } %>
 
         <div class="card" style="max-width: 700px; margin: 0 auto;">
@@ -71,7 +71,7 @@
                                         for (Department d : departments) {
                                             boolean isSel = (emp.getDepartmentId() != null && emp.getDepartmentId().equals(d.getDepartmentId()));
                                 %>
-                                    <option value="<%= d.getDepartmentId() %>" <%= isSel ? "selected" : "" %>><%= d.getDepartmentName() %></option>
+                                <option value="<%= d.getDepartmentId() %>" <%= isSel ? "selected" : "" %>><%= d.getDepartmentName() %></option>
                                 <%
                                         }
                                     }
@@ -89,11 +89,11 @@
                                             int pDeptId = (p.getDepartmentId() != null) ? p.getDepartmentId() : 0;
                                             boolean isSel = (emp.getPositionId() != null && emp.getPositionId().equals(p.getPositionId()));
                                 %>
-                                    <option value="<%= p.getPositionId() %>" 
-                                            data-dept="<%= pDeptId %>" 
-                                            <%= isSel ? "selected" : "" %>>
-                                        <%= p.getPositionName() %>
-                                    </option>
+                                <option value="<%= p.getPositionId() %>" 
+                                        data-dept="<%= pDeptId %>" 
+                                        <%= isSel ? "selected" : "" %>>
+                                    <%= p.getPositionName() %>
+                                </option>
                                 <%
                                         }
                                     }
@@ -113,7 +113,7 @@
                                         for (JobLevel lvl : jobLevels) {
                                             boolean isSel = (emp.getLevelId() != null && emp.getLevelId().equals(lvl.getLevelId()));
                                 %>
-                                    <option value="<%= lvl.getLevelId() %>" <%= isSel ? "selected" : "" %>><%= lvl.getLevelName() %></option>
+                                <option value="<%= lvl.getLevelId() %>" <%= isSel ? "selected" : "" %>><%= lvl.getLevelName() %></option>
                                 <%
                                         }
                                     }
@@ -144,7 +144,8 @@
     function filterAssignPositions(preserveSelection) {
         var deptSelect = document.getElementById("departmentId");
         var posSelect = document.getElementById("positionId");
-        if (!deptSelect || !posSelect) return;
+        if (!deptSelect || !posSelect)
+            return;
 
         var selectedDept = deptSelect.value;
         var currentPos = posSelect.value;
@@ -177,7 +178,7 @@
         }
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
+    document.addEventListener("DOMContentLoaded", function () {
         filterAssignPositions(true);
     });
 </script>

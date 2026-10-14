@@ -30,10 +30,10 @@
 
     <div class="content-body">
         <% if (successMessage != null) { %>
-            <div class="alert alert-success"><%= successMessage %></div>
+        <div class="alert alert-success"><%= successMessage %></div>
         <% } %>
         <% if (errorMessage != null) { %>
-            <div class="alert alert-danger"><%= errorMessage %></div>
+        <div class="alert alert-danger"><%= errorMessage %></div>
         <% } %>
 
         <div class="card">
@@ -66,19 +66,19 @@
                             <td><b><%= d.getDepartmentName() %></b></td>
                             <td>
                                 <% if (d.getManagerName() != null && !d.getManagerName().trim().isEmpty() && !"Chưa bổ nhiệm".equalsIgnoreCase(d.getManagerName().trim())) { %>
-                                    <div class="user-cell">
-                                        <div class="avatar-sm">
-                                            <%= d.getManagerName().substring(0, 1).toUpperCase() %>
-                                        </div>
-                                        <div>
-                                            <div class="user-fullname"><%= d.getManagerName() %></div>
-                                            <div class="user-sub"><span class="badge badge-manager" style="font-size: 10px; padding: 1px 6px;">Trưởng phòng</span></div>
-                                        </div>
+                                <div class="user-cell">
+                                    <div class="avatar-sm">
+                                        <%= d.getManagerName().substring(0, 1).toUpperCase() %>
                                     </div>
+                                    <div>
+                                        <div class="user-fullname"><%= d.getManagerName() %></div>
+                                        <div class="user-sub"><span class="badge badge-manager" style="font-size: 10px; padding: 1px 6px;">Trưởng phòng</span></div>
+                                    </div>
+                                </div>
                                 <% } else { %>
-                                    <span class="badge" style="background: #f1f5f9; color: #64748b; border-color: #e2e8f0;">
-                                        <i class="fa-regular fa-clock" style="font-size: 10px;"></i> Chưa bổ nhiệm
-                                    </span>
+                                <span class="badge" style="background: #f1f5f9; color: #64748b; border-color: #e2e8f0;">
+                                    <i class="fa-regular fa-clock" style="font-size: 10px;"></i> Chưa bổ nhiệm
+                                </span>
                                 <% } %>
                             </td>
                             <td><%= d.getDescription() != null ? d.getDescription() : "-" %></td>
@@ -89,9 +89,9 @@
                             </td>
                             <td>
                                 <% if (d.isStatus()) { %>
-                                    <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Hoạt động</span>
+                                <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Hoạt động</span>
                                 <% } else { %>
-                                    <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Tạm ngưng</span>
+                                <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Tạm ngưng</span>
                                 <% } %>
                             </td>
                             <% if (roleId == 1) { %>

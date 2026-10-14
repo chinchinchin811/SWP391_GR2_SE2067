@@ -175,9 +175,9 @@ public class EmployeeServlet extends HttpServlet {
         }
 
         List<User> employees = userDAO.getAllEmployees(search, deptId, posId, roleId);
-        List<Position> positions = (deptId != null && deptId > 0) 
-            ? positionDAO.getPositionsByDepartment(deptId) 
-            : positionDAO.getAllPositions();
+        List<Position> positions = (deptId != null && deptId > 0)
+                ? positionDAO.getPositionsByDepartment(deptId)
+                : positionDAO.getAllPositions();
         List<Role> roles = roleDAO.getAllRoles();
 
         request.setAttribute("employees", employees);

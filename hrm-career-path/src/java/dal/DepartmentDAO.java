@@ -22,17 +22,15 @@ public class DepartmentDAO {
             WHERE d.is_deleted = 0
             ORDER BY d.department_id ASC
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Department dept = new Department(
-                    rs.getInt("department_id"),
-                    rs.getString("department_name"),
-                    (Integer) rs.getObject("manager_id"),
-                    rs.getString("description"),
-                    rs.getBoolean("status"),
-                    rs.getTimestamp("created_at")
+                        rs.getInt("department_id"),
+                        rs.getString("department_name"),
+                        (Integer) rs.getObject("manager_id"),
+                        rs.getString("description"),
+                        rs.getBoolean("status"),
+                        rs.getTimestamp("created_at")
                 );
                 dept.setDeleted(rs.getBoolean("is_deleted"));
                 dept.setManagerName(rs.getString("manager_name"));
@@ -55,18 +53,17 @@ public class DepartmentDAO {
             LEFT JOIN Users u ON d.manager_id = u.user_id
             WHERE d.department_id = ? AND d.is_deleted = 0
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     Department dept = new Department(
-                        rs.getInt("department_id"),
-                        rs.getString("department_name"),
-                        (Integer) rs.getObject("manager_id"),
-                        rs.getString("description"),
-                        rs.getBoolean("status"),
-                        rs.getTimestamp("created_at")
+                            rs.getInt("department_id"),
+                            rs.getString("department_name"),
+                            (Integer) rs.getObject("manager_id"),
+                            rs.getString("description"),
+                            rs.getBoolean("status"),
+                            rs.getTimestamp("created_at")
                     );
                     dept.setDeleted(rs.getBoolean("is_deleted"));
                     dept.setManagerName(rs.getString("manager_name"));
@@ -90,18 +87,17 @@ public class DepartmentDAO {
             LEFT JOIN Users u ON d.manager_id = u.user_id
             WHERE d.manager_id = ? AND d.is_deleted = 0
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, managerId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     Department dept = new Department(
-                        rs.getInt("department_id"),
-                        rs.getString("department_name"),
-                        (Integer) rs.getObject("manager_id"),
-                        rs.getString("description"),
-                        rs.getBoolean("status"),
-                        rs.getTimestamp("created_at")
+                            rs.getInt("department_id"),
+                            rs.getString("department_name"),
+                            (Integer) rs.getObject("manager_id"),
+                            rs.getString("description"),
+                            rs.getBoolean("status"),
+                            rs.getTimestamp("created_at")
                     );
                     dept.setDeleted(rs.getBoolean("is_deleted"));
                     dept.setManagerName(rs.getString("manager_name"));
@@ -121,8 +117,7 @@ public class DepartmentDAO {
             INSERT INTO Departments (department_name, manager_id, description, status, is_deleted) 
             VALUES (?, ?, ?, ?, 0)
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, dept.getDepartmentName());
             if (dept.getManagerId() != null && dept.getManagerId() > 0) {
                 ps.setInt(2, dept.getManagerId());
@@ -144,8 +139,7 @@ public class DepartmentDAO {
             SET department_name = ?, manager_id = ?, description = ?, status = ? 
             WHERE department_id = ? AND is_deleted = 0
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, dept.getDepartmentName());
             if (dept.getManagerId() != null && dept.getManagerId() > 0) {
                 ps.setInt(2, dept.getManagerId());
@@ -168,8 +162,7 @@ public class DepartmentDAO {
             SET manager_id = ? 
             WHERE department_id = ? AND is_deleted = 0
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             if (managerId != null && managerId > 0) {
                 ps.setInt(1, managerId);
             } else {
@@ -190,8 +183,7 @@ public class DepartmentDAO {
             SET is_deleted = 1 
             WHERE department_id = ?
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -206,9 +198,7 @@ public class DepartmentDAO {
             FROM Departments 
             WHERE is_deleted = 0 AND status = 1
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
                 return rs.getInt(1);
             }

@@ -23,17 +23,15 @@ public class PositionDAO {
             WHERE p.is_deleted = 0
             ORDER BY p.position_id ASC
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Position pos = new Position(
-                    rs.getInt("position_id"),
-                    rs.getString("position_name"),
-                    (Integer) rs.getObject("department_id"),
-                    rs.getString("description"),
-                    rs.getBoolean("status"),
-                    rs.getTimestamp("created_at")
+                        rs.getInt("position_id"),
+                        rs.getString("position_name"),
+                        (Integer) rs.getObject("department_id"),
+                        rs.getString("description"),
+                        rs.getBoolean("status"),
+                        rs.getTimestamp("created_at")
                 );
                 pos.setDeleted(rs.getBoolean("is_deleted"));
                 pos.setDepartmentName(rs.getString("department_name"));
@@ -57,8 +55,7 @@ public class PositionDAO {
             WHERE p.is_deleted = 0 AND (? IS NULL OR p.department_id = ?)
             ORDER BY p.position_name ASC
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             if (deptId == null || deptId == 0) {
                 ps.setNull(1, Types.INTEGER);
                 ps.setNull(2, Types.INTEGER);
@@ -69,12 +66,12 @@ public class PositionDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Position pos = new Position(
-                        rs.getInt("position_id"),
-                        rs.getString("position_name"),
-                        (Integer) rs.getObject("department_id"),
-                        rs.getString("description"),
-                        rs.getBoolean("status"),
-                        rs.getTimestamp("created_at")
+                            rs.getInt("position_id"),
+                            rs.getString("position_name"),
+                            (Integer) rs.getObject("department_id"),
+                            rs.getString("description"),
+                            rs.getBoolean("status"),
+                            rs.getTimestamp("created_at")
                     );
                     pos.setDeleted(rs.getBoolean("is_deleted"));
                     pos.setDepartmentName(rs.getString("department_name"));
@@ -97,18 +94,17 @@ public class PositionDAO {
             LEFT JOIN Departments d ON p.department_id = d.department_id
             WHERE p.position_id = ? AND p.is_deleted = 0
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     Position pos = new Position(
-                        rs.getInt("position_id"),
-                        rs.getString("position_name"),
-                        (Integer) rs.getObject("department_id"),
-                        rs.getString("description"),
-                        rs.getBoolean("status"),
-                        rs.getTimestamp("created_at")
+                            rs.getInt("position_id"),
+                            rs.getString("position_name"),
+                            (Integer) rs.getObject("department_id"),
+                            rs.getString("description"),
+                            rs.getBoolean("status"),
+                            rs.getTimestamp("created_at")
                     );
                     pos.setDeleted(rs.getBoolean("is_deleted"));
                     pos.setDepartmentName(rs.getString("department_name"));
@@ -127,8 +123,7 @@ public class PositionDAO {
             INSERT INTO Positions (position_name, department_id, description, status, is_deleted) 
             VALUES (?, ?, ?, ?, 0)
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, pos.getPositionName());
             if (pos.getDepartmentId() != null && pos.getDepartmentId() > 0) {
                 ps.setInt(2, pos.getDepartmentId());
@@ -150,8 +145,7 @@ public class PositionDAO {
             SET position_name = ?, department_id = ?, description = ?, status = ? 
             WHERE position_id = ? AND is_deleted = 0
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, pos.getPositionName());
             if (pos.getDepartmentId() != null && pos.getDepartmentId() > 0) {
                 ps.setInt(2, pos.getDepartmentId());
@@ -175,8 +169,7 @@ public class PositionDAO {
             SET is_deleted = 1 
             WHERE position_id = ?
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -192,15 +185,13 @@ public class PositionDAO {
             FROM Job_Levels 
             ORDER BY rank_order ASC
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 JobLevel level = new JobLevel(
-                    rs.getInt("level_id"),
-                    rs.getString("level_name"),
-                    rs.getInt("rank_order"),
-                    rs.getString("description")
+                        rs.getInt("level_id"),
+                        rs.getString("level_name"),
+                        rs.getInt("rank_order"),
+                        rs.getString("description")
                 );
                 list.add(level);
             }
@@ -216,9 +207,7 @@ public class PositionDAO {
             FROM Positions 
             WHERE is_deleted = 0 AND status = 1
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
                 return rs.getInt(1);
             }
