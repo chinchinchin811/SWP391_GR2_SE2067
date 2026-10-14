@@ -35,7 +35,7 @@ public class PositionServlet extends HttpServlet {
 
         String action = request.getParameter("action");
         if (action == null) {
-            action = (currentUser.getRoleId() == 1) ? "requests" : "list";
+            action = "list";
         }
 
         // Nhân viên thường không vào trang quản lý vị trí
@@ -57,7 +57,24 @@ public class PositionServlet extends HttpServlet {
                     return;
                 }
                 String reqStatus = request.getParameter("status");
-                request.setAttribute("requests", positionRequestDAO.getAllRequests(reqStatus));
+                String deptFilterStr = request.getParameter("departmentId");
+                String searchKeyword = request.getParameter("search");
+
+                Integer deptFilter = null;
+                if (deptFilterStr != null && !deptFilterStr.trim().isEmpty() && !deptFilterStr.equals("0")) {
+                    try {
+                        deptFilter = Integer.parseInt(deptFilterStr);
+                    } catch (NumberFormatException ignored) {}
+                }
+
+                List<PositionRequest> requests = positionRequestDAO.getAllRequests(reqStatus, deptFilter, searchKeyword);
+                List<Department> departments = departmentDAO.getAllDepartments();
+
+                request.setAttribute("requests", requests);
+                request.setAttribute("departments", departments);
+                request.setAttribute("selectedStatus", reqStatus);
+                request.setAttribute("selectedDeptId", deptFilter);
+                request.setAttribute("searchKeyword", searchKeyword);
                 request.getRequestDispatcher("/views/positions/position-requests.jsp").forward(request, response);
                 break;
 
@@ -211,6 +228,7 @@ public class PositionServlet extends HttpServlet {
     private void listPositions(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws ServletException, IOException {
         String deptFilterStr = request.getParameter("departmentId");
+        String search = request.getParameter("search");
         Integer deptFilter = null;
         if (deptFilterStr != null && !deptFilterStr.isEmpty() && !deptFilterStr.equals("0")) {
             try {
@@ -235,13 +253,14 @@ public class PositionServlet extends HttpServlet {
             departments = departmentDAO.getAllDepartments();
         }
 
-        List<Position> positions = positionDAO.getPositionsByDepartment(deptFilter);
+        List<Position> positions = positionDAO.getPositionsByDepartment(deptFilter, search);
         List<JobLevel> jobLevels = positionDAO.getAllJobLevels();
 
         request.setAttribute("positions", positions);
         request.setAttribute("departments", departments);
         request.setAttribute("jobLevels", jobLevels);
         request.setAttribute("selectedDeptId", deptFilter);
+        request.setAttribute("searchKeyword", search);
         request.getRequestDispatcher("/views/positions/position-list.jsp").forward(request, response);
     }
 

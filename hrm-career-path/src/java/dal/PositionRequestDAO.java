@@ -8,8 +8,12 @@ import java.util.List;
 public class PositionRequestDAO {
 
     public List<PositionRequest> getAllRequests(String statusFilter) {
+        return getAllRequests(statusFilter, null, null);
+    }
+
+    public List<PositionRequest> getAllRequests(String statusFilter, Integer deptId, String searchKeyword) {
         List<PositionRequest> list = new ArrayList<>();
-        String sql = """
+        StringBuilder sql = new StringBuilder("""
             SELECT pr.*, 
                    u.full_name AS manager_name, 
                    d.department_name,
@@ -18,15 +22,36 @@ public class PositionRequestDAO {
             INNER JOIN Users u ON pr.manager_id = u.user_id
             INNER JOIN Departments d ON pr.department_id = d.department_id
             LEFT JOIN Users adm ON pr.reviewed_by = adm.user_id
-            WHERE (? IS NULL OR ? = '' OR pr.status = ?)
-            ORDER BY pr.request_id DESC
-            """;
+            WHERE 1=1
+            """);
+
+        List<Object> params = new ArrayList<>();
+
+        if (statusFilter != null && !statusFilter.trim().isEmpty() && !"ALL".equalsIgnoreCase(statusFilter)) {
+            sql.append(" AND pr.status = ?");
+            params.add(statusFilter.trim());
+        }
+
+        if (deptId != null && deptId > 0) {
+            sql.append(" AND pr.department_id = ?");
+            params.add(deptId);
+        }
+
+        if (searchKeyword != null && !searchKeyword.trim().isEmpty()) {
+            sql.append(" AND (pr.position_name LIKE ? OR u.full_name LIKE ? OR pr.reason LIKE ?)");
+            String pattern = "%" + searchKeyword.trim() + "%";
+            params.add(pattern);
+            params.add(pattern);
+            params.add(pattern);
+        }
+
+        sql.append(" ORDER BY pr.request_id DESC");
 
         try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, statusFilter);
-            ps.setString(2, statusFilter);
-            ps.setString(3, statusFilter);
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {

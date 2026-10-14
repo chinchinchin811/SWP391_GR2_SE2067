@@ -45,23 +45,41 @@ public class PositionDAO {
     }
 
     public List<Position> getPositionsByDepartment(Integer deptId) {
+        return getPositionsByDepartment(deptId, null);
+    }
+
+    public List<Position> getPositionsByDepartment(Integer deptId, String keyword) {
         List<Position> list = new ArrayList<>();
-        String sql = """
+        StringBuilder sql = new StringBuilder("""
             SELECT p.position_id, p.position_name, p.department_id, p.description, p.status, p.is_deleted, p.created_at,
                    d.department_name,
                    (SELECT COUNT(*) FROM Users WHERE position_id = p.position_id AND is_deleted = 0 AND status = 1) AS employee_count
             FROM Positions p
             LEFT JOIN Departments d ON p.department_id = d.department_id
-            WHERE p.is_deleted = 0 AND (? IS NULL OR p.department_id = ?)
-            ORDER BY p.position_name ASC
-            """;
-        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            if (deptId == null || deptId == 0) {
-                ps.setNull(1, Types.INTEGER);
-                ps.setNull(2, Types.INTEGER);
-            } else {
-                ps.setInt(1, deptId);
-                ps.setInt(2, deptId);
+            WHERE p.is_deleted = 0
+            """);
+
+        List<Object> params = new ArrayList<>();
+        if (deptId != null && deptId > 0) {
+            sql.append(" AND p.department_id = ?");
+            params.add(deptId);
+        } else if (deptId != null && deptId == -1) {
+            sql.append(" AND 1=0");
+        }
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            sql.append(" AND (p.position_name LIKE ? OR p.description LIKE ?)");
+            String pattern = "%" + keyword.trim() + "%";
+            params.add(pattern);
+            params.add(pattern);
+        }
+
+        sql.append(" ORDER BY p.position_name ASC");
+
+        try (Connection conn = DBContext.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
