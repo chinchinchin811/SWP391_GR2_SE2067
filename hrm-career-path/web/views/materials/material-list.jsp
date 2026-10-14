@@ -5,7 +5,7 @@
     List<LearningMaterial> materials = (List<LearningMaterial>) request.getAttribute("materials");
     List<TrainingClass> classes = (List<TrainingClass>) request.getAttribute("classes");
     User currentUser = (User) session.getAttribute("currentUser");
-    boolean canManage = currentUser != null && currentUser.getRoleId() <= 3;
+    boolean canManage = currentUser != null && (currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3);
     String successMessage = (String) session.getAttribute("successMessage");
     session.removeAttribute("successMessage");
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");

@@ -97,7 +97,7 @@ public class MaterialServlet extends HttpServlet {
             return;
         }
         if ("classCreate".equals(a)) {
-            if (u.getRoleId() != 3 && u.getRoleId() != 1) {
+            if (!canManage(u)) {
                 deny(s, q);
                 return;
             }
@@ -147,7 +147,7 @@ public class MaterialServlet extends HttpServlet {
             return;
         }
         if ("saveClass".equals(a)) {
-            if (u.getRoleId() != 3 && u.getRoleId() != 1) {
+            if (!canManage(u)) {
                 deny(s, q);
                 return;
             }

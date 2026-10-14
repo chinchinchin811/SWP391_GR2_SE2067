@@ -5,7 +5,7 @@
     List<ClassEnrollment> enrollments = (List<ClassEnrollment>) request.getAttribute("enrollments");
     List<LearningMaterial> availableMaterials = (List<LearningMaterial>) request.getAttribute("availableMaterials");
     User currentUser = (User) session.getAttribute("currentUser");
-    boolean canManage = currentUser != null && currentUser.getRoleId() <= 3;
+    boolean canManage = currentUser != null && (currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3);
     String successMessage = (String) session.getAttribute("successMessage");
     String errorMessage = (String) session.getAttribute("errorMessage");
     session.removeAttribute("successMessage");

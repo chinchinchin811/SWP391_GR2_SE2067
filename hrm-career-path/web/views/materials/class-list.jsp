@@ -3,7 +3,8 @@
 <%
     List<TrainingClass> classes = (List<TrainingClass>) request.getAttribute("classes");
     User currentUser = (User) session.getAttribute("currentUser");
-    boolean canCreateClass = currentUser != null && (currentUser.getRoleId() == 3 || currentUser.getRoleId() == 1);
+    boolean canManage = currentUser != null && (currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3);
+    boolean canCreateClass = canManage;
     request.setAttribute("pageTitle", "Quản lý lớp đào tạo | HRM");
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 %>

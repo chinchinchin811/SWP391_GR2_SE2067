@@ -5,7 +5,7 @@
     List<VideoCheckpoint> checkpoints = (List<VideoCheckpoint>) request.getAttribute("checkpoints");
     String fromClassId = request.getParameter("classId");
     User currentUser = (User) session.getAttribute("currentUser");
-    boolean canManage = currentUser != null && currentUser.getRoleId() <= 3;
+    boolean canManage = currentUser != null && (currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3);
     request.setAttribute("pageTitle", (material != null ? material.getTitle() : "Học liệu") + " | HRM");
 %>
 <jsp:include page="/views/common/header.jsp" />
