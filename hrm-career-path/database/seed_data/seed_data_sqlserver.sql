@@ -386,63 +386,42 @@ GO
 -- 9. SEED DATA: HỌC LIỆU & LỚP ĐÀO TẠO (LEARNING MATERIALS & TRAINING CLASSES)
 -- =======================================================
 INSERT INTO dbo.Learning_Materials 
-(title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, file_size, video_url, duration_minutes, status, is_deleted, created_by, created_at, updated_at)
+(title, description, material_type, scope_type, department_id, position_id, level_id, material_url, video_url, duration_minutes, status, created_by, created_at)
 VALUES 
--- 1. Sổ tay văn hóa doanh nghiệp (CULTURE)
-(N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty', 
- N'Tài liệu định hướng chuẩn mực dành cho toàn bộ nhân sự mới: Tầm nhìn sứ mệnh, 5 giá trị cốt lõi, tác phong làm việc chuyên nghiệp, nội quy lao động và chính sách phúc lợi.', 
- 'PDF', 'CULTURE', NULL, NULL, NULL, 
- N'So_Tay_Van_Hoa_Doanh_Nghiep.pdf', 'application/pdf', 1048576, 'https://viethandvh.com/wp-content/uploads/2026/04/So-tay-van-hoa.pdf', 30, 1, 0, 2, '2026-09-28 08:24:23.550', '2026-09-28 08:24:23.550'),
-
--- 2. Slide đào tạo Agile/Scrum (DEPARTMENT IT)
+-- 1. Slide đào tạo Agile/Scrum (CULTURE)
 (N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum', 
  N'Trình chiếu bài giảng chi tiết về quy trình vận hành Sprint, các buổi lễ Scrum (Planning, Daily Standup, Review, Retrospective), cách quản lý Task trên Jira và văn hóa phối hợp đội ngũ.', 
- 'SLIDE', 'DEPARTMENT', 1, 1, 2, 
- N'Agile_Scrum_Onboarding.pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 2097152, 'https://docs.google.com/presentation/d/1WX3Lvh6A8TqQBmbr4XyRN8SaWSsxIoQo/edit?rtpof=true', 45, 1, 0, 3, '2026-09-28 08:24:23.553', '2026-09-28 08:29:17.967'),
+ 'SLIDE', 'CULTURE', NULL, NULL, NULL, 'https://docs.google.com/presentation/d/1WX3Lvh6A8TqQBmbr4XyRN8SaWSsxIoQo/edit?slide=id.p1#slide=id.p1', 'https://docs.google.com/presentation/d/1WX3Lvh6A8TqQBmbr4XyRN8SaWSsxIoQo/edit?slide=id.p1#slide=id.p1', 0, 1, 3, '2026-09-01 08:05:00'),
 
--- 3. Video kiến trúc Java Backend & Servlet Jakarta EE (DEPARTMENT IT)
+-- 2. Video kiến trúc Java Backend & Servlet Jakarta EE (CULTURE)
 (N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE', 
  N'Khóa học video cô đọng chuẩn kiến trúc phần mềm MVC, vòng đời Servlet, Bộ lọc Filter, quản lý Session và tương tác cơ sở dữ liệu qua JDBC Transaction trong dự án doanh nghiệp thực tế.', 
- 'VIDEO', 'DEPARTMENT', 1, 1, 2, 
- NULL, 'video/mp4', NULL, 'https://www.youtube.com/watch?v=4wqMsmSEllA&t=532s', 25, 1, 0, 3, '2026-09-28 08:24:23.557', '2026-09-28 08:30:25.600'),
+ 'VIDEO', 'CULTURE', NULL, NULL, NULL, 'https://www.youtube.com/watch?v=X5nt9_11Ozg&list=PLW1k06REn7HsHn6D6e27gtFm-HXrZDLPX', 'https://www.youtube.com/watch?v=X5nt9_11Ozg&list=PLW1k06REn7HsHn6D6e27gtFm-HXrZDLPX', 15, 1, 3, '2026-09-01 08:10:00'),
 
--- 4. Bộ tiêu chuẩn lập trình Java Clean Code (DEPARTMENT IT)
-(N'Bộ Tiêu Chuẩn Lập Trình Java & Quy Định Đặt Mã Nguồn (Clean Code)', 
+-- 3. Bộ tiêu chuẩn lập trình Java (CULTURE)
+(N'Bộ Tiêu Chuẩn Lập Trình Java', 
  N'Tài liệu quy định chi tiết về cấu trúc mã nguồn, quy chuẩn đặt tên biến/hàm/lớp, nguyên tắc SOLID, kỹ thuật xử lý ngoại lệ và viết Unit Test theo chuẩn dự án doanh nghiệp.', 
- 'PDF', 'DEPARTMENT', 1, 1, 2, 
- N'Java_Clean_Code_Conventions.pdf', 'application/pdf', 1258291, NULL, 40, 1, 0, 3, '2026-09-28 08:24:23.560', '2026-09-28 08:24:23.560'),
-
--- 5. Video giới thiệu văn hóa và tầm nhìn 2026 (CULTURE)
-(N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026', 
- N'Thước phim truyền thông nội bộ giới thiệu lịch sử hình thành, đội ngũ ban điều hành, giá trị con người và định hướng phát triển bền vững của công ty trong năm 2026.', 
- 'VIDEO', 'CULTURE', NULL, NULL, NULL, 
- NULL, 'video/mp4', NULL, 'https://www.youtube.com/watch?v=KRYONejN6SU', 15, 1, 0, 2, '2026-09-28 08:24:23.560', '2026-09-28 08:27:47.147'),
-
--- 6. Cẩm nang an toàn thông tin & bảo mật dữ liệu doanh nghiệp (CULTURE)
-(N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp', 
- N'Hướng dẫn thực thi các tiêu chuẩn an toàn bảo mật thông tin nội bộ, nguyên tắc đặt mật khẩu định kỳ, bảo mật mã nguồn dự án và phòng ngừa tấn công lừa đảo qua mạng (Phishing).', 
- 'PDF', 'CULTURE', NULL, NULL, NULL, 
- N'Cam_Nang_Quy_Chuan_An_Toan_Thong_Tin_Bao_Mat.pdf', 'application/pdf', 10518152, NULL, 20, 1, 0, 2, '2026-09-28 08:24:23.560', '2026-09-28 08:27:09.823');
+ 'PDF', 'CULTURE', NULL, NULL, NULL, '/hrm-career-path/assets/docs/java-clean-code-conventions.pdf', '/hrm-career-path/assets/docs/java-clean-code-conventions.pdf', 0, 1, 3, '2026-09-01 08:15:00');
 GO
 
 -- Checkpoint câu hỏi dừng tương tác cho Video Bài Giảng Java Backend
-DECLARE @video_mat_id INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE');
+DECLARE @video_mat_id INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Video Bài Giảng: Kiến Trúc Java Backend%');
 
 IF @video_mat_id IS NOT NULL
 BEGIN
     INSERT INTO dbo.Video_Checkpoints 
     (material_id, stop_time_seconds, question_prompt, option_a, option_b, option_c, option_d, correct_option, explanation)
     VALUES 
-    (@video_mat_id, 45, 
-     N'Theo mô hình kiến trúc MVC trong Jakarta EE, tầng nào trực tiếp nhận và điều phối HTTP Request từ phía người dùng?',
+    (@video_mat_id, 15, 
+     N'Theo mô hình MVC trong Jakarta EE, thành phần nào chịu trách nhiệm tiếp nhận HTTP Request từ người dùng và chuyển tiếp yêu cầu đến các thành phần xử lý phù hợp?',
      N'Model (Java Bean / Entity)',
      N'Controller (Servlet)',
      N'View (JSP / JSTL)',
      N'DAL (Data Access Object)',
      1, 
-     N'Chính xác! Servlet đóng vai trò Controller, trực tiếp đón nhận HTTP Request, xử lý điều phối và chuyển tiếp dữ liệu đến View.'),
+     N'Trong mô hình MVC, Controller (thường được triển khai bằng Servlet trong Jakarta EE) tiếp nhận HTTP Request từ người dùng, điều phối quá trình xử lý và chuyển dữ liệu đến View để hiển thị kết quả.'),
 
-    (@video_mat_id, 120, 
+    (@video_mat_id, 30, 
      N'Để đảm bảo tính toàn vẹn dữ liệu (ACID) khi thực hiện nhiều thao tác INSERT/UPDATE liên quan mật thiết với nhau, kỹ thuật nào bắt buộc phải áp dụng?',
      N'Bật chế độ tự động lưu (AutoCommit = true)',
      N'Chỉ dùng câu lệnh Statement thông thường',
@@ -451,7 +430,7 @@ BEGIN
      2, 
      N'Chính xác! Database Transaction bảo đảm tính nguyên tử (Atomicity) và nhất quán, rollback lại toàn bộ nếu có bất kỳ bước nào thất bại.'),
 
-    (@video_mat_id, 240, 
+    (@video_mat_id, 45, 
      N'Để ngăn chặn triệt để lỗ hổng tấn công SQL Injection nguy hiểm trong ứng dụng Java Web, lập trình viên cần sử dụng đối tượng nào?',
      N'Statement và nối chuỗi trực tiếp (String concatenation)',
      N'PreparedStatement kết hợp cơ chế Parameterized Query',
@@ -462,62 +441,28 @@ BEGIN
 END;
 GO
 
--- Checkpoint câu hỏi dừng tương tác cho Video Giới Thiệu Tầm Nhìn & Môi Trường Làm Việc
-DECLARE @video_culture_id INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026');
-
-IF @video_culture_id IS NOT NULL
-BEGIN
-    INSERT INTO dbo.Video_Checkpoints 
-    (material_id, stop_time_seconds, question_prompt, option_a, option_b, option_c, option_d, correct_option, explanation)
-    VALUES 
-    (@video_culture_id, 30, 
-     N'Đâu là khẩu hiệu (Slogan) hành động gắn liền với giá trị cốt lõi của công ty công nghệ chúng ta?',
-     N'Tối ưu quy trình - Nâng tầm giải pháp công nghệ',
-     N'Chấp nhận mọi rủi ro để tăng trưởng bằng mọi giá',
-     N'Giữ nguyên hiện trạng, không thay đổi công nghệ cũ',
-     N'Tập trung cá nhân, hạn chế tinh thần làm việc nhóm',
-     0, 
-     N'Chính xác! Công ty luôn hướng tới đổi mới sáng tạo, tối ưu giải pháp và hỗ trợ khách hàng bằng các công nghệ tiên tiến nhất.'),
-
-    (@video_culture_id, 90, 
-     N'Kênh liên lạc chính thức nào được ưu tiên để cập nhật thông báo nội bộ và trao đổi công việc hàng ngày?',
-     N'Nhắn tin qua các hội nhóm mạng xã hội tự do',
-     N'Hệ thống Email công vụ và phần mềm giao tiếp nội bộ đã được cấp quyền',
-     N'Chỉ trao đổi truyền miệng không lưu vết',
-     N'Gửi tài liệu mật qua các dịch vụ lưu trữ bên ngoài',
-     1, 
-     N'Chính xác! Mọi trao đổi và tài liệu dự án phải được thực hiện trên kênh chính thức để đảm bảo tính minh bạch và an toàn dữ liệu.');
-END;
-GO
-
 -- Lớp đào tạo mẫu
 INSERT INTO dbo.Training_Classes 
-(class_code, class_name, description, department_id, target_position_id, target_level_id, mentor_id, start_date, end_date, status, created_by)
+(class_code, class_name, description, department_id, target_position_id, target_level_id, mentor_id, start_date, end_date, status, is_deleted, created_by)
 VALUES 
 ('CLS-IT-FRESHER-2026', 
  N'Khóa Đào Tạo Onboarding Kỹ Thuật Cho Fresher 2026', 
  N'Lớp đào tạo nền tảng kiến thức công nghệ, văn hóa làm việc và quy trình kỹ thuật dành cho các bạn Fresher/Junior mới gia nhập phòng IT.', 
- 1, 1, 2, 3, CAST(GETDATE() AS DATE), DATEADD(DAY, 30, CAST(GETDATE() AS DATE)), 'OPEN', 2);
+ 1, 1, 2, 3, CAST(GETDATE() AS DATE), DATEADD(DAY, 30, CAST(GETDATE() AS DATE)), 'OPEN', 0, 2);
 GO
 
 -- Gắn học liệu chuẩn công nghệ vào lớp đào tạo
 DECLARE @class_id INT = (SELECT TOP 1 class_id FROM dbo.Training_Classes WHERE class_code = 'CLS-IT-FRESHER-2026');
-DECLARE @id_culture INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty');
-DECLARE @id_video_culture INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026');
-DECLARE @id_security INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp');
-DECLARE @id_agile INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum');
-DECLARE @id_cleancode INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Bộ Tiêu Chuẩn Lập Trình Java & Quy Định Đặt Mã Nguồn (Clean Code)');
-DECLARE @id_backend INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE');
+DECLARE @id_agile INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Slide Đào Tạo Quy Trình%');
+DECLARE @id_backend INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Video Bài Giảng: Kiến Trúc Java Backend%');
+DECLARE @id_cleancode INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Bộ Tiêu Chuẩn Lập Trình Java%');
 
 IF @class_id IS NOT NULL
 BEGIN
     INSERT INTO dbo.Class_Materials (class_id, material_id, order_index, is_mandatory) VALUES
-    (@class_id, @id_culture, 1, 1),
-    (@class_id, @id_video_culture, 2, 1),
-    (@class_id, @id_security, 3, 1),
-    (@class_id, @id_agile, 4, 1),
-    (@class_id, @id_cleancode, 5, 1),
-    (@class_id, @id_backend, 6, 1);
+    (@class_id, @id_agile, 1, 1),
+    (@class_id, @id_backend, 2, 1),
+    (@class_id, @id_cleancode, 3, 1);
 END;
 GO
 
@@ -528,21 +473,21 @@ BEGIN
     INSERT INTO dbo.Class_Enrollments (class_id, user_id, enrolled_by, enrollment_type, assigned_reason, status, progress_percent)
     VALUES (@class_id, 4, 3, 'SMART_ASSIGN', N'Phân bổ tự động theo lộ trình vị trí Fresher Java Developer', 'IN_PROGRESS', 33);
 
-    DECLARE @id_culture INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty');
-    DECLARE @id_video_culture INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026');
-    DECLARE @id_security INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp');
+    DECLARE @id_agile INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Slide Đào Tạo Quy Trình%');
+    DECLARE @id_backend INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Video Bài Giảng: Kiến Trúc Java Backend%');
+    DECLARE @id_cleancode INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Bộ Tiêu Chuẩn Lập Trình Java%');
 
-    IF @id_culture IS NOT NULL
+    IF @id_agile IS NOT NULL
         INSERT INTO dbo.Learning_Progress (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
-        VALUES (4, @id_culture, @class_id, 'COMPLETED', DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, -2, GETDATE()), N'Đã đọc xong sổ tay văn hóa doanh nghiệp');
+        VALUES (4, @id_agile, @class_id, 'COMPLETED', DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, -2, GETDATE()), N'Đã hoàn thành slide quy trình Agile/Scrum');
 
-    IF @id_video_culture IS NOT NULL
+    IF @id_backend IS NOT NULL
         INSERT INTO dbo.Learning_Progress (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
-        VALUES (4, @id_video_culture, @class_id, 'COMPLETED', DATEADD(DAY, -1, GETDATE()), DATEADD(DAY, -1, GETDATE()), N'Đã xem xong video giới thiệu và hoàn thành câu hỏi tương tác');
+        VALUES (4, @id_backend, @class_id, 'IN_PROGRESS', DATEADD(DAY, -1, GETDATE()), NULL, N'Đang xem video kiến trúc Java Backend và làm câu hỏi dừng');
 
-    IF @id_security IS NOT NULL
+    IF @id_cleancode IS NOT NULL
         INSERT INTO dbo.Learning_Progress (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
-        VALUES (4, @id_security, @class_id, 'IN_PROGRESS', GETDATE(), NULL, N'Đang nghiên cứu cẩm nang an toàn thông tin & bảo mật');
+        VALUES (4, @id_cleancode, @class_id, 'NOT_STARTED', GETDATE(), NULL, N'Chuẩn bị nghiên cứu quy chuẩn Clean Code');
 END;
 GO
 

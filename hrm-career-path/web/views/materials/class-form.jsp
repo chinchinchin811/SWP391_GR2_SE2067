@@ -50,19 +50,9 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Phòng ban mục tiêu</label>
-                            <select class="form-control" name="departmentId">
-                                <option value="">— Tất cả —</option>
-                                <% if (departments != null) {
-                                    for (Department d : departments) { %>
-                                <option value="<%= d.getDepartmentId() %>"><%= d.getDepartmentName() %></option>
-                                <% } } %>
-                            </select>
-                        </div>
-                        <div class="form-group">
                             <label>Vị trí mục tiêu</label>
                             <select class="form-control" name="positionId">
-                                <option value="">— Tất cả —</option>
+                                <option value="">— Tất cả vị trí —</option>
                                 <% if (positions != null) {
                                     for (Position p : positions) { %>
                                 <option value="<%= p.getPositionId() %>"><%= p.getPositionName() %></option>
@@ -72,7 +62,7 @@
                         <div class="form-group">
                             <label>Cấp bậc mục tiêu</label>
                             <select class="form-control" name="levelId">
-                                <option value="">— Tất cả —</option>
+                                <option value="">— Tất cả cấp bậc —</option>
                                 <% if (levels != null) {
                                     for (JobLevel l : levels) { %>
                                 <option value="<%= l.getLevelId() %>"><%= l.getLevelName() %></option>
@@ -97,8 +87,8 @@
                             <input required class="form-control" type="date" name="startDate" id="startDate">
                         </div>
                         <div class="form-group">
-                            <label>Ngày kết thúc</label>
-                            <input class="form-control" type="date" name="endDate" id="endDate">
+                            <label>Ngày kết thúc <span style="color:#c00">*</span></label>
+                            <input required class="form-control" type="date" name="endDate" id="endDate">
                         </div>
                     </div>
 
@@ -128,23 +118,60 @@
     </div>
 </main>
 <script>
-    (function () {
-        var today = new Date().toISOString().slice(0, 10),
-                start = document.getElementById('startDate'),
-                end = document.getElementById('endDate');
-        start.min = today;
-        end.min = today;
-        start.addEventListener('change', function () {
-            end.min = start.value || today;
-            if (end.value && end.value < start.value)
-                end.value = '';
-        });
-        document.getElementById('classForm').addEventListener('submit', function (e) {
-            if (end.value && end.value < start.value) {
-                e.preventDefault();
-                alert('Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.');
+(function(){
+    var start = document.getElementById('startDate'),
+        end   = document.getElementById('endDate');
+
+    function formatDate(d) {
+        var year = d.getFullYear();
+        var month = ('0' + (d.getMonth() + 1)).slice(-2);
+        var day = ('0' + d.getDate()).slice(-2);
+        return year + '-' + month + '-' + day;
+    }
+
+    function addDays(dateStr, days) {
+        if (!dateStr) return '';
+        var parts = dateStr.split('-');
+        if (parts.length !== 3) return '';
+        var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        d.setDate(d.getDate() + days);
+        return formatDate(d);
+    }
+
+    var todayStr = formatDate(new Date());
+    start.min = todayStr;
+
+    start.addEventListener('change', function(){
+        if (start.value) {
+            var minEnd = addDays(start.value, 1);
+            end.min = minEnd;
+            if (end.value && end.value < minEnd) {
+                end.value = minEnd;
             }
-        });
-    })();
+        }
+    });
+
+    document.getElementById('classForm').addEventListener('submit', function(e){
+        if (!start.value) {
+            e.preventDefault();
+            alert('Vui lòng chọn ngày bắt đầu.');
+            start.focus();
+            return false;
+        }
+        if (!end.value) {
+            e.preventDefault();
+            alert('Vui lòng chọn ngày kết thúc.');
+            end.focus();
+            return false;
+        }
+        var minEnd = addDays(start.value, 1);
+        if (end.value < minEnd) {
+            e.preventDefault();
+            alert('Ngày kết thúc phải sau ngày bắt đầu ít nhất 1 ngày (tối thiểu là từ ngày ' + minEnd + ').');
+            end.focus();
+            return false;
+        }
+    });
+})();
 </script>
 <jsp:include page="/views/common/footer.jsp" />

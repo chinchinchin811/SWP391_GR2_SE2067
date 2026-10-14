@@ -22,6 +22,11 @@
             <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials?action=classList">Quay lại danh sách</a>
             <% if (canManage && trainingClass != null) { %>
             <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=classAssign&id=<%= trainingClass.getClassId() %>">+ Thêm học viên</a>
+            <form method="post" action="<%= request.getContextPath() %>/materials" style="display:inline;margin:0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa lớp đào tạo này không?');">
+                <input type="hidden" name="action" value="deleteClass">
+                <input type="hidden" name="id" value="<%= trainingClass.getClassId() %>">
+                <button type="submit" class="btn btn-danger">Xóa lớp</button>
+            </form>
             <% } %>
         </div>
     </div>
@@ -131,7 +136,7 @@
                                 <span class="badge" style="font-size:11px"><%= m.getMaterialType() %></span>
                             </td>
                             <td style="text-align:center;font-size:12.5px;color:#444">
-                                <%= m.getDurationMinutes() > 0 ? (m.getDurationMinutes() + " phút") : "—" %>
+                                <%= ("VIDEO".equals(m.getMaterialType()) && m.getDurationMinutes() > 0) ? (m.getDurationMinutes() + " phút") : "—" %>
                             </td>
                             <td style="text-align:center">
                                 <a class="btn btn-sm btn-primary" href="<%= request.getContextPath() %>/materials?action=view&id=<%= m.getMaterialId() %>&classId=<%= trainingClass.getClassId() %>" style="margin-right:4px">
