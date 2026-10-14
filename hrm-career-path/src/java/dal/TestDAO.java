@@ -14,8 +14,13 @@ public final class TestDAO {
 
     private final Connection conn;
 
-    /** Giữ kiểu VARBINARY khi file null, tránh SQL Server nhận tham số NVARCHAR NULL. */
-    public record Binary(byte[] value) { }
+    /**
+     * Giữ kiểu VARBINARY khi file null, tránh SQL Server nhận tham số NVARCHAR
+     * NULL.
+     */
+    public record Binary(byte[] value) {
+
+    }
 
     public TestDAO(Connection conn) {
         this.conn = conn;
@@ -96,7 +101,9 @@ public final class TestDAO {
                 + ") OR (t.type='department' AND (" + ("HR".equals(actor.role()) ? "1=1" : "1=0") + " OR t.department_id=?)))";
     }
 
-    /** Lọc xóa mềm và giới hạn ADMIN ở các bài văn hóa ngay tại SQL. */
+    /**
+     * Lọc xóa mềm và giới hạn ADMIN ở các bài văn hóa ngay tại SQL.
+     */
     private String visible(TestActor actor, List<Object> args) {
         return "t.is_deleted=0" + ("ADMIN".equals(actor.role()) ? " AND t.type='culture'" : "");
     }
@@ -164,7 +171,9 @@ public final class TestDAO {
         return result;
     }
 
-    /** Phạm vi assignment: assignee còn hoạt động, chủ bài hoặc người quản lý. */
+    /**
+     * Phạm vi assignment: assignee còn hoạt động, chủ bài hoặc người quản lý.
+     */
     private String assignmentScope(TestActor actor, List<Object> args) {
         String result = visible(actor, args)
                 + " AND a.is_deleted=0 AND u.is_deleted=0 AND u.status=1 "
@@ -229,50 +238,71 @@ public final class TestDAO {
         return result;
     }
 
-    /** Ánh xạ bộ đề/câu hỏi, không chứa đáp án đúng trong đối tượng metadata. */
+    /**
+     * Ánh xạ bộ đề/câu hỏi, không chứa đáp án đúng trong đối tượng metadata.
+     */
     private TestContent content(ResultSet rs) throws SQLException {
         return new TestContent(rs.getInt("id"), rs.getString("title"), rs.getString("prompt"),
                 rs.getString("kind"), rs.getString("type"), (Integer) rs.getObject("department_id"),
                 rs.getInt("created_by"), rs.getString("status"));
     }
 
-    /** Kho chỉ dành cho người quản lý đúng phạm vi; lấy theo ID cũng áp điều kiện SQL. */
+    /**
+     * Kho chỉ dành cho người quản lý đúng phạm vi; lấy theo ID cũng áp điều
+     * kiện SQL.
+     */
     public TestContent managedContent(TestActor actor, int id) throws SQLException {
         List<Object> args = new ArrayList<>();
         String scope = management(actor, args);
         args.add(id);
         try (PreparedStatement ps = prepare("SELECT t.* FROM Test_Content t WHERE t.is_deleted=0 AND " + scope + " AND t.id=?", args.toArray()); ResultSet rs = ps.executeQuery()) {
-            if (!rs.next()) throw new TestException(404, "Không tìm thấy bộ đề/câu hỏi trong phạm vi quản lý.");
+            if (!rs.next()) {
+                throw new TestException(404, "Không tìm thấy bộ đề/câu hỏi trong phạm vi quản lý.");
+            }
             return content(rs);
         }
     }
 
-    /** Danh sách kho có phân trang; selector chỉ trả nội dung ready cùng phạm vi của đợt giao. */
+    /**
+     * Danh sách kho có phân trang; selector chỉ trả nội dung ready cùng phạm vi
+     * của đợt giao.
+     */
     public List<TestContent> contents(TestActor actor, TestTemplate target, int offset, int size) throws SQLException {
         List<Object> args = new ArrayList<>();
         String sql = "SELECT t.id,t.title,CAST('' AS NVARCHAR(MAX)) AS prompt,t.kind,t.type,t.department_id,t.created_by,t.status FROM Test_Content t WHERE t.is_deleted=0 AND " + management(actor, args);
         if (target != null) {
             sql += " AND t.status='ready' AND t.type=? AND (t.department_id IS NULL OR t.department_id=?)";
-            args.add(target.type()); args.add(target.departmentId());
+            args.add(target.type());
+            args.add(target.departmentId());
         }
         sql += " ORDER BY t.id DESC";
-        if (target == null) { sql += " OFFSET ? ROWS FETCH NEXT ? ROWS ONLY"; args.add(offset); args.add(size); }
+        if (target == null) {
+            sql += " OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+            args.add(offset);
+            args.add(size);
+        }
         List<TestContent> result = new ArrayList<>();
         try (PreparedStatement ps = prepare(sql, args.toArray()); ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) result.add(content(rs));
+            while (rs.next()) {
+                result.add(content(rs));
+            }
         }
         return result;
     }
 
-    /** Nội dung đã gắn vào assignment phải được giữ bất biến để bảo toàn bài cũ. */
+    /**
+     * Nội dung đã gắn vào assignment phải được giữ bất biến để bảo toàn bài cũ.
+     */
     public boolean contentAssigned(int contentId) throws SQLException {
-        try (PreparedStatement ps = prepare("SELECT TOP 1 1 FROM Test_Assignments WHERE content_id=?", contentId);
-                ResultSet rs = ps.executeQuery()) {
+        try (PreparedStatement ps = prepare("SELECT TOP 1 1 FROM Test_Assignments WHERE content_id=?", contentId); ResultSet rs = ps.executeQuery()) {
             return rs.next();
         }
     }
 
-    /** Nội dung được giao chỉ tải qua assignment còn quyền; không mở kho cho người làm. */
+    /**
+     * Nội dung được giao chỉ tải qua assignment còn quyền; không mở kho cho
+     * người làm.
+     */
     public TestContent assignedContent(TestActor actor, int id) throws SQLException {
         List<Object> args = new ArrayList<>();
         String scope = assignmentScope(actor, args);
@@ -282,7 +312,10 @@ public final class TestDAO {
         }
     }
 
-    /** Chỉ gọi sau khi service kiểm tra quyền bộ đề/assignment trong cùng transaction. */
+    /**
+     * Chỉ gọi sau khi service kiểm tra quyền bộ đề/assignment trong cùng
+     * transaction.
+     */
     public List<TestQuestion> questions(int contentId, boolean includeKey) throws SQLException {
         Map<Integer, List<TestQuestionOption>> options = new LinkedHashMap<>();
         String optionSql = "SELECT q.id AS question_id,o.id,o.option_text,"
@@ -299,8 +332,7 @@ public final class TestDAO {
 
         List<TestQuestion> rows = new ArrayList<>();
         try (PreparedStatement ps = prepare(
-                "SELECT id,prompt,question_type FROM Test_Questions WHERE content_id=? ORDER BY id", contentId);
-                ResultSet rs = ps.executeQuery()) {
+                "SELECT id,prompt,question_type FROM Test_Questions WHERE content_id=? ORDER BY id", contentId); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 int questionId = rs.getInt("id");
                 rows.add(new TestQuestion(questionId, rs.getString("prompt"),
@@ -310,12 +342,14 @@ public final class TestDAO {
         return rows;
     }
 
-    /** Trả lựa chọn đã nộp chỉ sau khi xác minh quyền assignment ngay trong SQL. */
-    public Map<Integer,Set<Integer>> answers(TestActor actor, int id) throws SQLException {
+    /**
+     * Trả lựa chọn đã nộp chỉ sau khi xác minh quyền assignment ngay trong SQL.
+     */
+    public Map<Integer, Set<Integer>> answers(TestActor actor, int id) throws SQLException {
         List<Object> args = new ArrayList<>();
         String scope = assignmentScope(actor, args);
         args.add(id);
-        Map<Integer,Set<Integer>> result = new LinkedHashMap<>();
+        Map<Integer, Set<Integer>> result = new LinkedHashMap<>();
         try (PreparedStatement ps = prepare("SELECT x.question_id,x.option_id" + ASSIGNMENT_FROM
                 + "JOIN Test_Answer_Options x ON x.assignment_id=a.id WHERE " + scope
                 + " AND a.id=? ORDER BY x.question_id,x.option_id", args.toArray()); ResultSet rs = ps.executeQuery()) {
@@ -359,7 +393,9 @@ public final class TestDAO {
                 + (actor.departmentManager() ? "AND r.role_name='EMPLOYEE' AND u.department_id=? " : "")
                 + "AND NOT EXISTS (SELECT 1 FROM Test_Assignments a WHERE a.test_template_id=t.id AND a.assignee_id=u.user_id) "
                 + "ORDER BY u.full_name,u.user_id";
-        if (actor.departmentManager()) args.add(actor.managedDepartmentId());
+        if (actor.departmentManager()) {
+            args.add(actor.managedDepartmentId());
+        }
         List<TestActor> result = new ArrayList<>();
         try (PreparedStatement ps = prepare(sql, args.toArray()); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -369,7 +405,9 @@ public final class TestDAO {
         return result;
     }
 
-    /** Đóng đề hết hạn; giữ assignment pending để báo cáo là chưa làm. */
+    /**
+     * Đóng đề hết hạn; giữ assignment pending để báo cáo là chưa làm.
+     */
     public void closeExpiredTests(Instant now) throws SQLException {
         execute("UPDATE Test_Templates SET status='closed',updated_at=? WHERE status='published' AND end_time<=?", now, now);
     }

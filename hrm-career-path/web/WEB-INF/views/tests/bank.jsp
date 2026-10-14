@@ -70,9 +70,9 @@
                             </td>
                             <td class="col-status">
                                 <% if ("ready".equals(item.status())) { %>
-                                    <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Sẵn sàng</span>
+                                <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Sẵn sàng</span>
                                 <% } else { %>
-                                    <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Bản nháp</span>
+                                <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Bản nháp</span>
                                 <% } %>
                             </td>
                         </tr>
@@ -121,8 +121,8 @@
             %>
             <p class="test-option-line">
                 <% if(isCorrect) { %><span class="correct-answer-highlight"><% } %>
-                <%= (char)('A'+optionNumber++) %>. <%= h(option.text()) %>
-                <% if(isCorrect) { %> <i class="fa-solid fa-check"></i> Đáp án đúng</span><% } %>
+                    <%= (char)('A'+optionNumber++) %>. <%= h(option.text()) %>
+                    <% if(isCorrect) { %> <i class="fa-solid fa-check"></i> Đáp án đúng</span><% } %>
             </p>
             <% } %>
         </section>
