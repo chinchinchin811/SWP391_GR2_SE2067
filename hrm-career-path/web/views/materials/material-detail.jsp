@@ -170,7 +170,6 @@
                         src="<%= material.getSlideEmbedUrl() %>"
                         allowfullscreen
                         style="width:100%;height:650px;border:none"></iframe>
-<<<<<<< HEAD
                 <% } else { %>
                 <div style="padding:40px 20px;text-align:center;color:#666;font-size:13px;line-height:1.7">
                     <div style="font-size:36px;margin-bottom:10px">🔗</div>
@@ -182,13 +181,12 @@
                     <a class="btn btn-primary" href="<%= material.getMaterialUrl() %>" target="_blank">
                         Mở học liệu trong tab mới ↗
                     </a>
-                    <% } %>
-=======
                     <% } else { %>
-                <div style="padding:32px;text-align:center;color:#666;font-size:13px;line-height:1.7">
-                    Slide tải lên từ máy không thể xem trực tiếp trên trình duyệt.<br>
-                    Hãy cập nhật liên kết công khai Google Slides, Google Drive hoặc Office Online để trình chiếu tại đây.
->>>>>>> main
+                    <p style="color:#888;font-size:12px;margin-top:8px">
+                        Slide tải lên từ máy không thể xem trực tiếp trên trình duyệt.<br>
+                        Hãy cập nhật liên kết công khai Google Slides, Google Drive hoặc Office Online để trình chiếu tại đây.
+                    </p>
+                    <% } %>
                 </div>
                 <% } %>
             </div>
