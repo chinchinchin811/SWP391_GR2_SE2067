@@ -105,7 +105,7 @@ public final class TestDAO {
      * Lọc xóa mềm và giới hạn ADMIN ở các bài văn hóa ngay tại SQL.
      */
     private String visible(TestActor actor, List<Object> args) {
-        return "t.is_deleted=0" + ("ADMIN".equals(actor.role()) ? " AND t.type='culture'" : "");
+        return "t.is_deleted=0";
     }
 
     /**

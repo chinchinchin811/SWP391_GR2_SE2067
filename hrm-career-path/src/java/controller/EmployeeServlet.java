@@ -106,7 +106,7 @@ public class EmployeeServlet extends HttpServlet {
         User currentUser = (User) session.getAttribute("currentUser");
 
         if (currentUser.getRoleId() == 1) {
-            response.sendRedirect(request.getContextPath() + "/flashcards");
+            response.sendRedirect(request.getContextPath() + "/employees");
             return;
         }
 

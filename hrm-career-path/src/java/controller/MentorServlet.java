@@ -67,7 +67,7 @@ public class MentorServlet extends HttpServlet {
             return;
         }
         if (currentUser.getRoleId() == 1) {
-            response.sendRedirect(request.getContextPath() + "/flashcards");
+            response.sendRedirect(request.getContextPath() + "/departments");
             return;
         }
 
@@ -168,7 +168,7 @@ public class MentorServlet extends HttpServlet {
             return;
         }
         if (currentUser.getRoleId() == 1) {
-            response.sendRedirect(request.getContextPath() + "/flashcards");
+            response.sendRedirect(request.getContextPath() + "/departments");
             return;
         }
 

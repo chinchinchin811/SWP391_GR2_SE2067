@@ -23,6 +23,10 @@ public class MaterialServlet extends HttpServlet {
         if (u == null) {
             return;
         }
+        if (u.getRoleId() == 1) {
+            s.sendRedirect(q.getContextPath() + "/departments");
+            return;
+        }
         String a = param(q, "action", "list");
         if ("download".equals(a) || "preview".equals(a)) {
             stream(q, s);
@@ -118,6 +122,10 @@ public class MaterialServlet extends HttpServlet {
     protected void doPost(HttpServletRequest q, HttpServletResponse s) throws ServletException, IOException {
         User u = current(q, s);
         if (u == null) {
+            return;
+        }
+        if (u.getRoleId() == 1) {
+            s.sendRedirect(q.getContextPath() + "/departments");
             return;
         }
         String a = param(q, "action", "");
@@ -321,7 +329,7 @@ public class MaterialServlet extends HttpServlet {
     }
 
     private boolean canManage(User u) {
-        return u.getRoleId() >= 1 && u.getRoleId() <= 3;
+        return u.getRoleId() == 2 || u.getRoleId() == 3;
     }
 
     private void deny(HttpServletResponse s, HttpServletRequest q) throws IOException {

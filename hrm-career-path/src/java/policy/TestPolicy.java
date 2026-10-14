@@ -24,10 +24,10 @@ public final class TestPolicy {
     }
 
     /**
-     * Chỉ chủ sở hữu hoặc ADMIN được thay đổi nội dung bộ đề trong đúng scope.
+     * Chỉ chủ sở hữu được thay đổi nội dung bộ đề trong đúng scope.
      */
     public boolean canEditContent(TestActor actor, TestContent content) {
-        return "ADMIN".equals(actor.role()) || actor.id() == content.createdBy();
+        return actor.id() == content.createdBy();
     }
 
     /**

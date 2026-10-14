@@ -139,24 +139,20 @@ public class TestServlet extends HttpServlet {
         }
         try {
             TestActor actor = service.currentActor(userId);
+            if ("ADMIN".equals(actor.role())) {
+                res.sendRedirect(req.getContextPath() + "/departments");
+                return;
+            }
             req.setAttribute("testActor", actor);
             req.setAttribute("testPolicy", policy);
             req.setAttribute("testNow", Instant.now());
             int page = req.getParameter("page") == null ? 1 : integer(req.getParameter("page"));
             req.setAttribute("pageNumber", page);
             String action = action(req);
-            if ("ADMIN".equals(actor.role()) && "calendar".equals(action)) {
-                res.sendRedirect(req.getContextPath() + "/tests");
-                return;
-            }
             req.setAttribute("testView", action);
             switch (action) {
                 case "list":
                     String scope = Optional.ofNullable(req.getParameter("scope")).orElse("all");
-                    if ("ADMIN".equals(actor.role()) && "upcoming".equals(scope)) {
-                        res.sendRedirect(req.getContextPath() + "/tests");
-                        return;
-                    }
                     req.setAttribute("scope", scope);
                     req.setAttribute("templates", service.listTemplates(userId, scope, page, 20));
                     break;
@@ -257,6 +253,11 @@ public class TestServlet extends HttpServlet {
             return;
         }
         try {
+            TestActor actor = service.currentActor(userId);
+            if ("ADMIN".equals(actor.role())) {
+                res.sendRedirect(req.getContextPath() + "/departments");
+                return;
+            }
             String supplied = req.getParameter("csrf");
             String expected = (String) req.getSession().getAttribute("testCsrf");
             if (supplied == null || !MessageDigest.isEqual(expected.getBytes(StandardCharsets.UTF_8), supplied.getBytes(StandardCharsets.UTF_8))) {

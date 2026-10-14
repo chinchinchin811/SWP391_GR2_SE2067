@@ -167,6 +167,7 @@
             </li>
             <% } %>
 
+            <% if (roleId != 1) { %>
             <li class="sidebar-section <%= trainingActive ? "has-active" : "" %>" data-sidebar-section="training">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-training">
                     <span><i class="fa-solid fa-graduation-cap nav-cat-icon"></i> Học liệu &amp; Đào tạo</span>
@@ -194,18 +195,17 @@
                     <li class="<%= currentURI.contains("/tests") && (action == null || "list".equals(action)) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/tests"><i class="fa-solid fa-list-check nav-icon"></i> <span>Danh sách bài test</span></a>
                     </li>
-                    <% if (roleId != 1) { %>
                     <li class="<%= currentURI.contains("/tests") && "calendar".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/tests?action=calendar"><i class="fa-regular fa-calendar-days nav-icon"></i> <span>Lịch bài test</span></a>
                     </li>
-                    <% } %>
-                    <% if (roleId == 1 || roleId == 2 || roleId == 3) { %>
+                    <% if (roleId == 2 || roleId == 3) { %>
                     <li class="<%= currentURI.contains("/tests") && ("bank".equals(action) || "bankDetail".equals(action)) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/tests?action=bank"><i class="fa-solid fa-box-archive nav-icon"></i> <span>Bộ đề &amp; Câu hỏi</span></a>
                     </li>
                     <% } %>
                 </ul>
             </li>
+            <% } %>
         </ul>
     </nav>
 

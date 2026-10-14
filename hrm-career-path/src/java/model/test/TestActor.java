@@ -7,10 +7,10 @@ package model;
 public record TestActor(int id, String name, String role, Integer departmentId, Integer managedDepartmentId) {
 
     /**
-     * ADMIN/HR có quyền quản lý đánh giá toàn công ty.
+     * HR có quyền quản lý đánh giá toàn công ty.
      */
     public boolean cultureManager() {
-        return "ADMIN".equals(role) || "HR".equals(role);
+        return "HR".equals(role);
     }
 
     /**

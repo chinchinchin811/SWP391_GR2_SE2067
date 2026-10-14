@@ -64,10 +64,15 @@ public class FlashcardServlet extends HttpServlet {
         }
 
         User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser.getRoleId() == 1) {
+            response.sendRedirect(request.getContextPath() + "/departments");
+            return;
+        }
+
         FlashcardDAO dao = new FlashcardDAO();
         List<FlashcardDeck> decks;
         try {
-            decks = currentUser.getRoleId() == 1 ? dao.getCultureDecks() : dao.getAllDecks();
+            decks = dao.getAllDecks();
         } catch (IllegalStateException e) {
             throw new ServletException("Khong the tai du lieu Flashcard. Hay tao bang bang create_tables_sqlserver.sql va nap du lieu bang seed_data_sqlserver.sql.", e);
         }
