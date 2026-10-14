@@ -38,9 +38,9 @@
             </div>
         </div>
         <% } else { %>
-            <div class="card" style="border: 1px solid #000; padding: 20px; text-align: center;">
-                <p>Không tìm thấy thông tin chi tiết của Mentee này.</p>
-            </div>
+        <div class="card" style="border: 1px solid #000; padding: 20px; text-align: center;">
+            <p>Không tìm thấy thông tin chi tiết của Mentee này.</p>
+        </div>
         <% } %>
     </div>
 </main>

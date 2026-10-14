@@ -69,7 +69,7 @@
                                 <% if (departments != null) {
                                     for (Department d : departments) { %>
                                 <option value="<%= d.getDepartmentId() %>"
-                                    <%= material != null && material.getDepartmentId() != null && material.getDepartmentId().equals(d.getDepartmentId()) ? "selected" : "" %>>
+                                        <%= material != null && material.getDepartmentId() != null && material.getDepartmentId().equals(d.getDepartmentId()) ? "selected" : "" %>>
                                     <%= d.getDepartmentName() %>
                                 </option>
                                 <% } } %>

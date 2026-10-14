@@ -20,19 +20,19 @@
         <h1>Hồ Sơ Nhân Viên: <%= emp.getFullName() %></h1>
         <div style="display: flex; gap: 6px;">
             <% if (roleId == 2) { %>
-                <a href="<%= request.getContextPath() %>/employees?action=assign&id=<%= emp.getUserId() %>" class="btn btn-primary">
-                    Điều chuyển / Thăng chức
-                </a>
-                <a href="<%= request.getContextPath() %>/employees?action=edit&id=<%= emp.getUserId() %>" class="btn btn-secondary">
-                    Sửa thông tin
-                </a>
-                <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">
-                    Danh sách
-                </a>
+            <a href="<%= request.getContextPath() %>/employees?action=assign&id=<%= emp.getUserId() %>" class="btn btn-primary">
+                Điều chuyển / Thăng chức
+            </a>
+            <a href="<%= request.getContextPath() %>/employees?action=edit&id=<%= emp.getUserId() %>" class="btn btn-secondary">
+                Sửa thông tin
+            </a>
+            <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">
+                Danh sách
+            </a>
             <% } else if (roleId == 1 || roleId == 3) { %>
-                <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">
-                    Quay lại danh sách
-                </a>
+            <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">
+                Quay lại danh sách
+            </a>
             <% } %>
         </div>
     </div>
@@ -49,9 +49,9 @@
                     <p style="margin-bottom: 8px;"><b>Vai trò:</b> <span class="badge"><%= emp.getRoleName() %></span></p>
                     <p style="margin-bottom: 8px;"><b>Trạng thái:</b> 
                         <% if (emp.isStatus()) { %>
-                            <span class="badge">Đang làm việc</span>
+                        <span class="badge">Đang làm việc</span>
                         <% } else { %>
-                            <span class="badge">Đã nghỉ việc</span>
+                        <span class="badge">Đã nghỉ việc</span>
                         <% } %>
                     </p>
                     <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ccc;">
@@ -101,16 +101,16 @@
                                 <td><b><%= typeLabel %></b></td>
                                 <td>
                                     <% if (h.getNewPositionName() != null) { %>
-                                        <div>Vị trí: <%= h.getOldPositionName() != null ? h.getOldPositionName() : "(Chưa có)" %> -> <b><%= h.getNewPositionName() %></b> <%= h.getNewLevelName() != null ? "(" + h.getNewLevelName() + ")" : "" %></div>
+                                    <div>Vị trí: <%= h.getOldPositionName() != null ? h.getOldPositionName() : "(Chưa có)" %> -> <b><%= h.getNewPositionName() %></b> <%= h.getNewLevelName() != null ? "(" + h.getNewLevelName() + ")" : "" %></div>
                                     <% } %>
                                     <% if (h.getNewDepartmentName() != null) { %>
-                                        <div style="font-size: 11px; color: #555555;">Phòng ban: <%= h.getOldDepartmentName() != null ? h.getOldDepartmentName() : "(Chưa có)" %> -> <b><%= h.getNewDepartmentName() %></b></div>
+                                    <div style="font-size: 11px; color: #555555;">Phòng ban: <%= h.getOldDepartmentName() != null ? h.getOldDepartmentName() : "(Chưa có)" %> -> <b><%= h.getNewDepartmentName() %></b></div>
                                     <% } %>
                                 </td>
                                 <td>
                                     <div><%= h.getNotes() != null ? h.getNotes() : "-" %></div>
                                     <% if (h.getCreatorName() != null) { %>
-                                        <div style="font-size: 11px; color: #777777;">Người thực hiện: <%= h.getCreatorName() %></div>
+                                    <div style="font-size: 11px; color: #777777;">Người thực hiện: <%= h.getCreatorName() %></div>
                                     <% } %>
                                 </td>
                             </tr>
@@ -118,9 +118,9 @@
                         </tbody>
                     </table>
                     <% } else { %>
-                        <div style="text-align: center; padding: 20px; color: #555555;">
-                            Chưa có dữ liệu biến động lịch sử cho nhân viên này.
-                        </div>
+                    <div style="text-align: center; padding: 20px; color: #555555;">
+                        Chưa có dữ liệu biến động lịch sử cho nhân viên này.
+                    </div>
                     <% } %>
                 </div>
             </div>

@@ -119,7 +119,7 @@
                             <td style="text-align:left">
                                 <a href="<%= request.getContextPath() %>/materials?action=view&id=<%= m.getMaterialId() %>&classId=<%= trainingClass.getClassId() %>"
                                    style="font-weight:600;color:#000;text-decoration:none">
-                                   <%= m.getTitle() %>
+                                    <%= m.getTitle() %>
                                 </a>
                                 <% if (m.getDescription() != null && !m.getDescription().trim().isEmpty()) { %>
                                 <div style="font-size:12px;color:#666;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:480px">
@@ -171,9 +171,9 @@
                         <tr>
                             <th style="width:30%;text-align:center">Học viên</th>
                             <th style="text-align:center">Thông tin ghi danh</th>
-                            <% if (canManage) { %>
+                                <% if (canManage) { %>
                             <th style="width:16%;text-align:center">Thao tác</th>
-                            <% } %>
+                                <% } %>
                         </tr>
                     </thead>
                     <tbody>

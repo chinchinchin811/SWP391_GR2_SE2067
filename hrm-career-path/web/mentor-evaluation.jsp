@@ -47,35 +47,35 @@
                             for (MentorEvaluation eval : evaluations) {
                                 boolean isApproved = "APPROVED".equalsIgnoreCase(eval.getApprovalStatus());
                         %>
-                            <tr style="border-bottom: 1px solid #ccc;">
-                                <td style="padding: 10px; border: 1px solid #000; text-align: center;">
-                                    <%= stt++ %>
-                                </td>
-                                <td style="padding: 10px; border: 1px solid #000;">
-                                    <b><%= eval.getMenteeName() %></b>
-                                </td>
-                                <td style="padding: 10px; border: 1px solid #000;">
-                                    <%= eval.getMentorName() %>
-                                </td>
-                                <td style="padding: 10px; border: 1px solid #000; text-align: center;">
-                                    <b><%= eval.getPerformanceScore() %>/10</b>
-                                </td>
-                                <td style="padding: 10px; border: 1px solid #000;">
-                                    <%= eval.getFeedback() %>
-                                </td>
-                                <td style="padding: 10px; border: 1px solid #000; text-align: center;">
-                                    <span style="padding: 3px 8px; border: 1px solid #000; background: <%= isApproved ? "#e8f5e9" : "#fff3e0" %>; font-size: 11px; font-weight: bold;">
-                                        <%= eval.getApprovalStatus() %>
-                                    </span>
-                                </td>
-                            </tr>
+                        <tr style="border-bottom: 1px solid #ccc;">
+                            <td style="padding: 10px; border: 1px solid #000; text-align: center;">
+                                <%= stt++ %>
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #000;">
+                                <b><%= eval.getMenteeName() %></b>
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #000;">
+                                <%= eval.getMentorName() %>
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #000; text-align: center;">
+                                <b><%= eval.getPerformanceScore() %>/10</b>
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #000;">
+                                <%= eval.getFeedback() %>
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #000; text-align: center;">
+                                <span style="padding: 3px 8px; border: 1px solid #000; background: <%= isApproved ? "#e8f5e9" : "#fff3e0" %>; font-size: 11px; font-weight: bold;">
+                                    <%= eval.getApprovalStatus() %>
+                                </span>
+                            </td>
+                        </tr>
                         <%  }
                         } else { %>
-                            <tr>
-                                <td colspan="6" style="padding: 20px; text-align: center; border: 1px solid #000;">
-                                    Chưa có ghi nhận đánh giá nào từ Mentor.
-                                </td>
-                            </tr>
+                        <tr>
+                            <td colspan="6" style="padding: 20px; text-align: center; border: 1px solid #000;">
+                                Chưa có ghi nhận đánh giá nào từ Mentor.
+                            </td>
+                        </tr>
                         <% } %>
                     </tbody>
                 </table>

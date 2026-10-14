@@ -81,7 +81,9 @@ public class TestModuleHttpTest {
 
     private static int insertId(Connection conn, String sql, Object... values) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            for (int i = 0; i < values.length; i++) ps.setObject(i + 1, values[i]);
+            for (int i = 0; i < values.length; i++) {
+                ps.setObject(i + 1, values[i]);
+            }
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
                 return rs.getInt(1);
@@ -363,7 +365,9 @@ public class TestModuleHttpTest {
                 admin.setCatalog(database);
                 String schema = Files.readString(Path.of("database/schema/create_tables_sqlserver.sql"), StandardCharsets.UTF_8);
                 int moduleStart = schema.indexOf("-- BEGIN TEST MODULE");
-                if (moduleStart < 0) throw new IllegalStateException("Missing test module schema section");
+                if (moduleStart < 0) {
+                    throw new IllegalStateException("Missing test module schema section");
+                }
                 String moduleSchema = schema.substring(moduleStart);
                 schema = schema.substring(schema.indexOf("CREATE TABLE dbo.Roles"), moduleStart);
                 for (String batch : schema.split("(?m)^GO\\s*$")) {

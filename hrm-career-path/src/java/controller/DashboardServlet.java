@@ -53,7 +53,7 @@ public class DashboardServlet extends HttpServlet {
             request.setAttribute("departments", departments);
             request.setAttribute("recentEmployees", recentEmployees);
 
-        } else if (roleId == 3) {            
+        } else if (roleId == 3) {
             Department myDept = departmentDAO.getDepartmentByManagerId(currentUser.getUserId());
             if (myDept != null) {
                 List<User> deptEmployees = userDAO.getAllEmployees("", myDept.getDepartmentId(), null, null);
@@ -61,7 +61,7 @@ public class DashboardServlet extends HttpServlet {
                 request.setAttribute("deptEmployees", deptEmployees);
             }
 
-        } else {            
+        } else {
             User myProfile = userDAO.getUserById(currentUser.getUserId());
             List<EmployeeHistory> myHistory = userDAO.getHistoryByUserId(currentUser.getUserId());
             request.setAttribute("myProfile", myProfile != null ? myProfile : currentUser);

@@ -505,8 +505,8 @@ public final class TestService {
     }
 
     /**
-     * Đóng các đợt đã hết hạn. Assignment chưa làm vẫn được giữ lại để bảng
-     * kết quả hiển thị trạng thái "Chưa làm".
+     * Đóng các đợt đã hết hạn. Assignment chưa làm vẫn được giữ lại để bảng kết
+     * quả hiển thị trạng thái "Chưa làm".
      */
     public void closeExpiredTests(Instant now) throws SQLException {
         transaction(dao -> {
@@ -540,13 +540,19 @@ public final class TestService {
 
     }
 
-    /** Dữ liệu đáp án khi người quản lý tạo một câu hỏi mới. */
+    /**
+     * Dữ liệu đáp án khi người quản lý tạo một câu hỏi mới.
+     */
     public record OptionDraft(String text, boolean correct) {
+
     }
 
-    /** Dữ liệu câu hỏi nhận từ form tạo bộ đề; ID và chủ sở hữu do server tạo. */
+    /**
+     * Dữ liệu câu hỏi nhận từ form tạo bộ đề; ID và chủ sở hữu do server tạo.
+     */
     public record QuestionDraft(String prompt, String type, List<OptionDraft> options) {
-        public QuestionDraft {
+
+        public QuestionDraft   {
             options = options == null ? List.of() : List.copyOf(options);
         }
     }
@@ -582,7 +588,9 @@ public final class TestService {
                 if (!normalized.add(optionText.toLowerCase(Locale.ROOT))) {
                     throw new TestException(400, "Các đáp án trong cùng một câu không được trùng nhau.");
                 }
-                if (option.correct()) correct++;
+                if (option.correct()) {
+                    correct++;
+                }
                 checkedOptions.add(new OptionDraft(optionText, option.correct()));
             }
             if (("single".equals(questionType) || "true_false".equals(questionType)) && correct != 1) {
@@ -636,7 +644,9 @@ public final class TestService {
         });
     }
 
-    /** Tải đầy đủ đáp án cho biểu mẫu sửa, đồng thời kiểm tra đúng chủ sở hữu. */
+    /**
+     * Tải đầy đủ đáp án cho biểu mẫu sửa, đồng thời kiểm tra đúng chủ sở hữu.
+     */
     public ContentDetail getEditableContent(int userId, int id) throws SQLException {
         return transaction(dao -> {
             TestActor actor = dao.actor(userId);
@@ -652,7 +662,10 @@ public final class TestService {
         });
     }
 
-    /** Cập nhật nguyên tử bộ đề chưa được giao; sau khi lưu luôn ở trạng thái ready. */
+    /**
+     * Cập nhật nguyên tử bộ đề chưa được giao; sau khi lưu luôn ở trạng thái
+     * ready.
+     */
     public void updateContentSet(int userId, int id, String title, String description, String type,
             List<QuestionDraft> questionDrafts) throws SQLException {
         final String checkedTitle = text(title, 200, true);

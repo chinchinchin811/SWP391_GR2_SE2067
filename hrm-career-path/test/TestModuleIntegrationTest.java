@@ -64,9 +64,13 @@ public class TestModuleIntegrationTest {
 
     private static int insertId(String sql, Object... values) throws SQLException {
         try (Connection conn = connection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            for (int i = 0; i < values.length; i++) ps.setObject(i + 1, values[i]);
+            for (int i = 0; i < values.length; i++) {
+                ps.setObject(i + 1, values[i]);
+            }
             try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) throw new SQLException("Insert did not return an id");
+                if (!rs.next()) {
+                    throw new SQLException("Insert did not return an id");
+                }
                 return rs.getInt(1);
             }
         }
@@ -134,7 +138,8 @@ public class TestModuleIntegrationTest {
     }
 
     /**
-     * Luồng nghiệp vụ, IDOR, state machine, file và transaction trên SQL Server.
+     * Luồng nghiệp vụ, IDOR, state machine, file và transaction trên SQL
+     * Server.
      */
     private static void runTests() throws Exception {
         TestService s = service(NOW);
@@ -432,7 +437,9 @@ public class TestModuleIntegrationTest {
                 String seed = Files.readString(seedPath, StandardCharsets.UTF_8);
                 int seedStart = seed.indexOf("-- 8. SEED DATA: KHO ĐỀ THI");
                 int seedEnd = seed.indexOf("\nGO", seedStart);
-                if (seedStart < 0 || seedEnd < 0) throw new IllegalStateException("Missing test question seed section");
+                if (seedStart < 0 || seedEnd < 0) {
+                    throw new IllegalStateException("Missing test question seed section");
+                }
                 String testSeed = seed.substring(seedStart, seedEnd);
                 sql(testSeed);
                 sql(testSeed);

@@ -15,7 +15,9 @@ public record TestAssignment(int id, int templateId, int assigneeId, String assi
         TestEvaluation evaluation, Integer contentId, String contentKind, String contentTitle,
         java.math.BigDecimal quizScore) {
 
-    /** Hạn cá nhân không bao giờ vượt quá giờ đóng chung của đợt giao bài. */
+    /**
+     * Hạn cá nhân không bao giờ vượt quá giờ đóng chung của đợt giao bài.
+     */
     public Instant submissionDeadline() {
         if (startedAt == null) {
             return null;

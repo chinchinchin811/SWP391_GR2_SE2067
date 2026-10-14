@@ -128,22 +128,23 @@
     </div>
 </main>
 <script>
-(function(){
-    var today = new Date().toISOString().slice(0, 10),
-        start = document.getElementById('startDate'),
-        end   = document.getElementById('endDate');
-    start.min = today;
-    end.min   = today;
-    start.addEventListener('change', function(){
-        end.min = start.value || today;
-        if (end.value && end.value < start.value) end.value = '';
-    });
-    document.getElementById('classForm').addEventListener('submit', function(e){
-        if (end.value && end.value < start.value){
-            e.preventDefault();
-            alert('Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.');
-        }
-    });
-})();
+    (function () {
+        var today = new Date().toISOString().slice(0, 10),
+                start = document.getElementById('startDate'),
+                end = document.getElementById('endDate');
+        start.min = today;
+        end.min = today;
+        start.addEventListener('change', function () {
+            end.min = start.value || today;
+            if (end.value && end.value < start.value)
+                end.value = '';
+        });
+        document.getElementById('classForm').addEventListener('submit', function (e) {
+            if (end.value && end.value < start.value) {
+                e.preventDefault();
+                alert('Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.');
+            }
+        });
+    })();
 </script>
 <jsp:include page="/views/common/footer.jsp" />
