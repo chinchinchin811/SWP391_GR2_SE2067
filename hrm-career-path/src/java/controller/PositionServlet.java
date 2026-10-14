@@ -38,20 +38,14 @@ public class PositionServlet extends HttpServlet {
             action = (currentUser.getRoleId() == 1) ? "requests" : "list";
         }
 
-        // Admin (role 1) chỉ xem danh sách hoặc duyệt đề xuất vị trí
-        if (currentUser.getRoleId() == 1 && !"requests".equals(action) && !"list".equals(action)) {
-            response.sendRedirect(request.getContextPath() + "/positions?action=requests");
-            return;
-        }
-
-        // Nhân viên không vào trang quản lý vị trí
+        // Nhân viên thường không vào trang quản lý vị trí
         if (currentUser.getRoleId() == 4) {
             response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + currentUser.getUserId());
             return;
         }
 
-        // Manager chỉ xem hoặc gửi đề xuất, không được tạo/sửa trực tiếp vị trí công ty
-        if (currentUser.getRoleId() == 3 && ("create".equals(action) || "edit".equals(action))) {
+        // HR (role 2) và Manager (role 3) không được trực tiếp tạo/sửa vị trí (chỉ Admin mới có quyền)
+        if ((currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3) && ("create".equals(action) || "edit".equals(action))) {
             response.sendRedirect(request.getContextPath() + "/positions");
             return;
         }
@@ -93,7 +87,7 @@ public class PositionServlet extends HttpServlet {
                 showEditForm(request, response);
                 break;
             default:
-                listPositions(request, response);
+                listPositions(request, response, currentUser);
                 break;
         }
     }
@@ -137,8 +131,8 @@ public class PositionServlet extends HttpServlet {
             return;
         }
 
-        // Chỉ HR mới được thêm/sửa/xóa vị trí trực tiếp
-        if (currentUser.getRoleId() != 2) {
+        // Chỉ Admin (role 1) mới được thêm/sửa/xóa vị trí trực tiếp
+        if (currentUser.getRoleId() != 1) {
             response.sendRedirect(request.getContextPath() + "/positions");
             return;
         }
@@ -214,7 +208,7 @@ public class PositionServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/positions?action=requests");
     }
 
-    private void listPositions(HttpServletRequest request, HttpServletResponse response)
+    private void listPositions(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws ServletException, IOException {
         String deptFilterStr = request.getParameter("departmentId");
         Integer deptFilter = null;
@@ -225,8 +219,23 @@ public class PositionServlet extends HttpServlet {
             }
         }
 
+        List<Department> departments;
+        // Nếu là Manager (role 3), chỉ xem vị trí trong phòng ban mình phụ trách
+        if (currentUser != null && currentUser.getRoleId() == 3) {
+            Department myDept = departmentDAO.getDepartmentByManagerId(currentUser.getUserId());
+            if (myDept != null) {
+                deptFilter = myDept.getDepartmentId();
+                departments = new java.util.ArrayList<>();
+                departments.add(myDept);
+            } else {
+                deptFilter = -1;
+                departments = new java.util.ArrayList<>();
+            }
+        } else {
+            departments = departmentDAO.getAllDepartments();
+        }
+
         List<Position> positions = positionDAO.getPositionsByDepartment(deptFilter);
-        List<Department> departments = departmentDAO.getAllDepartments();
         List<JobLevel> jobLevels = positionDAO.getAllJobLevels();
 
         request.setAttribute("positions", positions);

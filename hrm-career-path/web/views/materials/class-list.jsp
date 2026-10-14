@@ -3,7 +3,7 @@
 <%
     List<TrainingClass> classes = (List<TrainingClass>) request.getAttribute("classes");
     User currentUser = (User) session.getAttribute("currentUser");
-    boolean canManage = currentUser != null && currentUser.getRoleId() <= 3;
+    boolean canCreateClass = currentUser != null && (currentUser.getRoleId() == 3 || currentUser.getRoleId() == 1);
     request.setAttribute("pageTitle", "Quản lý lớp đào tạo | HRM");
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 %>
@@ -14,7 +14,7 @@
         <h1>Quản Lý Lớp Đào Tạo</h1>
         <div class="topbar-actions">
             <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials">Kho học liệu</a>
-            <% if (canManage) { %>
+            <% if (canCreateClass) { %>
             <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=classCreate">+ Mở lớp mới</a>
             <% } %>
         </div>

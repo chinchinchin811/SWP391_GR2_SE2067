@@ -8,7 +8,11 @@
 <%
     User emp = (User) request.getAttribute("employee");
     boolean isEdit = (emp != null && emp.getUserId() > 0);
-    request.setAttribute("pageTitle", (isEdit ? "Cập Nhật Nhân Sự" : "Khai Báo Nhân Sự Mới") + " | HRM");
+    User currentUser = (User) session.getAttribute("currentUser");
+    int currentUserRole = (currentUser != null) ? currentUser.getRoleId() : 4;
+    boolean isSelfEdit = (isEdit && currentUserRole == 4 && emp != null && emp.getUserId() == currentUser.getUserId());
+
+    request.setAttribute("pageTitle", (isSelfEdit ? "Cập Nhật Thông Tin Cá Nhân" : (isEdit ? "Cập Nhật Nhân Sự" : "Khai Báo Nhân Sự Mới")) + " | HRM");
 
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<Position> positions = (List<Position>) request.getAttribute("positions");
@@ -20,11 +24,17 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1><%= isEdit ? "Cập Nhật Hồ Sơ Nhân Viên" : "Khai Báo Nhân Viên Mới" %></h1>
+        <h1><%= isSelfEdit ? "Cập Nhật Thông Tin Cá Nhân" : (isEdit ? "Cập Nhật Hồ Sơ Nhân Viên" : "Khai Báo Nhân Viên Mới") %></h1>
         <div>
-            <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">
-                Quay lại danh sách
-            </a>
+            <% if (isSelfEdit) { %>
+                <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-secondary">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại hồ sơ
+                </a>
+            <% } else { %>
+                <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">
+                    Quay lại danh sách
+                </a>
+            <% } %>
         </div>
     </div>
 
@@ -75,7 +85,11 @@
                         <div class="form-group">
                             <label for="email">Email (*):</label>
                             <input type="email" id="email" name="email" class="form-control" 
-                                   value="<%= emp != null && emp.getEmail() != null ? emp.getEmail() : "" %>" required>
+                                   value="<%= emp != null && emp.getEmail() != null ? emp.getEmail() : "" %>" 
+                                   <%= isSelfEdit ? "readonly style='background: #f1f2f6; cursor: not-allowed;'" : "required" %>>
+                            <% if (isSelfEdit) { %>
+                                <small style="color: #64748b; font-size: 11px;"><i class="fa-solid fa-lock"></i> Email định danh nội bộ, bạn không thể tự thay đổi.</small>
+                            <% } %>
                         </div>
                     </div>
 
@@ -103,9 +117,41 @@
                     </div>
 
                     <div style="font-weight: bold; margin: 15px 0 10px; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-                        2. Phân quyền & Tổ chức
+                        <%= isSelfEdit ? "2. Thông tin phân bổ vị trí (Chỉ xem)" : "2. Phân quyền & Tổ chức" %>
                     </div>
 
+                    <% if (isSelfEdit) { %>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Vai trò:</label>
+                            <input type="hidden" name="roleId" value="<%= emp.getRoleId() %>">
+                            <div style="padding: 9px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; font-weight: 600; color: #1e293b;">
+                                <i class="fa-solid fa-id-card-clip" style="color: var(--primary);"></i> <%= emp.getRoleName() != null ? emp.getRoleName() : "EMPLOYEE" %>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Trạng thái:</label>
+                            <input type="hidden" name="status" value="<%= emp.isStatus() ? "1" : "0" %>">
+                            <div style="padding: 9px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; font-weight: 600; color: #16a34a;">
+                                <i class="fa-solid fa-circle-check"></i> <%= emp.isStatus() ? "Đang làm việc" : "Đã nghỉ việc" %>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Phòng ban hiện tại:</label>
+                            <div style="padding: 9px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; color: #334155;">
+                                <i class="fa-regular fa-building"></i> <%= emp.getDepartmentName() != null ? emp.getDepartmentName() : "Chưa phân bổ" %>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Vị trí chuyên môn:</label>
+                            <div style="padding: 9px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; color: #334155;">
+                                <i class="fa-solid fa-briefcase"></i> <%= emp.getPositionName() != null ? emp.getPositionName() : "Chưa phân bổ" %>
+                            </div>
+                        </div>
+                    </div>
+                    <% } else { %>
                     <div class="form-row">
                         <div class="form-group" style="<%= !isEdit ? "flex: 1;" : "" %>">
                             <label for="roleId">Vai trò (*):</label>
@@ -133,6 +179,7 @@
                         </div>
                         <% } %>
                     </div>
+                    <% } %>
 
                     <% if (!isEdit) { %>
                     <div class="form-row">

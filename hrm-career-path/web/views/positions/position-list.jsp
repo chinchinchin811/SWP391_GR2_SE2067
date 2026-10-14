@@ -24,9 +24,13 @@
     <div class="topbar">
         <h1>Tổ Chức Vị Trí Công Việc & Cấp Bậc</h1>
         <div>
-            <% if (roleId == 1 || roleId == 2) { %>
+            <% if (roleId == 1) { %>
                 <a href="<%= request.getContextPath() %>/positions?action=create" class="btn btn-primary">
-                    + Tạo Vị Trí Mới
+                    <i class="fa-solid fa-plus"></i> Tạo Vị Trí Mới
+                </a>
+            <% } else if (roleId == 3) { %>
+                <a href="<%= request.getContextPath() %>/positions?action=requestCreate" class="btn btn-primary">
+                    <i class="fa-solid fa-paper-plane"></i> Đề Xuất Vị Trí Mới
                 </a>
             <% } %>
         </div>
@@ -77,7 +81,7 @@
                                 <th>Phòng Ban</th>
                                 <th>Số Nhân Sự</th>
                                 <th>Trạng Thái</th>
-                                <% if (roleId == 1 || roleId == 2) { %>
+                                <% if (roleId == 1) { %>
                                     <th style="text-align: center; width: 110px;">Thao Tác</th>
                                 <% } %>
                             </tr>
@@ -108,7 +112,7 @@
                                         <span class="badge">Tạm khóa</span>
                                     <% } %>
                                 </td>
-                                <% if (roleId == 1 || roleId == 2) { %>
+                                <% if (roleId == 1) { %>
                                     <td>
                                         <div class="table-actions">
                                             <a href="<%= request.getContextPath() %>/positions?action=edit&amp;id=<%= p.getPositionId() %>" class="btn btn-sm btn-edit" aria-label="Sửa vị trí <%= p.getPositionName() %>">Sửa</a>
@@ -126,7 +130,7 @@
                                 } else {
                             %>
                             <tr>
-                                <td colspan="<%= (roleId == 1 || roleId == 2) ? "6" : "5" %>" style="text-align: center; padding: 15px;">Không có vị trí nào.</td>
+                                <td colspan="<%= (roleId == 1) ? "6" : "5" %>" style="text-align: center; padding: 15px;">Không có vị trí nào.</td>
                             </tr>
                             <% } %>
                         </tbody>

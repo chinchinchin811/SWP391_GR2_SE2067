@@ -302,6 +302,30 @@ public class UserDAO {
         return false;
     }
 
+    public boolean updateMyProfile(int userId, String fullName, String phone, String gender, Date dob) {
+        String sql = """
+            UPDATE Users 
+            SET full_name = ?, phone = ?, gender = ?, dob = ? 
+            WHERE user_id = ? AND is_deleted = 0
+            """;
+        try (Connection conn = DBContext.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, fullName);
+            ps.setString(2, phone);
+            ps.setString(3, gender);
+            if (dob != null) {
+                ps.setDate(4, dob);
+            } else {
+                ps.setNull(4, Types.DATE);
+            }
+            ps.setInt(5, userId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     // XOA MEM NHAN SU (Soft Delete)
     public boolean deleteEmployee(int id) {
         String sql = """

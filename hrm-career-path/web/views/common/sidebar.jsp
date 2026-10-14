@@ -40,23 +40,43 @@
 
             <% if (roleId == 1) { %>
             <li class="<%= currentURI.contains("/departments") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/departments"><i class="fa-regular fa-building nav-icon"></i> <span>Danh sách Phòng ban</span></a>
+                <a href="<%= request.getContextPath() %>/departments"><i class="fa-regular fa-building nav-icon"></i> <span>Quản lý Phòng ban</span></a>
             </li>
-            <li class="<%= currentURI.contains("/employees") ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/employees"><i class="fa-solid fa-address-book nav-icon"></i> <span>Danh sách Nhân viên</span></a>
+            <li class="<%= currentURI.contains("/positions") && !"requests".equals(action) ? "active" : "" %>">
+                <a href="<%= request.getContextPath() %>/positions"><i class="fa-solid fa-id-badge nav-icon"></i> <span>Vị trí &amp; Cấp bậc</span></a>
             </li>
             <li class="<%= currentURI.contains("/positions") && "requests".equals(action) ? "active" : "" %>">
                 <a href="<%= request.getContextPath() %>/positions?action=requests"><i class="fa-solid fa-clipboard-check nav-icon"></i> <span>Duyệt Đề Xuất Vị Trí</span></a>
             </li>
+            <li class="<%= currentURI.contains("/employees") ? "active" : "" %>">
+                <a href="<%= request.getContextPath() %>/employees"><i class="fa-solid fa-address-book nav-icon"></i> <span>Danh sách Nhân viên</span></a>
+            </li>
             <% } %>
 
-            <%-- Chỉ hiển thị mục này khi nhân viên thực sự đang được ghép cặp có Mentor hướng dẫn (đang là Mentee) --%>
+            <%-- Menu dành cho Nhân viên (role 4) --%>
+            <% if (roleId == 4 && user != null) { %>
+            <li class="<%= currentURI.contains("/employees") && (action == null || "detail".equals(action)) ? "active" : "" %>">
+                <a href="<%= request.getContextPath() %>/employees?action=detail&amp;id=<%= user.getUserId() %>">
+                    <i class="fa-solid fa-id-card nav-icon"></i> <span>Hồ Sơ Của Tôi</span>
+                </a>
+            </li>
+            <li class="<%= currentURI.contains("/employees") && "edit".equals(action) ? "active" : "" %>">
+                <a href="<%= request.getContextPath() %>/employees?action=edit">
+                    <i class="fa-solid fa-user-pen nav-icon"></i> <span>Cập Nhật Thông Tin</span>
+                </a>
+            </li>
+            <li class="<%= currentURI.contains("/transfer") ? "active" : "" %>">
+                <a href="<%= request.getContextPath() %>/transfer?action=myRequests">
+                    <i class="fa-solid fa-arrows-split-up-and-left nav-icon"></i> <span>Nguyện Vọng Điều Chuyển</span>
+                </a>
+            </li>
             <% if (isUserMentee) { %>
-            <li class="nav-item">
-                <a class="nav-link" href="<%= request.getContextPath() %>/mentors?action=myMentor">
+            <li class="<%= currentURI.contains("/mentors") && "myMentor".equals(action) ? "active" : "" %>">
+                <a href="<%= request.getContextPath() %>/mentors?action=myMentor">
                     <i class="fa-solid fa-user-tie nav-icon"></i> <span>Mentor Hướng Dẫn Của Tôi</span>
                 </a>
             </li>
+            <% } %>
             <% } %>
 
             <% if (roleId == 2) { %>
@@ -67,18 +87,15 @@
                 </button>
                 <ul class="sidebar-submenu" id="sidebar-organization">
                     <li class="<%= currentURI.contains("/departments") ? "active" : "" %>">
-                        <a href="<%= request.getContextPath() %>/departments"><i class="fa-regular fa-building nav-icon"></i> <span>Quản lý Phòng Ban</span></a>
+                        <a href="<%= request.getContextPath() %>/departments"><i class="fa-regular fa-building nav-icon"></i> <span>Danh bạ Phòng Ban (Xem)</span></a>
                     </li>
-                    <li class="<%= currentURI.contains("/positions") && !"requests".equals(action) ? "active" : "" %>">
-                        <a href="<%= request.getContextPath() %>/positions"><i class="fa-solid fa-id-badge nav-icon"></i> <span>Vị trí &amp; Cấp bậc</span></a>
-                    </li>
-                    <li class="<%= currentURI.contains("/positions") && "requests".equals(action) ? "active" : "" %>">
-                        <a href="<%= request.getContextPath() %>/positions?action=requests"><i class="fa-solid fa-list-check nav-icon"></i> <span>Duyệt Đề Xuất Vị Trí</span></a>
+                    <li class="<%= currentURI.contains("/positions") ? "active" : "" %>">
+                        <a href="<%= request.getContextPath() %>/positions"><i class="fa-solid fa-id-badge nav-icon"></i> <span>Vị trí &amp; Cấp bậc (Xem)</span></a>
                     </li>
                 </ul>
             </li>
 
-            <li class="sidebar-section <%= employeeActive ? "has-active" : "" %>" data-sidebar-section="employees">
+            <li class="sidebar-section <%= (employeeActive || currentURI.contains("/transfer")) ? "has-active" : "" %>" data-sidebar-section="employees">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-employees">
                     <span><i class="fa-solid fa-users-gear nav-cat-icon"></i> Quản trị Nhân sự</span>
                     <span class="sidebar-menu-category-icon" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
@@ -90,6 +107,9 @@
                     <li class="<%= currentURI.contains("/employees") && "create".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/employees?action=create"><i class="fa-solid fa-user-plus nav-icon"></i> <span>Khai báo Nhân viên mới</span></a>
                     </li>
+                    <li class="<%= currentURI.contains("/transfer") && "hrRequests".equals(action) ? "active" : "" %>">
+                        <a href="<%= request.getContextPath() %>/transfer?action=hrRequests"><i class="fa-solid fa-people-arrows nav-icon"></i> <span>Điều Chuyển Nhân Sự</span></a>
+                    </li>
                     <li class="<%= currentURI.contains("/mentors") && "pair".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/mentors?action=pair"><i class="fa-solid fa-handshake nav-icon"></i> <span>Ghép Nối Mentor</span></a>
                     </li>
@@ -100,7 +120,7 @@
             </li>
            
             <% } else if (roleId == 3) { %>
-            <li class="sidebar-section <%= (organizationActive || employeeActive) ? "has-active" : "" %>" data-sidebar-section="managed-department">
+            <li class="sidebar-section <%= (organizationActive || employeeActive || currentURI.contains("/transfer")) ? "has-active" : "" %>" data-sidebar-section="managed-department">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-managed-department">
                     <span><i class="fa-solid fa-building-user nav-cat-icon"></i> Phòng Ban Phụ Trách</span>
                     <span class="sidebar-menu-category-icon" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
@@ -113,10 +133,13 @@
                         <a href="<%= request.getContextPath() %>/employees"><i class="fa-solid fa-users nav-icon"></i> <span>Nhân viên trực thuộc</span></a>
                     </li>
                     <li class="<%= currentURI.contains("/positions") && !"myRequests".equals(action) && !"requestCreate".equals(action) ? "active" : "" %>">
-                        <a href="<%= request.getContextPath() %>/positions"><i class="fa-solid fa-id-badge nav-icon"></i> <span>Vị trí cấp bậc</span></a>
+                        <a href="<%= request.getContextPath() %>/positions"><i class="fa-solid fa-id-badge nav-icon"></i> <span>Vị trí phòng ban</span></a>
                     </li>
                     <li class="<%= currentURI.contains("/positions") && ("myRequests".equals(action) || "requestCreate".equals(action)) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/positions?action=myRequests"><i class="fa-solid fa-paper-plane nav-icon"></i> <span>Đề Xuất Vị Trí Mới</span></a>
+                    </li>
+                    <li class="<%= currentURI.contains("/transfer") && "managerRequests".equals(action) ? "active" : "" %>">
+                        <a href="<%= request.getContextPath() %>/transfer?action=managerRequests"><i class="fa-solid fa-clipboard-check nav-icon"></i> <span>Duyệt Đề Xuất Điều Chuyển</span></a>
                     </li>
                 </ul>
             </li>

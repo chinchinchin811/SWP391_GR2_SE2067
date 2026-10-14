@@ -93,7 +93,7 @@ public class MaterialServlet extends HttpServlet {
             return;
         }
         if ("classCreate".equals(a)) {
-            if (!canManage(u)) {
+            if (u.getRoleId() != 3 && u.getRoleId() != 1) {
                 deny(s, q);
                 return;
             }
@@ -139,6 +139,10 @@ public class MaterialServlet extends HttpServlet {
             return;
         }
         if ("saveClass".equals(a)) {
+            if (u.getRoleId() != 3 && u.getRoleId() != 1) {
+                deny(s, q);
+                return;
+            }
             TrainingClass c = new TrainingClass();
             c.setClassCode(q.getParameter("classCode"));
             c.setClassName(q.getParameter("className"));

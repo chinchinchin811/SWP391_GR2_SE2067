@@ -152,6 +152,31 @@ CREATE INDEX IX_PosReq_Dept_Status ON dbo.Position_Requests(department_id, statu
 GO
 
 -- =======================================================
+-- 5.2. BẢNG ĐỀ XUẤT ĐIỀU CHUYỂN VỊ TRÍ (TRANSFER_REQUESTS)
+-- Luồng: Employee đề xuất -> Manager duyệt -> HR thực thi điều chuyển
+-- =======================================================
+CREATE TABLE dbo.Transfer_Requests (
+    request_id INT IDENTITY(1,1) PRIMARY KEY,
+    employee_id INT NOT NULL REFERENCES dbo.Users(user_id),
+    current_department_id INT NOT NULL REFERENCES dbo.Departments(department_id),
+    current_position_id INT NULL REFERENCES dbo.Positions(position_id),
+    target_department_id INT NOT NULL REFERENCES dbo.Departments(department_id),
+    target_position_id INT NULL REFERENCES dbo.Positions(position_id),
+    reason NVARCHAR(1000) NOT NULL,
+    manager_status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (manager_status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    manager_note NVARCHAR(1000) NULL,
+    manager_reviewed_by INT NULL REFERENCES dbo.Users(user_id),
+    manager_reviewed_at DATETIME NULL,
+    hr_status VARCHAR(20) NOT NULL DEFAULT 'WAITING_MANAGER' CHECK (hr_status IN ('WAITING_MANAGER', 'PENDING', 'COMPLETED', 'REJECTED')),
+    hr_note NVARCHAR(1000) NULL,
+    hr_reviewed_by INT NULL REFERENCES dbo.Users(user_id),
+    hr_reviewed_at DATETIME NULL,
+    created_at DATETIME DEFAULT GETDATE()
+);
+CREATE INDEX IX_TransferReq_Status ON dbo.Transfer_Requests(manager_status, hr_status);
+GO
+
+-- =======================================================
 -- 6. BẢNG LỊCH SỬ BIẾN ĐỘNG (EMPLOYEE_HISTORY)
 -- =======================================================
 CREATE TABLE dbo.Employee_History (

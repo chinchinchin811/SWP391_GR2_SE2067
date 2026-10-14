@@ -48,18 +48,18 @@ public class EmployeeServlet extends HttpServlet {
             return;
         }
 
-        // Nhân viên thường (role 4): Chỉ được xem hồ sơ của chính mình
+        // Nhân viên thường (role 4): Được xem hồ sơ của chính mình hoặc tự sửa hồ sơ của mình
         if (currentUser.getRoleId() == 4) {
-            if ("detail".equals(action)) {
-                showDetail(request, response, currentUser.getUserId());
+            if ("edit".equals(action)) {
+                showEditForm(request, response, currentUser);
             } else {
                 showDetail(request, response, currentUser.getUserId());
             }
             return;
         }
 
-        // Manager (role 3): Không được vào trang tạo nhân sự mới
-        if (currentUser.getRoleId() == 3 && ("create".equals(action) || "assign".equals(action))) {
+        // Manager (role 3): Chỉ được xem danh sách hoặc xem chi tiết nhân sự phòng ban mình
+        if (currentUser.getRoleId() == 3 && !"list".equals(action) && !"detail".equals(action)) {
             response.sendRedirect(request.getContextPath() + "/employees");
             return;
         }
@@ -110,19 +110,23 @@ public class EmployeeServlet extends HttpServlet {
             return;
         }
 
-        // Nhân viên thường không có quyền thao tác dữ liệu
-        if (currentUser.getRoleId() == 4) {
-            response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + currentUser.getUserId());
-            return;
-        }
-
         String action = request.getParameter("action");
         if (action == null) {
             action = "list";
         }
 
-        // Manager không có quyền tạo hoặc phân bổ vị trí nhân sự
-        if (currentUser.getRoleId() == 3 && ("create".equals(action) || "assign".equals(action))) {
+        // Nhân viên thường (role 4): Chỉ được tự sửa hồ sơ của chính mình
+        if (currentUser.getRoleId() == 4) {
+            if ("edit".equals(action)) {
+                updateMyProfile(request, response, currentUser);
+                return;
+            }
+            response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + currentUser.getUserId());
+            return;
+        }
+
+        // Manager không có quyền tạo, sửa hồ sơ hoặc phân bổ vị trí nhân sự (chỉ xem)
+        if (currentUser.getRoleId() == 3) {
             response.sendRedirect(request.getContextPath() + "/employees");
             return;
         }
@@ -197,19 +201,23 @@ public class EmployeeServlet extends HttpServlet {
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws ServletException, IOException {
-        String idStr = request.getParameter("id");
-        if (idStr != null) {
-            try {
-                int id = Integer.parseInt(idStr);
-                User user = userDAO.getUserById(id);
-                if (user != null) {
-                    request.setAttribute("employee", user);
-                    loadFormData(request);
-                    request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
-                    return;
+        int id = (currentUser != null) ? currentUser.getUserId() : 0;
+        // Nếu không phải là Employee tự sửa, lấy ID từ tham số
+        if (currentUser != null && currentUser.getRoleId() != 4) {
+            String idStr = request.getParameter("id");
+            if (idStr != null) {
+                try {
+                    id = Integer.parseInt(idStr);
+                } catch (NumberFormatException ignored) {
                 }
-            } catch (NumberFormatException ignored) {
             }
+        }
+        User user = userDAO.getUserById(id);
+        if (user != null) {
+            request.setAttribute("employee", user);
+            loadFormData(request);
+            request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+            return;
         }
         response.sendRedirect(request.getContextPath() + "/employees");
     }
@@ -473,6 +481,38 @@ public class EmployeeServlet extends HttpServlet {
         } catch (NumberFormatException e) {
             response.sendRedirect(request.getContextPath() + "/employees");
         }
+    }
+
+    private void updateMyProfile(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws ServletException, IOException {
+        String fullName = request.getParameter("fullName");
+        String phone = request.getParameter("phone");
+        String gender = request.getParameter("gender");
+        String dobStr = request.getParameter("dob");
+
+        if (fullName == null || fullName.trim().isEmpty()) {
+            request.setAttribute("error", "Họ và tên không được để trống!");
+            showEditForm(request, response, currentUser);
+            return;
+        }
+
+        java.sql.Date dob = null;
+        if (dobStr != null && !dobStr.isEmpty()) {
+            try {
+                dob = java.sql.Date.valueOf(dobStr);
+            } catch (IllegalArgumentException ignored) {}
+        }
+
+        boolean ok = userDAO.updateMyProfile(currentUser.getUserId(), fullName.trim(), phone != null ? phone.trim() : null, gender, dob);
+        if (ok) {
+            currentUser.setFullName(fullName.trim());
+            request.getSession().setAttribute("currentUser", currentUser);
+            request.getSession().setAttribute("successMessage", "Cập nhật thông tin cá nhân thành công!");
+            response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + currentUser.getUserId());
+            return;
+        }
+        request.setAttribute("error", "Cập nhật hồ sơ thất bại!");
+        showEditForm(request, response, currentUser);
     }
 
     private void assignEmployee(HttpServletRequest request, HttpServletResponse response, User currentUser)

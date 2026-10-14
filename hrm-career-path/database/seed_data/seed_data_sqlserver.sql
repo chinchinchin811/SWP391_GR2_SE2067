@@ -584,6 +584,19 @@ VALUES (3, 1, N'Scrum Master Fulltime', N'Điều phối quy trình Agile Scrum 
 GO
 
 -- =======================================================
+-- 8.2. SEED DATA: ĐỀ XUẤT ĐIỀU CHUYỂN VỊ TRÍ CỦA NHÂN VIÊN (TRANSFER_REQUESTS)
+-- Luồng: Employee gửi -> Manager duyệt -> HR thực thi
+-- =======================================================
+-- Đơn 1: Nhân viên gửi lên, đang chờ Trưởng phòng duyệt
+INSERT INTO dbo.Transfer_Requests (employee_id, current_department_id, current_position_id, target_department_id, target_position_id, reason, manager_status, hr_status, created_at)
+VALUES (4, 1, 1, 1, 2, N'Em đã hoàn thành các khóa đào tạo nâng cao về React và UI/UX, mong muốn được thử sức ở vị trí Frontend Developer.', 'PENDING', 'WAITING_MANAGER', DATEADD(DAY, -2, GETDATE()));
+
+-- Đơn 2: Trưởng phòng đã duyệt đồng ý, đang chờ HR xử lý điều chuyển
+INSERT INTO dbo.Transfer_Requests (employee_id, current_department_id, current_position_id, target_department_id, target_position_id, reason, manager_status, manager_note, manager_reviewed_by, manager_reviewed_at, hr_status, created_at)
+VALUES (5, 1, 1, 1, 2, N'Nguyện vọng chuyển sang mảng Frontend sau khi đạt kết quả tốt bài test Onboarding.', 'APPROVED', N'Đồng ý với nguyện vọng của nhân sự. Kỹ năng JavaScript và React rất tốt.', 3, DATEADD(DAY, -1, GETDATE()), 'PENDING', DATEADD(DAY, -5, GETDATE()));
+GO
+
+-- =======================================================
 -- 10. KIỂM TRA DỮ LIỆU ĐÃ NẠP: SELECT * FROM TẤT CẢ CÁC BẢNG
 -- =======================================================
 SELECT * FROM dbo.Roles;
@@ -591,6 +604,7 @@ SELECT * FROM dbo.Job_Levels;
 SELECT * FROM dbo.Departments;
 SELECT * FROM dbo.Positions;
 SELECT * FROM dbo.Position_Requests;
+SELECT * FROM dbo.Transfer_Requests;
 SELECT * FROM dbo.Users;
 SELECT * FROM dbo.Employee_History;
 SELECT * FROM dbo.FlashcardDecks;
