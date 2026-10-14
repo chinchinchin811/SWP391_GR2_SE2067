@@ -20,7 +20,7 @@
     <div class="topbar">
         <h1><%= (roleId == 3) ? "Thông Tin Phòng Ban Phụ Trách" : "Cơ Cấu Tổ Chức Phòng Ban" %></h1>
         <div>
-            <% if (roleId == 1 || roleId == 2) { %>
+            <% if (roleId == 1) { %>
                 <a href="<%= request.getContextPath() %>/departments?action=create" class="btn btn-primary">
                     + Tạo Phòng Ban Mới
                 </a>
@@ -30,10 +30,10 @@
 
     <div class="content-body">
         <% if (successMessage != null) { %>
-            <div class="alert alert-success"><%= successMessage %></div>
+        <div class="alert alert-success"><%= successMessage %></div>
         <% } %>
         <% if (errorMessage != null) { %>
-            <div class="alert alert-danger"><%= errorMessage %></div>
+        <div class="alert alert-danger"><%= errorMessage %></div>
         <% } %>
 
         <div class="card">
@@ -51,7 +51,7 @@
                             <th>Mô Tả Chức Năng</th>
                             <th>Số Nhân Sự</th>
                             <th>Trạng Thái</th>
-                            <% if (roleId == 1 || roleId == 2) { %>
+                            <% if (roleId == 1) { %>
                                 <th style="text-align: center; width: 140px;">Thao Tác</th>
                             <% } %>
                         </tr>
@@ -66,19 +66,19 @@
                             <td><b><%= d.getDepartmentName() %></b></td>
                             <td>
                                 <% if (d.getManagerName() != null && !d.getManagerName().trim().isEmpty() && !"Chưa bổ nhiệm".equalsIgnoreCase(d.getManagerName().trim())) { %>
-                                    <div class="user-cell">
-                                        <div class="avatar-sm">
-                                            <%= d.getManagerName().substring(0, 1).toUpperCase() %>
-                                        </div>
-                                        <div>
-                                            <div class="user-fullname"><%= d.getManagerName() %></div>
-                                            <div class="user-sub"><span class="badge badge-manager" style="font-size: 10px; padding: 1px 6px;">Trưởng phòng</span></div>
-                                        </div>
+                                <div class="user-cell">
+                                    <div class="avatar-sm">
+                                        <%= d.getManagerName().substring(0, 1).toUpperCase() %>
                                     </div>
+                                    <div>
+                                        <div class="user-fullname"><%= d.getManagerName() %></div>
+                                        <div class="user-sub"><span class="badge badge-manager" style="font-size: 10px; padding: 1px 6px;">Trưởng phòng</span></div>
+                                    </div>
+                                </div>
                                 <% } else { %>
-                                    <span class="badge" style="background: #f1f5f9; color: #64748b; border-color: #e2e8f0;">
-                                        <i class="fa-regular fa-clock" style="font-size: 10px;"></i> Chưa bổ nhiệm
-                                    </span>
+                                <span class="badge" style="background: #f1f5f9; color: #64748b; border-color: #e2e8f0;">
+                                    <i class="fa-regular fa-clock" style="font-size: 10px;"></i> Chưa bổ nhiệm
+                                </span>
                                 <% } %>
                             </td>
                             <td><%= d.getDescription() != null ? d.getDescription() : "-" %></td>
@@ -89,12 +89,12 @@
                             </td>
                             <td>
                                 <% if (d.isStatus()) { %>
-                                    <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Hoạt động</span>
+                                <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Hoạt động</span>
                                 <% } else { %>
-                                    <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Tạm ngưng</span>
+                                <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Tạm ngưng</span>
                                 <% } %>
                             </td>
-                            <% if (roleId == 1 || roleId == 2) { %>
+                            <% if (roleId == 1) { %>
                                 <td>
                                     <div class="table-actions">
                                         <a href="<%= request.getContextPath() %>/departments?action=edit&amp;id=<%= d.getDepartmentId() %>" class="btn btn-sm btn-action-edit" aria-label="Sửa phòng ban <%= d.getDepartmentName() %>">
@@ -116,7 +116,7 @@
                             } else {
                         %>
                         <tr>
-                            <td colspan="<%= (roleId == 1 || roleId == 2) ? "7" : "6" %>" style="text-align: center; padding: 15px;">Chưa có phòng ban nào.</td>
+                            <td colspan="<%= roleId == 1 ? "7" : "6" %>" style="text-align: center; padding: 15px;">Chưa có phòng ban nào.</td>
                         </tr>
                         <% } %>
                     </tbody>

@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller;
 
 import java.io.IOException;
@@ -13,6 +9,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import dal.FlashcardDAO;
 import model.Flashcard.Flashcard;
 import model.Flashcard.FlashcardDeck;
+import model.User;
+import jakarta.servlet.http.HttpSession;
 import java.util.List;
 
 /**
@@ -59,6 +57,18 @@ public class FlashcardServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("currentUser") == null) {
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser.getRoleId() == 1) {
+            response.sendRedirect(request.getContextPath() + "/departments");
+            return;
+        }
+
         FlashcardDAO dao = new FlashcardDAO();
         List<FlashcardDeck> decks;
         try {
@@ -77,7 +87,7 @@ public class FlashcardServlet extends HttpServlet {
                 currentDeckId = -1;
             }
         }
-        
+
         if (currentDeckId == -1 && decks != null && !decks.isEmpty()) {
             currentDeckId = decks.get(0).getDeckId();
         }

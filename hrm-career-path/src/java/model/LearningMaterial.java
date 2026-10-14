@@ -329,10 +329,15 @@ public class LearningMaterial implements Serializable {
         return null;
     }
 
-    /** Returns a browser-friendly embed URL for public Google Slides/Drive or Office links. */
+    /**
+     * Returns a browser-friendly embed URL for public Google Slides/Drive or
+     * Office links.
+     */
     public String getSlideEmbedUrl() {
         String url = getMaterialUrl();
-        if (url == null || url.trim().isEmpty()) return null;
+        if (url == null || url.trim().isEmpty()) {
+            return null;
+        }
         url = url.trim();
         if (url.contains("docs.google.com/presentation/")) {
             return url.replaceFirst("/(edit|view)(\\?.*)?$", "/embed");
@@ -340,7 +345,9 @@ public class LearningMaterial implements Serializable {
         if (url.contains("drive.google.com/file/")) {
             return url.replaceFirst("/(view|edit)(\\?.*)?$", "/preview");
         }
-        if (url.contains("view.officeapps.live.com") || url.contains("office.com")) return url;
+        if (url.contains("view.officeapps.live.com") || url.contains("office.com")) {
+            return url;
+        }
         if (url.matches("(?i)^https?://.*\\.(ppt|pptx)(\\?.*)?$")) {
             return "https://view.officeapps.live.com/op/embed.aspx?src="
                     + URLEncoder.encode(url, StandardCharsets.UTF_8);
@@ -348,7 +355,10 @@ public class LearningMaterial implements Serializable {
         return url;
     }
 
-    /** Returns a browser-friendly embed URL for public PDF online links (Google Drive, Docs, direct PDF). */
+    /**
+     * Returns a browser-friendly embed URL for public PDF online links (Google
+     * Drive, Docs, direct PDF).
+     */
     public String getPdfEmbedUrl() {
         String url = getMaterialUrl();
         if (url == null || url.trim().isEmpty()) {
@@ -361,7 +371,9 @@ public class LearningMaterial implements Serializable {
             int end = url.indexOf('/', start);
             String fileId = end != -1 ? url.substring(start, end) : url.substring(start);
             int q = fileId.indexOf('?');
-            if (q != -1) fileId = fileId.substring(0, q);
+            if (q != -1) {
+                fileId = fileId.substring(0, q);
+            }
             return "https://drive.google.com/file/d/" + fileId + "/preview";
         }
         // Google Drive id=...
@@ -369,7 +381,9 @@ public class LearningMaterial implements Serializable {
             int start = url.indexOf("id=") + 3;
             String fileId = url.substring(start);
             int amp = fileId.indexOf('&');
-            if (amp != -1) fileId = fileId.substring(0, amp);
+            if (amp != -1) {
+                fileId = fileId.substring(0, amp);
+            }
             return "https://drive.google.com/file/d/" + fileId + "/preview";
         }
         // Google Docs link
@@ -383,7 +397,10 @@ public class LearningMaterial implements Serializable {
         return url;
     }
 
-    /** Returns Google Docs Viewer embed URL as a reliable cross-origin fallback for web PDFs. */
+    /**
+     * Returns Google Docs Viewer embed URL as a reliable cross-origin fallback
+     * for web PDFs.
+     */
     public String getGoogleDocsViewerUrl() {
         String url = getMaterialUrl();
         if (url == null || url.trim().isEmpty()) {

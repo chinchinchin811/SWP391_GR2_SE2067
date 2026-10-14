@@ -1,7 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+
 package dal;
 
 import model.Flashcard.Flashcard;
@@ -29,6 +26,25 @@ public class FlashcardDAO {
             }
         } catch (SQLException e) {
             throw new IllegalStateException("Khong the tai danh sach bo Flashcard", e);
+        }
+        return list;
+    }
+
+    public List<FlashcardDeck> getCultureDecks() {
+        List<FlashcardDeck> list = new ArrayList<>();
+        String sql = "SELECT deck_id, title, description FROM dbo.FlashcardDecks "
+                + "WHERE title = N'Văn hóa công ty' "
+                + "ORDER BY created_at DESC, deck_id DESC";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                FlashcardDeck d = new FlashcardDeck();
+                d.setDeckId(rs.getInt("deck_id"));
+                d.setTitle(rs.getString("title"));
+                d.setDescription(rs.getString("description"));
+                list.add(d);
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Khong the tai danh sach Flashcard van hoa cong ty", e);
         }
         return list;
     }

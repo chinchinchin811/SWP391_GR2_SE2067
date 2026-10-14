@@ -17,14 +17,32 @@ public class RoleDAO {
             FROM Roles 
             ORDER BY role_id ASC
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Role r = new Role(
-                    rs.getInt("role_id"),
-                    rs.getString("role_name"),
-                    rs.getString("description")
+                        rs.getInt("role_id"),
+                        rs.getString("role_name"),
+                        rs.getString("description")
+                );
+                list.add(r);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<Role> getRolesForEmployeeForm(boolean includeAdmin) {
+        List<Role> list = new ArrayList<>();
+        String sql = includeAdmin
+                ? "SELECT role_id, role_name, description FROM Roles ORDER BY role_id ASC"
+                : "SELECT role_id, role_name, description FROM Roles WHERE role_id != 1 ORDER BY role_id ASC";
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                Role r = new Role(
+                        rs.getInt("role_id"),
+                        rs.getString("role_name"),
+                        rs.getString("description")
                 );
                 list.add(r);
             }

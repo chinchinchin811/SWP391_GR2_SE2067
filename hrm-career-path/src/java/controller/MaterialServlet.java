@@ -23,6 +23,10 @@ public class MaterialServlet extends HttpServlet {
         if (u == null) {
             return;
         }
+        if (u.getRoleId() == 1) {
+            s.sendRedirect(q.getContextPath() + "/departments");
+            return;
+        }
         String a = param(q, "action", "list");
         if ("download".equals(a) || "preview".equals(a)) {
             stream(q, s);
@@ -116,7 +120,7 @@ public class MaterialServlet extends HttpServlet {
             return;
         }
         if ("classCreate".equals(a)) {
-            if (!canManage(u)) {
+            if (u.getRoleId() != 3 && u.getRoleId() != 1) {
                 deny(s, q);
                 return;
             }
@@ -151,6 +155,10 @@ public class MaterialServlet extends HttpServlet {
     protected void doPost(HttpServletRequest q, HttpServletResponse s) throws ServletException, IOException {
         User u = current(q, s);
         if (u == null) {
+            return;
+        }
+        if (u.getRoleId() == 1) {
+            s.sendRedirect(q.getContextPath() + "/departments");
             return;
         }
         String a = param(q, "action", "");
@@ -188,6 +196,10 @@ public class MaterialServlet extends HttpServlet {
             return;
         }
         if ("saveClass".equals(a)) {
+            if (u.getRoleId() != 3 && u.getRoleId() != 1) {
+                deny(s, q);
+                return;
+            }
             TrainingClass c = new TrainingClass();
             c.setClassCode(q.getParameter("classCode"));
             c.setClassName(q.getParameter("className"));

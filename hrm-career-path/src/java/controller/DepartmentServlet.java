@@ -40,8 +40,8 @@ public class DepartmentServlet extends HttpServlet {
             action = "list";
         }
 
-        // Manager chỉ được xem danh sách phòng ban của mình, không được tạo/sửa/xóa
-        if (currentUser.getRoleId() == 3 && ("create".equals(action) || "edit".equals(action))) {
+        // HR và Manager chỉ được xem danh sách phòng ban, không được tạo/sửa/xóa
+        if ((currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3) && ("create".equals(action) || "edit".equals(action))) {
             response.sendRedirect(request.getContextPath() + "/departments");
             return;
         }
@@ -73,8 +73,8 @@ public class DepartmentServlet extends HttpServlet {
 
         User currentUser = (User) session.getAttribute("currentUser");
 
-        // Chỉ HR (role 2) và Admin (role 1) mới có quyền tạo/sửa/xóa phòng ban hoặc gán manager
-        if (currentUser.getRoleId() > 2) {
+        // Chỉ Admin (role 1) mới có quyền tạo/sửa/xóa phòng ban hoặc gán manager
+        if (currentUser.getRoleId() != 1) {
             response.sendRedirect(request.getContextPath() + "/departments");
             return;
         }
@@ -114,7 +114,7 @@ public class DepartmentServlet extends HttpServlet {
                 departments.add(myDept);
             }
         } else {
-            // HR / Admin: Xem tất cả
+            // HR: Xem tất cả
             departments = departmentDAO.getAllDepartments();
         }
 

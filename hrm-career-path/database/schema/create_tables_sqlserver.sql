@@ -30,7 +30,7 @@ GO
 -- =======================================================
 CREATE TABLE dbo.Roles (
     role_id INT IDENTITY(1,1) PRIMARY KEY,
-    role_name VARCHAR(50) NOT NULL UNIQUE, -- 'ADMIN', 'HR', 'MANAGER', 'EMPLOYEE', 'MENTOR'
+    role_name VARCHAR(50) NOT NULL UNIQUE, -- 'ADMIN', 'HR', 'MANAGER', 'EMPLOYEE'
     description NVARCHAR(255) NULL
 );
 GO
@@ -113,6 +113,69 @@ ADD CONSTRAINT FK_Departments_Manager FOREIGN KEY (manager_id)
     REFERENCES dbo.Users(user_id);
 GO
 
+-- RÀNG BUỘC TOÀN VẸN NGHIỆP VỤ (UNIQUE FILTERED INDEXES)
+-- 1. Toàn bộ hệ thống chỉ có DUY NHẤT 1 Quản trị viên (ADMIN - role_id = 1)
+CREATE UNIQUE NONCLUSTERED INDEX UQ_Users_SingleAdmin 
+ON dbo.Users(role_id) 
+WHERE role_id = 1 AND is_deleted = 0;
+GO
+
+-- 2. Mỗi phòng ban chỉ có DUY NHẤT 1 Trưởng phòng (MANAGER - role_id = 3)
+CREATE UNIQUE NONCLUSTERED INDEX UQ_Users_SingleManagerPerDept 
+ON dbo.Users(department_id) 
+WHERE role_id = 3 AND is_deleted = 0 AND department_id IS NOT NULL;
+GO
+
+-- 3. Mỗi Trưởng phòng chỉ phụ trách tối đa 1 phòng ban
+CREATE UNIQUE NONCLUSTERED INDEX UQ_Departments_SingleManager 
+ON dbo.Departments(manager_id) 
+WHERE manager_id IS NOT NULL AND is_deleted = 0;
+GO
+
+-- =======================================================
+-- 5.1. BẢNG ĐỀ XUẤT VỊ TRÍ MỚI (POSITION_REQUESTS)
+-- =======================================================
+CREATE TABLE dbo.Position_Requests (
+    request_id INT IDENTITY(1,1) PRIMARY KEY,
+    manager_id INT NOT NULL REFERENCES dbo.Users(user_id),
+    department_id INT NOT NULL REFERENCES dbo.Departments(department_id),
+    position_name NVARCHAR(100) NOT NULL,
+    description NVARCHAR(500) NULL,
+    reason NVARCHAR(1000) NOT NULL, -- Lý do đề xuất của Trưởng phòng
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    decision_note NVARCHAR(1000) NULL, -- Giải trình quyết định của Admin (Accept / Explain decision)
+    reviewed_by INT NULL REFERENCES dbo.Users(user_id), -- Admin duyệt/từ chối
+    created_at DATETIME DEFAULT GETDATE(),
+    reviewed_at DATETIME NULL
+);
+CREATE INDEX IX_PosReq_Dept_Status ON dbo.Position_Requests(department_id, status);
+GO
+
+-- =======================================================
+-- 5.2. BẢNG ĐỀ XUẤT ĐIỀU CHUYỂN VỊ TRÍ (TRANSFER_REQUESTS)
+-- Luồng: Employee đề xuất -> Manager duyệt -> HR thực thi điều chuyển
+-- =======================================================
+CREATE TABLE dbo.Transfer_Requests (
+    request_id INT IDENTITY(1,1) PRIMARY KEY,
+    employee_id INT NOT NULL REFERENCES dbo.Users(user_id),
+    current_department_id INT NOT NULL REFERENCES dbo.Departments(department_id),
+    current_position_id INT NULL REFERENCES dbo.Positions(position_id),
+    target_department_id INT NOT NULL REFERENCES dbo.Departments(department_id),
+    target_position_id INT NULL REFERENCES dbo.Positions(position_id),
+    reason NVARCHAR(1000) NOT NULL,
+    manager_status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (manager_status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    manager_note NVARCHAR(1000) NULL,
+    manager_reviewed_by INT NULL REFERENCES dbo.Users(user_id),
+    manager_reviewed_at DATETIME NULL,
+    hr_status VARCHAR(20) NOT NULL DEFAULT 'WAITING_MANAGER' CHECK (hr_status IN ('WAITING_MANAGER', 'PENDING', 'COMPLETED', 'REJECTED')),
+    hr_note NVARCHAR(1000) NULL,
+    hr_reviewed_by INT NULL REFERENCES dbo.Users(user_id),
+    hr_reviewed_at DATETIME NULL,
+    created_at DATETIME DEFAULT GETDATE()
+);
+CREATE INDEX IX_TransferReq_Status ON dbo.Transfer_Requests(manager_status, hr_status);
+GO
+
 -- =======================================================
 -- 6. BẢNG LỊCH SỬ BIẾN ĐỘNG (EMPLOYEE_HISTORY)
 -- =======================================================
@@ -186,8 +249,10 @@ CREATE TABLE dbo.MentorEvaluations (
     evaluation_id INT IDENTITY(1,1) PRIMARY KEY,
     assignment_id INT NOT NULL,
     evaluator_id INT NOT NULL,
-    performance_score INT,
+    performance_score INT CHECK (performance_score BETWEEN 1 AND 10),
     feedback NVARCHAR(MAX),
+    public_feedback NVARCHAR(MAX) NULL,   -- Non-anonymous feedback (Mentee xem được)
+    private_feedback NVARCHAR(MAX) NULL,  -- Anonymous / Nội bộ (Chỉ Mentor, Manager, HR xem)
     approval_status VARCHAR(20) DEFAULT 'PENDING',
     evaluation_date DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (assignment_id) REFERENCES dbo.MentorAssignments(assignment_id)
@@ -357,17 +422,66 @@ END;
 
 IF OBJECT_ID('dbo.Test_Questions', 'U') IS NULL
 BEGIN
-    CREATE TABLE dbo.Test_Questions (
+    EXEC(N'
+        CREATE TABLE dbo.Test_Questions (
+            id INT IDENTITY PRIMARY KEY,
+            content_id INT NOT NULL REFERENCES dbo.Test_Content(id),
+            prompt NVARCHAR(4000) NOT NULL,
+            question_type VARCHAR(20) NOT NULL DEFAULT ''single'',
+            CONSTRAINT CK_Test_Question_Type CHECK (question_type IN (''single'',''multiple'',''true_false''))
+        );
+        CREATE INDEX IX_Questions_Content ON dbo.Test_Questions(content_id, id);
+    ');
+END;
+
+-- Nâng cấp schema cũ mà không làm mất câu hỏi đã có.
+IF COL_LENGTH('dbo.Test_Questions', 'question_type') IS NULL
+BEGIN
+    EXEC(N'ALTER TABLE dbo.Test_Questions ADD question_type VARCHAR(20) NOT NULL
+        CONSTRAINT DF_Test_Questions_Type DEFAULT ''single'';');
+    EXEC(N'ALTER TABLE dbo.Test_Questions ADD CONSTRAINT CK_Test_Question_Type
+        CHECK (question_type IN (''single'',''multiple'',''true_false''));');
+END;
+
+IF OBJECT_ID('dbo.Test_Question_Options', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Test_Question_Options (
         id INT IDENTITY PRIMARY KEY,
-        content_id INT NOT NULL REFERENCES dbo.Test_Content(id),
-        prompt NVARCHAR(4000) NOT NULL,
-        option_a NVARCHAR(1000) NOT NULL,
-        option_b NVARCHAR(1000) NOT NULL,
-        option_c NVARCHAR(1000) NOT NULL,
-        option_d NVARCHAR(1000) NOT NULL,
-        correct_option INT NOT NULL CHECK (correct_option BETWEEN 0 AND 3)
+        question_id INT NOT NULL REFERENCES dbo.Test_Questions(id) ON DELETE CASCADE,
+        option_text NVARCHAR(1000) NOT NULL,
+        is_correct BIT NOT NULL DEFAULT 0,
+        display_order INT NOT NULL,
+        CONSTRAINT CK_Test_Option_Order CHECK (display_order > 0),
+        CONSTRAINT UQ_Test_Option_Order UNIQUE (question_id, display_order),
+        CONSTRAINT UQ_Test_Option_Question UNIQUE (question_id, id)
     );
-    CREATE INDEX IX_Questions_Content ON dbo.Test_Questions(content_id, id);
+    CREATE INDEX IX_Test_Options_Question ON dbo.Test_Question_Options(question_id, display_order);
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.key_constraints WHERE name = 'UQ_Test_Option_Question')
+    ALTER TABLE dbo.Test_Question_Options ADD CONSTRAINT UQ_Test_Option_Question UNIQUE (question_id, id);
+
+-- Chuyển dữ liệu 4 lựa chọn cũ sang bảng lựa chọn linh hoạt khi cần.
+IF COL_LENGTH('dbo.Test_Questions', 'option_a') IS NOT NULL
+BEGIN
+    EXEC(N'
+        INSERT INTO dbo.Test_Question_Options(question_id, option_text, is_correct, display_order)
+        SELECT q.id, legacy.option_text,
+               CASE WHEN q.correct_option = legacy.zero_based_order THEN 1 ELSE 0 END,
+               legacy.zero_based_order + 1
+        FROM dbo.Test_Questions q
+        CROSS APPLY (VALUES
+            (0, q.option_a), (1, q.option_b), (2, q.option_c), (3, q.option_d)
+        ) legacy(zero_based_order, option_text)
+        WHERE legacy.option_text IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM dbo.Test_Question_Options o WHERE o.question_id = q.id);
+
+        ALTER TABLE dbo.Test_Questions ALTER COLUMN option_a NVARCHAR(1000) NULL;
+        ALTER TABLE dbo.Test_Questions ALTER COLUMN option_b NVARCHAR(1000) NULL;
+        ALTER TABLE dbo.Test_Questions ALTER COLUMN option_c NVARCHAR(1000) NULL;
+        ALTER TABLE dbo.Test_Questions ALTER COLUMN option_d NVARCHAR(1000) NULL;
+        ALTER TABLE dbo.Test_Questions ALTER COLUMN correct_option INT NULL;
+    ');
 END;
 
 IF OBJECT_ID('dbo.Test_Templates', 'U') IS NULL
@@ -379,7 +493,7 @@ BEGIN
         type VARCHAR(20) NOT NULL,
         department_id INT NULL REFERENCES dbo.Departments(department_id),
         created_by INT NOT NULL REFERENCES dbo.Users(user_id),
-        status VARCHAR(20) NOT NULL DEFAULT 'draft',
+        status VARCHAR(20) NOT NULL CONSTRAINT DF_Test_Template_Status DEFAULT 'published',
         start_time DATETIME2 NOT NULL,
         end_time DATETIME2 NOT NULL,
         default_content_id INT NULL REFERENCES dbo.Test_Content(id),
@@ -387,7 +501,7 @@ BEGIN
         updated_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
         is_deleted BIT NOT NULL DEFAULT 0,
         CONSTRAINT CK_Test_Type CHECK (type IN ('culture','department')),
-        CONSTRAINT CK_Test_Status CHECK (status IN ('draft','published','closed')),
+        CONSTRAINT CK_Test_Status CHECK (status IN ('published','closed')),
         CONSTRAINT CK_Test_Time CHECK (start_time < end_time)
     );
     CREATE INDEX IX_Test_Scope ON dbo.Test_Templates(department_id, status, start_time);
@@ -404,6 +518,8 @@ BEGIN
         status VARCHAR(20) NOT NULL DEFAULT 'pending',
         quiz_score DECIMAL(4,2) NULL CHECK (quiz_score BETWEEN 0 AND 10),
         assigned_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
+        duration_minutes INT NOT NULL CONSTRAINT DF_Test_Assignment_Duration DEFAULT 30,
+        started_at DATETIME2 NULL,
         submitted_at DATETIME2 NULL,
         submission_content NVARCHAR(MAX) NULL,
         file_name NVARCHAR(200) NULL,
@@ -411,6 +527,7 @@ BEGIN
         is_deleted BIT NOT NULL DEFAULT 0,
         CONSTRAINT UQ_Test_Assignee UNIQUE (test_template_id, assignee_id),
         CONSTRAINT CK_Assignment_Status CHECK (status IN ('pending','in_progress','submitted','evaluated')),
+        CONSTRAINT CK_Assignment_Duration CHECK (duration_minutes BETWEEN 1 AND 60),
         CONSTRAINT CK_Submission_Time CHECK ((status IN ('pending','in_progress') AND submitted_at IS NULL)
             OR (status IN ('submitted','evaluated') AND submitted_at IS NOT NULL)),
         CONSTRAINT CK_Submission_File CHECK ((file_name IS NULL AND file_data IS NULL)
@@ -419,14 +536,81 @@ BEGIN
     CREATE INDEX IX_Assignment_Owner ON dbo.Test_Assignments(assignee_id, status);
 END;
 
-IF OBJECT_ID('dbo.Test_Answers', 'U') IS NULL
+-- Bỏ vòng đời bản nháp của đợt giao bài. Các bản nháp cũ được kích hoạt để
+-- trạng thái hiển thị tự động theo start_time: Sắp tới hoặc Đang diễn ra.
+IF OBJECT_ID('dbo.Test_Templates', 'U') IS NOT NULL
 BEGIN
-    CREATE TABLE dbo.Test_Answers (
+    UPDATE dbo.Test_Templates
+    SET status=CASE WHEN end_time<=SYSUTCDATETIME() THEN 'closed' ELSE 'published' END,
+        updated_at=SYSUTCDATETIME()
+    WHERE status='draft';
+
+    DECLARE @TestStatusDefault SYSNAME;
+    SELECT @TestStatusDefault = dc.name
+    FROM sys.default_constraints dc
+    JOIN sys.columns c ON c.default_object_id=dc.object_id
+    WHERE dc.parent_object_id=OBJECT_ID('dbo.Test_Templates') AND c.name='status';
+    IF @TestStatusDefault IS NOT NULL AND @TestStatusDefault <> 'DF_Test_Template_Status'
+        EXEC(N'ALTER TABLE dbo.Test_Templates DROP CONSTRAINT [' + @TestStatusDefault + N']');
+    IF NOT EXISTS (SELECT 1 FROM sys.default_constraints WHERE parent_object_id=OBJECT_ID('dbo.Test_Templates') AND name='DF_Test_Template_Status')
+        ALTER TABLE dbo.Test_Templates ADD CONSTRAINT DF_Test_Template_Status DEFAULT 'published' FOR status;
+
+    IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE parent_object_id=OBJECT_ID('dbo.Test_Templates') AND name='CK_Test_Status')
+        ALTER TABLE dbo.Test_Templates DROP CONSTRAINT CK_Test_Status;
+    ALTER TABLE dbo.Test_Templates WITH CHECK ADD CONSTRAINT CK_Test_Status CHECK (status IN ('published','closed'));
+END;
+
+-- Nâng cấp database đã tồn tại mà không xóa dữ liệu bài được giao.
+IF COL_LENGTH('dbo.Test_Assignments', 'duration_minutes') IS NULL
+    EXEC(N'ALTER TABLE dbo.Test_Assignments ADD duration_minutes INT NOT NULL
+        CONSTRAINT DF_Test_Assignment_Duration DEFAULT 30 WITH VALUES');
+
+IF COL_LENGTH('dbo.Test_Assignments', 'started_at') IS NULL
+    EXEC(N'ALTER TABLE dbo.Test_Assignments ADD started_at DATETIME2 NULL');
+
+-- Thay constraint danh sách phút cũ bằng khoảng linh hoạt 1–60. WITH NOCHECK
+-- giữ nguyên dữ liệu lịch sử nếu trước đây từng có bài dài hơn 60 phút.
+IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_Assignment_Duration')
+    EXEC(N'ALTER TABLE dbo.Test_Assignments DROP CONSTRAINT CK_Assignment_Duration');
+
+EXEC(N'ALTER TABLE dbo.Test_Assignments WITH NOCHECK ADD CONSTRAINT CK_Assignment_Duration
+    CHECK (duration_minutes BETWEEN 1 AND 60)');
+
+-- Một câu có thể được chọn nhiều đáp án; mỗi lựa chọn là một dòng.
+IF OBJECT_ID('dbo.Test_Answer_Options', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.Test_Answer_Options (
         assignment_id INT NOT NULL REFERENCES dbo.Test_Assignments(id),
         question_id INT NOT NULL REFERENCES dbo.Test_Questions(id),
-        selected_option INT NOT NULL CHECK (selected_option BETWEEN 0 AND 3),
-        PRIMARY KEY (assignment_id, question_id)
+        option_id INT NOT NULL,
+        PRIMARY KEY (assignment_id, question_id, option_id),
+        CONSTRAINT FK_Test_Answer_Selected_Option FOREIGN KEY (question_id, option_id)
+            REFERENCES dbo.Test_Question_Options(question_id, id)
     );
+    CREATE INDEX IX_Test_Answer_Question ON dbo.Test_Answer_Options(assignment_id, question_id);
+END;
+
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_Test_Answer_Selected_Option')
+    ALTER TABLE dbo.Test_Answer_Options ADD CONSTRAINT FK_Test_Answer_Selected_Option
+        FOREIGN KEY (question_id, option_id) REFERENCES dbo.Test_Question_Options(question_id, id);
+
+-- Giữ lại câu trả lời schema cũ và chuyển chỉ số A/B/C/D thành khóa lựa chọn.
+IF OBJECT_ID('dbo.Test_Answers', 'U') IS NOT NULL
+BEGIN
+    EXEC(N'
+        INSERT INTO dbo.Test_Answer_Options(assignment_id, question_id, option_id)
+        SELECT a.assignment_id, a.question_id, o.id
+        FROM dbo.Test_Answers a
+        JOIN dbo.Test_Question_Options o
+          ON o.question_id = a.question_id AND o.display_order = a.selected_option + 1
+        WHERE NOT EXISTS (
+            SELECT 1 FROM dbo.Test_Answer_Options x
+            WHERE x.assignment_id = a.assignment_id
+              AND x.question_id = a.question_id
+              AND x.option_id = o.id
+        );
+    ');
 END;
 
 IF OBJECT_ID('dbo.Test_Evaluations', 'U') IS NULL
@@ -441,40 +625,5 @@ BEGIN
     );
 END;
 
-IF OBJECT_ID('dbo.Test_Reminder_Outbox', 'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.Test_Reminder_Outbox (
-        id INT IDENTITY PRIMARY KEY,
-        assignment_id INT NOT NULL REFERENCES dbo.Test_Assignments(id),
-        scheduled_start DATETIME2 NOT NULL,
-        delivered_at DATETIME2 NULL,
-        CONSTRAINT UQ_Test_Reminder UNIQUE (assignment_id, scheduled_start)
-    );
-END;
-
-IF OBJECT_ID('dbo.Test_Notifications', 'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.Test_Notifications (
-        id INT IDENTITY PRIMARY KEY,
-        outbox_id INT NOT NULL UNIQUE REFERENCES dbo.Test_Reminder_Outbox(id),
-        user_id INT NOT NULL REFERENCES dbo.Users(user_id),
-        assignment_id INT NOT NULL REFERENCES dbo.Test_Assignments(id),
-        message NVARCHAR(300) NOT NULL,
-        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-        read_at DATETIME2 NULL
-    );
-END;
-
-IF OBJECT_ID('dbo.Test_Audit', 'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.Test_Audit (
-        id BIGINT IDENTITY PRIMARY KEY,
-        actor_id INT NOT NULL REFERENCES dbo.Users(user_id),
-        action VARCHAR(40) NOT NULL,
-        template_id INT NOT NULL REFERENCES dbo.Test_Templates(id),
-        assignment_id INT NULL REFERENCES dbo.Test_Assignments(id),
-        created_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
-    );
-END;
-
 COMMIT;
+-- END TEST MODULE

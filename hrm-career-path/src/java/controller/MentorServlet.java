@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller;
 
 import java.io.IOException;
@@ -15,6 +11,7 @@ import dal.PositionDAO;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
+import model.Mentor.MentorAssignment;
 import model.Mentor.MentorEvaluation;
 import model.User;
 
@@ -69,47 +66,83 @@ public class MentorServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return;
         }
-
-        // Chặn Employee (Role 4) truy cập
-        if (currentUser.getRoleId() == 4) {
-            response.sendRedirect(request.getContextPath() + "/dashboard");
+        if (currentUser.getRoleId() == 1) {
+            response.sendRedirect(request.getContextPath() + "/departments");
             return;
-        }
-
-        String action = request.getParameter("action");
-        if (action == null) {
-            action = "evaluations";
         }
 
         MentorDAO mentorDAO = new MentorDAO();
 
-        switch (action) {
-            case "pair":
-                if (currentUser.getRoleId() != 1 && currentUser.getRoleId() != 2) {
+        String action = request.getParameter("action");
+        if (action == null) {
+            // Tự động chọn action mặc định theo quyền và trạng thái phân công
+            if (mentorDAO.isMentor(currentUser.getUserId())) {
+                action = "myMentees";
+            } else if (currentUser.getRoleId() == 2) {
+                action = "pair";
+            } else if (currentUser.getRoleId() == 4) {
+                if (mentorDAO.hasMentor(currentUser.getUserId())) {
+                    action = "myMentor";
+                } else {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }
-                
+            } else {
+                action = "evaluations";
+            }
+        }
+
+        switch (action) {
+            case "pair":
+                if (currentUser.getRoleId() != 2) {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
                 request.setAttribute("newEmployees", mentorDAO.getUnassignedNewEmployees());
                 request.setAttribute("mentors", mentorDAO.getAllMentorsWithSpecialty());
-                request.setAttribute("assignments", mentorDAO.getActiveAssignments()); // Thêm dòng này
-
+                request.setAttribute("assignments", mentorDAO.getActiveAssignments());
                 request.getRequestDispatcher("mentor-pairing.jsp").forward(request, response);
                 break;
 
             case "evaluations":
+                if (currentUser.getRoleId() == 4 && !mentorDAO.isMentor(currentUser.getUserId())) {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
                 request.setAttribute("evaluations", mentorDAO.getAllEvaluations());
                 request.getRequestDispatcher("mentor-evaluation.jsp").forward(request, response);
                 break;
-                
-                case "myMentees":
-                // Lấy ds Mentee của riêng Mentor này và đẩy ra giao diện
+
+            case "myMentees":
+                // Lấy danh sách Mentee của Mentor này
                 request.setAttribute("myAssignments", mentorDAO.getAssignmentsByMentor(currentUser.getUserId()));
                 request.getRequestDispatcher("my-mentees.jsp").forward(request, response);
                 break;
 
+            case "menteeDetail":
+                // Xử lý nút "Hồ sơ"
+                String menteeIdStr = request.getParameter("id");
+                if (menteeIdStr != null && !menteeIdStr.isEmpty()) {
+                    int menteeId = Integer.parseInt(menteeIdStr);
+                    User mentee = mentorDAO.getMenteeDetail(menteeId);
+                    request.setAttribute("mentee", mentee);
+                }
+                request.getRequestDispatcher("mentee-detail.jsp").forward(request, response);
+                break;
+
+            case "myMentor":
+                // Dành riêng cho Employee (Mentee) xem Mentor phụ trách mình
+                MentorAssignment myMentor = mentorDAO.getMentorByMentee(currentUser.getUserId());
+                if (myMentor == null) {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
+                request.setAttribute("myMentor", myMentor);
+                request.setAttribute("myEvaluations", mentorDAO.getEvaluationsByMentee(currentUser.getUserId()));
+                request.getRequestDispatcher("my-mentor.jsp").forward(request, response);
+                break;
+
             case "evaluateForm":
-                // Mở Form đánh giá
                 request.setAttribute("assignmentId", request.getParameter("assignmentId"));
                 request.getRequestDispatcher("mentor-evaluate-form.jsp").forward(request, response);
                 break;
@@ -132,6 +165,10 @@ public class MentorServlet extends HttpServlet {
 
         if (currentUser == null) {
             response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        if (currentUser.getRoleId() == 1) {
+            response.sendRedirect(request.getContextPath() + "/departments");
             return;
         }
 
@@ -158,6 +195,30 @@ public class MentorServlet extends HttpServlet {
                 }
             }
             response.sendRedirect(request.getContextPath() + "/mentors?action=pair");
+        } else if ("saveEvaluation".equals(action)) {
+            String assignmentIdStr = request.getParameter("assignmentId");
+            String scoreStr = request.getParameter("performanceScore");
+            String publicFeedback = request.getParameter("publicFeedback");
+            String privateFeedback = request.getParameter("privateFeedback");
+            
+            if (assignmentIdStr != null && !assignmentIdStr.isEmpty()) {
+                int assignmentId = Integer.parseInt(assignmentIdStr);
+                int score = 8;
+                if (scoreStr != null && !scoreStr.trim().isEmpty()) {
+                    try {
+                        score = Integer.parseInt(scoreStr.trim());
+                    } catch (NumberFormatException ignored) {}
+                }
+                
+                // Lưu đánh giá với đầy đủ Public Feedback (Non-anonymous) và Private Feedback (Anonymous)
+                boolean success = new MentorDAO().saveEvaluation(assignmentId, currentUser.getUserId(), score, publicFeedback, privateFeedback);
+                
+                if (success) {
+                    session.setAttribute("successMessage", "Lưu đánh giá Mentee thành công!");
+                }
+            }
+            // LƯU Ý QUAN TRỌNG: Phải có lệnh sendRedirect để tránh màn hình trắng
+            response.sendRedirect(request.getContextPath() + "/mentors?action=evaluations");
         }
 
     }

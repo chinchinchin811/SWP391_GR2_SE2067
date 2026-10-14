@@ -494,7 +494,7 @@
             </div>
 
             <% if (cards != null && !cards.isEmpty()) { %>
-            
+
             <!-- Thanh Tiến Trình (Progress bar) -->
             <div class="progress-wrapper">
                 <div class="progress-track">
@@ -580,14 +580,17 @@
                     function updateControls() {
                         btnPrev.disabled = (currentIndex === 0);
                         btnNext.disabled = (currentIndex === totalCards - 1);
-                        
+
                         const pct = ((currentIndex + 1) / totalCards) * 100;
-                        if (progressFill) progressFill.style.width = pct + '%';
-                        if (progressCount) progressCount.innerText = (currentIndex + 1) + ' / ' + totalCards;
+                        if (progressFill)
+                            progressFill.style.width = pct + '%';
+                        if (progressCount)
+                            progressCount.innerText = (currentIndex + 1) + ' / ' + totalCards;
                     }
 
                     window.showCard = function (newIndex, direction) {
-                        if (isAnimating || newIndex === currentIndex || newIndex < 0 || newIndex >= totalCards) return;
+                        if (isAnimating || newIndex === currentIndex || newIndex < 0 || newIndex >= totalCards)
+                            return;
                         isAnimating = true;
 
                         const currentCard = cardElements[currentIndex];
@@ -643,8 +646,10 @@
 
                     // Điều khiển bằng bàn phím
                     document.addEventListener('keydown', function (e) {
-                        if (!document.getElementById('flashcardStage')) return;
-                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                        if (!document.getElementById('flashcardStage'))
+                            return;
+                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')
+                            return;
 
                         if (e.key === 'ArrowRight') {
                             e.preventDefault();

@@ -3,6 +3,7 @@ package model;
 import java.io.Serializable;
 
 public class Role implements Serializable {
+
     private int roleId;
     private String roleName;
     private String description;

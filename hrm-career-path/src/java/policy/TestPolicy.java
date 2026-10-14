@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Objects;
 import model.TestActor;
 import model.TestAssignment;
+import model.TestContent;
 import model.TestTemplate;
 
 /**
@@ -12,16 +13,28 @@ import model.TestTemplate;
  */
 public final class TestPolicy {
 
-    /** ADMIN/HR quản lý toàn công ty; MANAGER quản lý nội dung gắn với phòng mình. */
+    /**
+     * ADMIN chỉ quản lý Văn hóa; HR quản lý cả hai; MANAGER quản lý Chuyên môn
+     * đúng phòng.
+     */
     public boolean canManage(TestActor actor, TestTemplate t) {
         return "culture".equals(t.type()) ? actor.cultureManager()
-                : actor.cultureManager() || (actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId()));
+                : "HR".equals(actor.role())
+                || (actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId()));
     }
 
-    /** Đề nháp chỉ người quản lý xem; đề công bố/đóng hiển thị toàn công ty. */
+    /**
+     * Chỉ chủ sở hữu được thay đổi nội dung bộ đề trong đúng scope.
+     */
+    public boolean canEditContent(TestActor actor, TestContent content) {
+        return actor.id() == content.createdBy();
+    }
+
+    /**
+     * Đề đã tạo hiển thị theo phạm vi; ADMIN chỉ xem đề văn hóa.
+     */
     public boolean canView(TestActor actor, TestTemplate t) {
-        boolean scope = !"ADMIN".equals(actor.role()) || canManage(actor, t);
-        return scope && (!"draft".equals(t.status()) || canManage(actor, t));
+        return !"ADMIN".equals(actor.role()) || canManage(actor, t);
     }
 
     /**
@@ -44,16 +57,57 @@ public final class TestPolicy {
      * Cho chấm cả sau khi đóng đề, nhưng chỉ chấm bài submitted một lần.
      */
     public boolean canEvaluate(TestActor actor, TestAssignment a, TestTemplate t) {
-        return canViewAssignment(actor, a, t) && canManage(actor, t)
+        return canViewAssignment(actor, a, t) && canManage(actor, t) && canEvaluateAssignee(actor, a)
                 && "submitted".equals(a.status());
     }
 
     /**
-     * Khoảng làm bài là [start, end); đúng giờ kết thúc thì không nhận bài mới.
+     * Người chấm phải có vai trò cao hơn người làm; cùng vai trò không được tự
+     * chấm lẫn nhau.
+     */
+    public boolean canEvaluateAssignee(TestActor actor, TestAssignment assignment) {
+        return actor.id() != assignment.assigneeId()
+                && roleRank(actor.role()) > roleRank(assignment.assigneeRole());
+    }
+
+    /**
+     * Chỉ bắt đầu trong khoảng mở của đợt và khi bài vẫn đang chờ làm.
+     */
+    public boolean canStart(TestActor actor, TestAssignment a, TestTemplate t, Instant now) {
+        return a.assigneeId() == actor.id() && canView(actor, t) && "published".equals(t.status())
+                && !now.isBefore(t.startTime()) && now.isBefore(t.endTime())
+                && "pending".equals(a.status());
+    }
+
+    /**
+     * Hạn nộp cá nhân không vượt quá giờ đóng chung của đợt.
      */
     public boolean canSubmit(TestActor actor, TestAssignment a, TestTemplate t, Instant now) {
         return a.assigneeId() == actor.id() && canView(actor, t) && "published".equals(t.status())
                 && !now.isBefore(t.startTime()) && now.isBefore(t.endTime())
-                && ("pending".equals(a.status()) || "in_progress".equals(a.status()));
+                && "in_progress".equals(a.status())
+                && (a.startedAt() == null || now.isBefore(a.submissionDeadline()));
+    }
+
+    /**
+     * Chỉ người giao hoặc vai trò cấp trên trong hệ thống được thu hồi.
+     */
+    public boolean canRevoke(TestActor actor, TestAssignment assignment) {
+        return "pending".equals(assignment.status())
+                && (actor.id() == assignment.assignedBy()
+                || roleRank(actor.role()) > roleRank(assignment.assignedByRole()));
+    }
+
+    private int roleRank(String role) {
+        if ("ADMIN".equals(role)) {
+            return 4;
+        }
+        if ("HR".equals(role)) {
+            return 3;
+        }
+        if ("MANAGER".equals(role)) {
+            return 2;
+        }
+        return 1;
     }
 }

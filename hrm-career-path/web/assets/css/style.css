@@ -17,7 +17,7 @@
     --bg-surface: #ffffff;
     --border-color: #e2e8f0;
     --border-light: #f1f5f9;
-    
+
     /* Text Colors */
     --text-primary: #0f172a;
     --text-secondary: #475569;
@@ -110,6 +110,13 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.sidebar-brand:hover {
+    background-color: var(--sidebar-surface);
 }
 
 .sidebar-brand .brand-icon {
@@ -124,6 +131,11 @@ body {
     font-size: 16px;
     box-shadow: 0 4px 10px rgba(79, 70, 229, 0.4);
     flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.sidebar-brand:hover .brand-icon {
+    transform: scale(1.05);
 }
 
 .sidebar-brand .brand-text {
@@ -316,6 +328,26 @@ body {
     gap: 10px;
 }
 
+.sidebar-user-profile {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: inherit;
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+}
+
+a.sidebar-user-profile {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+a.sidebar-user-profile:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
 .sidebar-user .user-avatar-circle {
     width: 34px;
     height: 34px;
@@ -458,10 +490,18 @@ body {
     opacity: 0.8;
 }
 
-.stat-box:nth-child(2)::before { background: #06b6d4; }
-.stat-box:nth-child(3)::before { background: #10b981; }
-.stat-box:nth-child(4)::before { background: #f59e0b; }
-.stat-box:nth-child(5)::before { background: #8b5cf6; }
+.stat-box:nth-child(2)::before {
+    background: #06b6d4;
+}
+.stat-box:nth-child(3)::before {
+    background: #10b981;
+}
+.stat-box:nth-child(4)::before {
+    background: #f59e0b;
+}
+.stat-box:nth-child(5)::before {
+    background: #8b5cf6;
+}
 
 .stat-box:hover {
     transform: translateY(-2px);
@@ -691,21 +731,67 @@ table.data-table tbody tr:last-child td {
 }
 
 /* Badges theo vai tro (Vibrant Role Colors) */
-.badge-admin, .badge-role-admin { background-color: #f3e8ff; color: #7e22ce; border-color: #d8b4fe; font-weight: 700; }
-.badge-hr, .badge-role-hr { background-color: #ffe4e6; color: #e11d48; border-color: #fecdd3; font-weight: 700; }
-.badge-manager, .badge-role-manager { background-color: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; font-weight: 700; }
-.badge-mentor, .badge-role-mentor { background-color: #fef3c7; color: #b45309; border-color: #fde68a; font-weight: 700; }
-.badge-employee, .badge-role-employee { background-color: #e0f2fe; color: #0284c7; border-color: #bae6fd; font-weight: 700; }
+.badge-admin, .badge-role-admin {
+    background-color: #f3e8ff;
+    color: #7e22ce;
+    border-color: #d8b4fe;
+    font-weight: 700;
+}
+.badge-hr, .badge-role-hr {
+    background-color: #ffe4e6;
+    color: #e11d48;
+    border-color: #fecdd3;
+    font-weight: 700;
+}
+.badge-manager, .badge-role-manager {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+    border-color: #bfdbfe;
+    font-weight: 700;
+}
+.badge-mentor, .badge-role-mentor {
+    background-color: #fef3c7;
+    color: #b45309;
+    border-color: #fde68a;
+    font-weight: 700;
+}
+.badge-employee, .badge-role-employee {
+    background-color: #e0f2fe;
+    color: #0284c7;
+    border-color: #bae6fd;
+    font-weight: 700;
+}
 
 /* Badges theo trang thai (Vibrant Status Badges) */
-.badge-status-active { background-color: #dcfce7; color: #15803d; border-color: #86efac; font-weight: 600; }
-.badge-status-inactive { background-color: #fee2e2; color: #b91c1c; border-color: #fca5a5; font-weight: 600; }
-.status-dot { font-size: 6px; margin-right: 3px; }
-.badge-status-active .status-dot { color: #22c55e; }
-.badge-status-inactive .status-dot { color: #ef4444; }
+.badge-status-active {
+    background-color: #dcfce7;
+    color: #15803d;
+    border-color: #86efac;
+    font-weight: 600;
+}
+.badge-status-inactive {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border-color: #fca5a5;
+    font-weight: 600;
+}
+.status-dot {
+    font-size: 6px;
+    margin-right: 3px;
+}
+.badge-status-active .status-dot {
+    color: #22c55e;
+}
+.badge-status-inactive .status-dot {
+    color: #ef4444;
+}
 
 /* User Cell & Avatar Chip */
-.user-cell { display: flex; align-items: center; gap: 10px; }
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 .avatar-sm {
     width: 32px;
     height: 32px;
@@ -720,8 +806,16 @@ table.data-table tbody tr:last-child td {
     flex-shrink: 0;
     box-shadow: 0 2px 5px rgba(79, 70, 229, 0.25);
 }
-.user-fullname { font-weight: 700; color: #0f172a; line-height: 1.3; }
-.user-sub { font-size: 11px; color: #64748b; font-weight: 500; }
+.user-fullname {
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.3;
+}
+.user-sub {
+    font-size: 11px;
+    color: #64748b;
+    font-weight: 500;
+}
 .level-tag {
     display: inline-block;
     background: #f1f5f9;
@@ -1138,4 +1232,31 @@ th[style*="border: 1px solid #000"] {
         width: 100%;
         max-width: 380px;
     }
+}
+
+/* ==========================================================================
+   ALERT SYSTEM (Red Alert & Status Notifications)
+   ========================================================================== */
+.alert {
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: var(--radius-md, 8px);
+    font-size: 0.885rem;
+    font-weight: 500;
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.alert-danger {
+    background-color: var(--danger-bg, #fef2f2);
+    color: var(--danger-text, #dc2626);
+    border: 1px solid var(--danger-border, #fecaca);
+}
+
+.alert-success {
+    background-color: var(--success-bg, #ecfdf5);
+    color: var(--success-text, #059669);
+    border: 1px solid var(--success-border, #a7f3d0);
 }

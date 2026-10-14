@@ -24,9 +24,13 @@
     <div class="topbar">
         <h1>Tổ Chức Vị Trí Công Việc & Cấp Bậc</h1>
         <div>
-            <% if (roleId == 1 || roleId == 2) { %>
+            <% if (roleId == 1) { %>
                 <a href="<%= request.getContextPath() %>/positions?action=create" class="btn btn-primary">
-                    + Tạo Vị Trí Mới
+                    <i class="fa-solid fa-plus"></i> Tạo Vị Trí Mới
+                </a>
+            <% } else if (roleId == 3) { %>
+                <a href="<%= request.getContextPath() %>/positions?action=requestCreate" class="btn btn-primary">
+                    <i class="fa-solid fa-paper-plane"></i> Đề Xuất Vị Trí Mới
                 </a>
             <% } %>
         </div>
@@ -34,10 +38,10 @@
 
     <div class="content-body">
         <% if (successMessage != null) { %>
-            <div class="alert alert-success"><%= successMessage %></div>
+        <div class="alert alert-success"><%= successMessage %></div>
         <% } %>
         <% if (errorMessage != null) { %>
-            <div class="alert alert-danger"><%= errorMessage %></div>
+        <div class="alert alert-danger"><%= errorMessage %></div>
         <% } %>
 
         <form action="<%= request.getContextPath() %>/positions" method="GET" class="filter-box">
@@ -50,7 +54,7 @@
                             for (Department d : departments) {
                                 boolean isSel = (selectedDeptId != null && selectedDeptId.equals(d.getDepartmentId()));
                     %>
-                        <option value="<%= d.getDepartmentId() %>" <%= isSel ? "selected" : "" %>><%= d.getDepartmentName() %></option>
+                    <option value="<%= d.getDepartmentId() %>" <%= isSel ? "selected" : "" %>><%= d.getDepartmentName() %></option>
                     <%
                             }
                         }
@@ -58,7 +62,7 @@
                 </select>
             </div>
             <% if (selectedDeptId != null && selectedDeptId > 0) { %>
-                <a href="<%= request.getContextPath() %>/positions" class="btn btn-secondary">Bỏ lọc</a>
+            <a href="<%= request.getContextPath() %>/positions" class="btn btn-secondary">Bỏ lọc</a>
             <% } %>
         </form>
 
@@ -77,7 +81,7 @@
                                 <th>Phòng Ban</th>
                                 <th>Số Nhân Sự</th>
                                 <th>Trạng Thái</th>
-                                <% if (roleId == 1 || roleId == 2) { %>
+                                <% if (roleId == 1) { %>
                                     <th style="text-align: center; width: 110px;">Thao Tác</th>
                                 <% } %>
                             </tr>
@@ -92,7 +96,7 @@
                                 <td>
                                     <b><%= p.getPositionName() %></b>
                                     <% if (p.getDescription() != null && !p.getDescription().isEmpty()) { %>
-                                        <div style="font-size: 11px; color: #555555;"><%= p.getDescription() %></div>
+                                    <div style="font-size: 11px; color: #555555;"><%= p.getDescription() %></div>
                                     <% } %>
                                 </td>
                                 <td><%= p.getDepartmentName() != null ? p.getDepartmentName() : "Dùng chung" %></td>
@@ -103,12 +107,12 @@
                                 </td>
                                 <td>
                                     <% if (p.isStatus()) { %>
-                                        <span class="badge">Áp dụng</span>
+                                    <span class="badge">Áp dụng</span>
                                     <% } else { %>
-                                        <span class="badge">Tạm khóa</span>
+                                    <span class="badge">Tạm khóa</span>
                                     <% } %>
                                 </td>
-                                <% if (roleId == 1 || roleId == 2) { %>
+                                <% if (roleId == 1) { %>
                                     <td>
                                         <div class="table-actions">
                                             <a href="<%= request.getContextPath() %>/positions?action=edit&amp;id=<%= p.getPositionId() %>" class="btn btn-sm btn-edit" aria-label="Sửa vị trí <%= p.getPositionName() %>">Sửa</a>
@@ -126,7 +130,7 @@
                                 } else {
                             %>
                             <tr>
-                                <td colspan="<%= (roleId == 1 || roleId == 2) ? "6" : "5" %>" style="text-align: center; padding: 15px;">Không có vị trí nào.</td>
+                                <td colspan="<%= (roleId == 1) ? "6" : "5" %>" style="text-align: center; padding: 15px;">Không có vị trí nào.</td>
                             </tr>
                             <% } %>
                         </tbody>

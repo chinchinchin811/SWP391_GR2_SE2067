@@ -22,10 +22,9 @@ public class UserDAO {
             LEFT JOIN Departments d ON u.department_id = d.department_id
             LEFT JOIN Positions p ON u.position_id = p.position_id
             LEFT JOIN Job_Levels l ON u.level_id = l.level_id
-            WHERE (u.username = ? OR u.email = ?) AND u.password = ? AND u.is_deleted = 0 AND u.status = 1
+            WHERE (u.username = ? OR u.email = ?) AND u.password = ? AND u.is_deleted = 0
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, username);
             ps.setString(2, username);
             ps.setString(3, password);
@@ -69,8 +68,7 @@ public class UserDAO {
 
         sql.append(" ORDER BY u.user_id DESC");
 
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql.toString())) {
             int paramIndex = 1;
             if (search != null && !search.trim().isEmpty()) {
                 String pattern = "%" + search.trim() + "%";
@@ -112,9 +110,7 @@ public class UserDAO {
             WHERE u.is_deleted = 0 AND u.status = 1 AND u.role_id IN (1, 2, 3)
             ORDER BY u.full_name ASC
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 list.add(mapUserFromResultSet(rs));
             }
@@ -134,8 +130,7 @@ public class UserDAO {
             LEFT JOIN Job_Levels l ON u.level_id = l.level_id
             WHERE u.user_id = ? AND u.is_deleted = 0
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -172,7 +167,7 @@ public class UserDAO {
                     ps.setNull(7, Types.DATE);
                 }
                 ps.setInt(8, user.getRoleId());
-                
+
                 if (user.getDepartmentId() != null && user.getDepartmentId() > 0) {
                     ps.setInt(9, user.getDepartmentId());
                 } else {
@@ -209,6 +204,16 @@ public class UserDAO {
             }
 
             if (newUserId > 0) {
+                // Neu vai tro la MANAGER (role_id = 3) va co phong ban, tu dong cap nhat Departments.manager_id
+                if (user.getRoleId() == 3 && user.getDepartmentId() != null && user.getDepartmentId() > 0) {
+                    String sqlUpdateDept = "UPDATE Departments SET manager_id = ? WHERE department_id = ?";
+                    try (PreparedStatement psDept = conn.prepareStatement(sqlUpdateDept)) {
+                        psDept.setInt(1, newUserId);
+                        psDept.setInt(2, user.getDepartmentId());
+                        psDept.executeUpdate();
+                    }
+                }
+
                 // Ghi nhan lich su tuyen dung
                 String sqlHistory = """
                     INSERT INTO Employee_History (user_id, old_department_id, new_department_id, old_position_id, new_position_id, old_level_id, new_level_id, change_type, change_date, notes, created_by)
@@ -271,8 +276,7 @@ public class UserDAO {
             SET full_name = ?, email = ?, phone = ?, gender = ?, dob = ?, role_id = ?, status = ? 
             WHERE user_id = ? AND is_deleted = 0
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, user.getFullName());
             ps.setString(2, user.getEmail());
             ps.setString(3, user.getPhone());
@@ -292,6 +296,30 @@ public class UserDAO {
         return false;
     }
 
+    public boolean updateMyProfile(int userId, String fullName, String phone, String gender, Date dob) {
+        String sql = """
+            UPDATE Users 
+            SET full_name = ?, phone = ?, gender = ?, dob = ? 
+            WHERE user_id = ? AND is_deleted = 0
+            """;
+        try (Connection conn = DBContext.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, fullName);
+            ps.setString(2, phone);
+            ps.setString(3, gender);
+            if (dob != null) {
+                ps.setDate(4, dob);
+            } else {
+                ps.setNull(4, Types.DATE);
+            }
+            ps.setInt(5, userId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     // XOA MEM NHAN SU (Soft Delete)
     public boolean deleteEmployee(int id) {
         String sql = """
@@ -299,8 +327,7 @@ public class UserDAO {
             SET is_deleted = 1 
             WHERE user_id = ?
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -371,15 +398,43 @@ public class UserDAO {
                 """;
             try (PreparedStatement psHist = conn.prepareStatement(historySql)) {
                 psHist.setInt(1, userId);
-                if (oldDeptId != null) psHist.setInt(2, oldDeptId); else psHist.setNull(2, Types.INTEGER);
-                if (newDeptId != null && newDeptId > 0) psHist.setInt(3, newDeptId); else psHist.setNull(3, Types.INTEGER);
-                if (oldPosId != null) psHist.setInt(4, oldPosId); else psHist.setNull(4, Types.INTEGER);
-                if (newPosId != null && newPosId > 0) psHist.setInt(5, newPosId); else psHist.setNull(5, Types.INTEGER);
-                if (oldLevelId != null) psHist.setInt(6, oldLevelId); else psHist.setNull(6, Types.INTEGER);
-                if (newLevelId != null && newLevelId > 0) psHist.setInt(7, newLevelId); else psHist.setNull(7, Types.INTEGER);
+                if (oldDeptId != null) {
+                    psHist.setInt(2, oldDeptId);
+                } else {
+                    psHist.setNull(2, Types.INTEGER);
+                }
+                if (newDeptId != null && newDeptId > 0) {
+                    psHist.setInt(3, newDeptId);
+                } else {
+                    psHist.setNull(3, Types.INTEGER);
+                }
+                if (oldPosId != null) {
+                    psHist.setInt(4, oldPosId);
+                } else {
+                    psHist.setNull(4, Types.INTEGER);
+                }
+                if (newPosId != null && newPosId > 0) {
+                    psHist.setInt(5, newPosId);
+                } else {
+                    psHist.setNull(5, Types.INTEGER);
+                }
+                if (oldLevelId != null) {
+                    psHist.setInt(6, oldLevelId);
+                } else {
+                    psHist.setNull(6, Types.INTEGER);
+                }
+                if (newLevelId != null && newLevelId > 0) {
+                    psHist.setInt(7, newLevelId);
+                } else {
+                    psHist.setNull(7, Types.INTEGER);
+                }
                 psHist.setString(8, changeType != null && !changeType.isEmpty() ? changeType : "ROLE_CHANGE");
                 psHist.setString(9, notes);
-                if (updatedBy > 0) psHist.setInt(10, updatedBy); else psHist.setNull(10, Types.INTEGER);
+                if (updatedBy > 0) {
+                    psHist.setInt(10, updatedBy);
+                } else {
+                    psHist.setNull(10, Types.INTEGER);
+                }
                 psHist.executeUpdate();
             }
 
@@ -427,8 +482,7 @@ public class UserDAO {
             WHERE h.user_id = ?
             ORDER BY h.change_date DESC
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -468,9 +522,7 @@ public class UserDAO {
             FROM Users 
             WHERE is_deleted = 0 AND status = 1
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
                 return rs.getInt(1);
             }
@@ -487,9 +539,7 @@ public class UserDAO {
             JOIN Users u ON h.user_id = u.user_id 
             WHERE u.is_deleted = 0 AND h.change_type = 'NEW_HIRE'
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
                 return rs.getInt(1);
             }
@@ -506,9 +556,7 @@ public class UserDAO {
             JOIN Users u ON h.user_id = u.user_id 
             WHERE u.is_deleted = 0 AND h.change_type IN ('ROLE_CHANGE', 'DEPARTMENT_TRANSFER', 'PROMOTION')
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
                 return rs.getInt(1);
             }
@@ -516,6 +564,63 @@ public class UserDAO {
             e.printStackTrace();
         }
         return 0;
+    }
+
+    public int countAdmin() {
+        String sql = "SELECT COUNT(*) FROM Users WHERE role_id = 1 AND is_deleted = 0";
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    public User getManagerByDepartment(int departmentId) {
+        String sql = """
+            SELECT u.*, r.role_name, d.department_name, p.position_name, l.level_name
+            FROM Users u
+            JOIN Roles r ON u.role_id = r.role_id
+            LEFT JOIN Departments d ON u.department_id = d.department_id
+            LEFT JOIN Positions p ON u.position_id = p.position_id
+            LEFT JOIN Job_Levels l ON u.level_id = l.level_id
+            WHERE u.department_id = ? AND u.role_id = 3 AND u.is_deleted = 0 AND u.status = 1
+            """;
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, departmentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapUserFromResultSet(rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean hasManagerInDepartment(int departmentId, Integer excludeUserId) {
+        String sql = """
+            SELECT COUNT(*) 
+            FROM Users 
+            WHERE department_id = ? AND role_id = 3 AND is_deleted = 0 AND status = 1
+            """ + (excludeUserId != null ? " AND user_id != ?" : "");
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, departmentId);
+            if (excludeUserId != null) {
+                ps.setInt(2, excludeUserId);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     private User mapUserFromResultSet(ResultSet rs) throws SQLException {

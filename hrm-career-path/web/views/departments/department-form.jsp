@@ -23,7 +23,7 @@
 
     <div class="content-body">
         <% if (request.getAttribute("error") != null) { %>
-            <div class="alert alert-danger"><%= request.getAttribute("error") %></div>
+        <div class="alert alert-danger"><%= request.getAttribute("error") %></div>
         <% } %>
 
         <div class="card" style="max-width: 600px; margin: 0 auto;">
@@ -34,7 +34,7 @@
                 <form action="<%= request.getContextPath() %>/departments" method="POST">
                     <input type="hidden" name="action" value="<%= isEdit ? "edit" : "create" %>">
                     <% if (isEdit) { %>
-                        <input type="hidden" name="departmentId" value="<%= dept.getDepartmentId() %>">
+                    <input type="hidden" name="departmentId" value="<%= dept.getDepartmentId() %>">
                     <% } %>
 
                     <div class="form-group">
@@ -52,9 +52,9 @@
                                     for (User u : managerCandidates) {
                                         boolean isSelected = (dept != null && dept.getManagerId() != null && dept.getManagerId().equals(u.getUserId()));
                             %>
-                                <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>>
-                                    <%= u.getFullName() %> (<%= u.getRoleName() %>)
-                                </option>
+                            <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>>
+                                <%= u.getFullName() %> (<%= u.getRoleName() %>)
+                            </option>
                             <%
                                     }
                                 }

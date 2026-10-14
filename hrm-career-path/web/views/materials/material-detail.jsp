@@ -93,12 +93,17 @@
                             <span style="font-size:12.5px;color:#555">Đang hiển thị tài liệu học tập</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:8px">
+                            <button type="button" class="btn btn-secondary" onclick="togglePdfSource()" style="font-size:12px;padding:4px 10px" id="togglePdfBtn">
+                                Đổi chế độ xem (Google Docs Viewer)
+                            </button>
+                            <% if (material.getMaterialUrl() != null) { %>
                             <a class="btn btn-secondary" href="<%= material.getMaterialUrl() %>" download style="font-size:12px;padding:4px 12px">
                                 ⤓ Tải xuống PDF
                             </a>
                             <a class="btn btn-primary" href="<%= material.getMaterialUrl() %>" target="_blank" style="font-size:12px;padding:4px 12px">
                                 Mở tab mới ↗
                             </a>
+                            <% } %>
                         </div>
                     </div>
                     <iframe id="pdfFrame" title="<%= material.getTitle() %>"
@@ -110,6 +115,36 @@
                             <a href="<%= material.getMaterialUrl() %>" target="_blank" style="color:#0056b3;font-weight:600">Bấm vào đây để mở tài liệu trong tab mới ↗</a>
                         </p>
                     </iframe>
+                    <script>
+                        let isGoogleDocsMode = false;
+                        const originalPdfUrl = <%= json(material.getPdfEmbedUrl()) %>;
+                        const gdocsPdfUrl = <%= json(material.getGoogleDocsViewerUrl()) %>;
+                        function togglePdfSource() {
+                            const frame = document.getElementById('pdfFrame');
+                            const btn = document.getElementById('togglePdfBtn');
+                            if (!frame) return;
+                            isGoogleDocsMode = !isGoogleDocsMode;
+                            if (isGoogleDocsMode) {
+                                frame.src = gdocsPdfUrl;
+                                btn.textContent = 'Đổi sang Trình xem trực tiếp';
+                            } else {
+                                frame.src = originalPdfUrl;
+                                btn.textContent = 'Đổi sang Google Docs Viewer';
+                            }
+                        }
+                    </script>
+                    <% } else if (material.getFileName() != null && !material.getFileName().isEmpty()) { %>
+                    <div style="background:#f8f9fa;border-bottom:1px solid #ddd;padding:8px 14px;display:flex;align-items:center;justify-content:space-between">
+                        <span style="font-size:12.5px;color:#555">
+                            <strong>Tệp đính kèm:</strong> <%= material.getFileName() %>
+                        </span>
+                        <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials?action=download&id=<%= material.getMaterialId() %>" style="font-size:12px;padding:4px 10px">
+                            Tải xuống tệp
+                        </a>
+                    </div>
+                    <iframe title="<%= material.getTitle() %>"
+                            src="<%= request.getContextPath() %>/materials?action=preview&id=<%= material.getMaterialId() %>"
+                            style="width:100%;height:700px;border:none"></iframe>
                     <% } else { %>
                     <div style="padding:48px 24px;text-align:center;color:#666">
                         <div style="font-size:40px;margin-bottom:12px">📄</div>
@@ -135,6 +170,7 @@
                         src="<%= material.getSlideEmbedUrl() %>"
                         allowfullscreen
                         style="width:100%;height:650px;border:none"></iframe>
+<<<<<<< HEAD
                 <% } else { %>
                 <div style="padding:40px 20px;text-align:center;color:#666;font-size:13px;line-height:1.7">
                     <div style="font-size:36px;margin-bottom:10px">🔗</div>
@@ -147,6 +183,12 @@
                         Mở học liệu trong tab mới ↗
                     </a>
                     <% } %>
+=======
+                    <% } else { %>
+                <div style="padding:32px;text-align:center;color:#666;font-size:13px;line-height:1.7">
+                    Slide tải lên từ máy không thể xem trực tiếp trên trình duyệt.<br>
+                    Hãy cập nhật liên kết công khai Google Slides, Google Drive hoặc Office Online để trình chiếu tại đây.
+>>>>>>> main
                 </div>
                 <% } %>
             </div>
@@ -234,13 +276,13 @@
 
 <script>
     const checkpoints = [
-        <% if (checkpoints != null) {
+    <% if (checkpoints != null) {
             for (int i = 0; i < checkpoints.size(); i++) {
                 VideoCheckpoint c = checkpoints.get(i);
                 if (i > 0) out.print(",");
-        %>
-            {id: <%= c.getCheckpointId() %>, seconds: <%= c.getStopTimeSeconds() %>, question: <%= json(c.getQuestionPrompt()) %>, options: [<%= json(c.getOptionA()) %>, <%= json(c.getOptionB()) %>, <%= json(c.getOptionC()) %>, <%= json(c.getOptionD()) %>]}
-        <%  }
+    %>
+        {id: <%= c.getCheckpointId() %>, seconds: <%= c.getStopTimeSeconds() %>, question: <%= json(c.getQuestionPrompt()) %>, options: [<%= json(c.getOptionA()) %>, <%= json(c.getOptionB()) %>, <%= json(c.getOptionC()) %>, <%= json(c.getOptionD()) %>]}
+    <%  }
         } %>
     ];
     checkpoints.sort((a, b) => a.seconds - b.seconds);
@@ -260,7 +302,8 @@
     const modalActions = document.getElementById('modalActions');
 
     function escapeHtml(text) {
-        if (!text) return '';
+        if (!text)
+            return '';
         return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
 
@@ -273,60 +316,82 @@
     // Helper: Triệt để dừng toàn bộ phát video (cả HTML5 Video và YouTube Iframe)
     function pauseAll() {
         if (videoElement) {
-            try { videoElement.pause(); } catch(e) {}
+            try {
+                videoElement.pause();
+            } catch (e) {
+            }
         }
         if (youtubePlayer && typeof youtubePlayer.pauseVideo === 'function') {
-            try { youtubePlayer.pauseVideo(); } catch(e) {}
+            try {
+                youtubePlayer.pauseVideo();
+            } catch (e) {
+            }
         }
         // Fallback postMessage trực tiếp tới iframe của YouTube
         try {
             const iframes = document.querySelectorAll('iframe');
-            iframes.forEach(function(f) {
+            iframes.forEach(function (f) {
                 if (f.contentWindow) {
                     f.contentWindow.postMessage(JSON.stringify({event: 'command', func: 'pauseVideo', args: []}), '*');
                 }
             });
-        } catch(e) {}
+        } catch (e) {
+        }
     }
 
     // Helper: Tiếp tục phát video
     function playAll() {
         if (videoElement) {
-            try { videoElement.play(); } catch(e) {}
+            try {
+                videoElement.play();
+            } catch (e) {
+            }
         }
         if (youtubePlayer && typeof youtubePlayer.playVideo === 'function') {
-            try { youtubePlayer.playVideo(); } catch(e) {}
+            try {
+                youtubePlayer.playVideo();
+            } catch (e) {
+            }
         }
         try {
             const iframes = document.querySelectorAll('iframe');
-            iframes.forEach(function(f) {
+            iframes.forEach(function (f) {
                 if (f.contentWindow) {
                     f.contentWindow.postMessage(JSON.stringify({event: 'command', func: 'playVideo', args: []}), '*');
                 }
             });
-        } catch(e) {}
+        } catch (e) {
+        }
     }
 
     // Helper: Tua video tới mốc giây chỉ định
     function seekAll(targetSeconds) {
         if (videoElement) {
-            try { videoElement.currentTime = targetSeconds; } catch(e) {}
+            try {
+                videoElement.currentTime = targetSeconds;
+            } catch (e) {
+            }
         }
         if (youtubePlayer && typeof youtubePlayer.seekTo === 'function') {
-            try { youtubePlayer.seekTo(targetSeconds, true); } catch(e) {}
+            try {
+                youtubePlayer.seekTo(targetSeconds, true);
+            } catch (e) {
+            }
         }
         try {
             const iframes = document.querySelectorAll('iframe');
-            iframes.forEach(function(f) {
+            iframes.forEach(function (f) {
                 if (f.contentWindow) {
                     f.contentWindow.postMessage(JSON.stringify({event: 'command', func: 'seekTo', args: [targetSeconds, true]}), '*');
                 }
             });
-        } catch(e) {}
+        } catch (e) {
+        }
     }
 
     function pauseForCheckpoint(checkpoint) {
-        if (activeCheckpoint || answered.has(checkpoint.id)) return;
+        if (activeCheckpoint || answered.has(checkpoint.id))
+            return;
         activeCheckpoint = checkpoint;
 
         // Dừng video ngay lập tức và gọi lại nhiều lần để xử lý độ trễ buffer YouTube
@@ -342,16 +407,16 @@
         checkpoint.options.forEach((opt, idx) => {
             if (opt) {
                 html += '<label class="checkpoint-option-label" style="display:flex;align-items:center;padding:10px 12px;margin:7px 0;border:1px solid #ddd;border-radius:4px;cursor:pointer;background:#fafafa;font-size:13.5px;transition:all 0.15s">'
-                     + '<input type="radio" name="answer" value="' + idx + '" style="margin-right:10px;cursor:pointer"> '
-                     + '<span>' + escapeHtml(opt) + '</span>'
-                     + '</label>';
+                        + '<input type="radio" name="answer" value="' + idx + '" style="margin-right:10px;cursor:pointer"> '
+                        + '<span>' + escapeHtml(opt) + '</span>'
+                        + '</label>';
             }
         });
         optionsContainer.innerHTML = html;
 
         // Cho phép click vào cả dòng để chọn phương án
         document.querySelectorAll('.checkpoint-option-label').forEach(label => {
-            label.addEventListener('click', function() {
+            label.addEventListener('click', function () {
                 document.querySelectorAll('.checkpoint-option-label').forEach(l => {
                     l.style.borderColor = '#ddd';
                     l.style.background = '#fafafa';
@@ -359,7 +424,8 @@
                 label.style.borderColor = '#000';
                 label.style.background = '#f4f4f4';
                 const r = label.querySelector('input[type=radio]');
-                if (r) r.checked = true;
+                if (r)
+                    r.checked = true;
             });
         });
 
@@ -393,21 +459,23 @@
 
         // Tua video về 15s trước và tiếp tục phát
         seekAll(targetSeconds);
-        setTimeout(function() {
+        setTimeout(function () {
             playAll();
         }, 200);
     }
 
     function attachSubmitHandler() {
         const btn = document.getElementById('submitAnswer');
-        if (!btn) return;
-        btn.addEventListener('click', async function() {
+        if (!btn)
+            return;
+        btn.addEventListener('click', async function () {
             const choice = document.querySelector('input[name=answer]:checked');
             if (!choice) {
                 feedback.innerHTML = '<div style="color:#c0392b;font-weight:600;padding:6px 0">⚠️ Vui lòng chọn một phương án trả lời.</div>';
                 return;
             }
-            if (!activeCheckpoint) return;
+            if (!activeCheckpoint)
+                return;
 
             btn.disabled = true;
             btn.textContent = 'Đang kiểm tra...';
@@ -426,11 +494,11 @@
 
                 if (result.correct) {
                     feedback.innerHTML = '<div style="padding:10px 14px;background:#e8f8f5;border:1px solid #27ae60;color:#1e8449;border-radius:4px;font-size:13px">'
-                        + '<strong>✓ Chính xác!</strong> ' + (result.explanation || 'Bạn đã hoàn thành câu hỏi kiến thức này.')
-                        + '</div>';
+                            + '<strong>✓ Chính xác!</strong> ' + (result.explanation || 'Bạn đã hoàn thành câu hỏi kiến thức này.')
+                            + '</div>';
                     answered.add(activeCheckpoint.id);
 
-                    setTimeout(function() {
+                    setTimeout(function () {
                         activeCheckpoint = null;
                         modal.style.display = 'none';
                         feedback.innerHTML = '';
@@ -441,27 +509,27 @@
                     const rewindTarget = Math.max(0, checkpointSec - 15);
 
                     feedback.innerHTML = '<div style="padding:12px 14px;background:#fef5e7;border:1px solid #e67e22;color:#935116;border-radius:4px;font-size:13px;line-height:1.6">'
-                        + '<div style="font-weight:700;color:#c0392b;margin-bottom:4px">✕ Trả lời chưa chính xác!</div>'
-                        + (result.explanation ? '<div>' + escapeHtml(result.explanation) + '</div>' : '')
-                        + '<div style="margin-top:8px;font-weight:600;color:#2c3e50">'
-                        + '⏱️ Đang tua lại 15 giây (về <strong>' + formatTime(rewindTarget) + '</strong>) để bạn xem lại bài giảng...'
-                        + '</div>'
-                        + '</div>';
+                            + '<div style="font-weight:700;color:#c0392b;margin-bottom:4px">✕ Trả lời chưa chính xác!</div>'
+                            + (result.explanation ? '<div>' + escapeHtml(result.explanation) + '</div>' : '')
+                            + '<div style="margin-top:8px;font-weight:600;color:#2c3e50">'
+                            + '⏱️ Đang tua lại 15 giây (về <strong>' + formatTime(rewindTarget) + '</strong>) để bạn xem lại bài giảng...'
+                            + '</div>'
+                            + '</div>';
 
                     modalActions.innerHTML = '<button type="button" id="rewindNowBtn" class="btn btn-secondary" style="width:100%;padding:10px;font-size:13.5px;font-weight:600">Tua lại ngay (' + formatTime(rewindTarget) + ') &amp; Tiếp tục xem</button>';
                     const rewindBtn = document.getElementById('rewindNowBtn');
                     if (rewindBtn) {
-                        rewindBtn.addEventListener('click', function() {
+                        rewindBtn.addEventListener('click', function () {
                             executeRewindAndResume(rewindTarget);
                         });
                     }
 
                     // Tự động tua lại và ẩn modal sau 2.2 giây để người dùng theo dõi lại
-                    rewindTimeout = setTimeout(function() {
+                    rewindTimeout = setTimeout(function () {
                         executeRewindAndResume(rewindTarget);
                     }, 2200);
                 }
-            } catch(e) {
+            } catch (e) {
                 console.error('Error submitting checkpoint answer:', e);
                 feedback.innerHTML = '<div style="color:#c0392b;padding:6px 0">Có lỗi khi gửi đáp án. Vui lòng thử lại.</div>';
                 btn.disabled = false;
@@ -471,72 +539,73 @@
     }
 
     <% if (material != null && "VIDEO".equals(material.getMaterialType()) && material.getYoutubeEmbedId() != null) { %>
-        function initYouTubePlayer() {
-            if (youtubePlayer) return;
-            youtubePlayer = new YT.Player('youtubePlayer', {
-                videoId: '<%= material.getYoutubeEmbedId() %>',
-                playerVars: {
-                    'autoplay': 0,
-                    'enablejsapi': 1,
-                    'origin': window.location.origin,
-                    'rel': 0
-                },
-                events: {
-                    onStateChange: function(event) {
-                        if (event.data === YT.PlayerState.PLAYING) {
-                            if (activeCheckpoint) {
-                                pauseAll();
-                                return;
-                            }
-                            if (youtubeTimer === null) {
-                                youtubeTimer = window.setInterval(function() {
-                                    if (activeCheckpoint) {
-                                        pauseAll();
-                                        return;
-                                    }
-                                    if (youtubePlayer && typeof youtubePlayer.getCurrentTime === 'function') {
-                                        checkPlaybackTime(youtubePlayer.getCurrentTime());
-                                    }
-                                }, 250);
-                            }
-                        } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
-                            if (youtubeTimer !== null) {
-                                clearInterval(youtubeTimer);
-                                youtubeTimer = null;
-                            }
+    function initYouTubePlayer() {
+        if (youtubePlayer)
+            return;
+        youtubePlayer = new YT.Player('youtubePlayer', {
+            videoId: '<%= material.getYoutubeEmbedId() %>',
+            playerVars: {
+                'autoplay': 0,
+                'enablejsapi': 1,
+                'origin': window.location.origin,
+                'rel': 0
+            },
+            events: {
+                onStateChange: function (event) {
+                    if (event.data === YT.PlayerState.PLAYING) {
+                        if (activeCheckpoint) {
+                            pauseAll();
+                            return;
+                        }
+                        if (youtubeTimer === null) {
+                            youtubeTimer = window.setInterval(function () {
+                                if (activeCheckpoint) {
+                                    pauseAll();
+                                    return;
+                                }
+                                if (youtubePlayer && typeof youtubePlayer.getCurrentTime === 'function') {
+                                    checkPlaybackTime(youtubePlayer.getCurrentTime());
+                                }
+                            }, 250);
+                        }
+                    } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+                        if (youtubeTimer !== null) {
+                            clearInterval(youtubeTimer);
+                            youtubeTimer = null;
                         }
                     }
                 }
-            });
-        }
+            }
+        });
+    }
 
-        window.onYouTubeIframeAPIReady = function() {
-            initYouTubePlayer();
-        };
+    window.onYouTubeIframeAPIReady = function () {
+        initYouTubePlayer();
+    };
 
-        if (window.YT && window.YT.Player) {
-            initYouTubePlayer();
-        } else {
-            var youtubeApi = document.createElement('script');
-            youtubeApi.src = 'https://www.youtube.com/iframe_api';
-            document.head.appendChild(youtubeApi);
-        }
+    if (window.YT && window.YT.Player) {
+        initYouTubePlayer();
+    } else {
+        var youtubeApi = document.createElement('script');
+        youtubeApi.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(youtubeApi);
+    }
     <% } else { %>
-        videoElement = document.getElementById('learningVideo');
-        if (videoElement) {
-            videoElement.addEventListener('timeupdate', function() {
-                if (activeCheckpoint) {
-                    videoElement.pause();
-                    return;
-                }
-                checkPlaybackTime(videoElement.currentTime);
-            });
-            videoElement.addEventListener('play', function() {
-                if (activeCheckpoint) {
-                    videoElement.pause();
-                }
-            });
-        }
+    videoElement = document.getElementById('learningVideo');
+    if (videoElement) {
+        videoElement.addEventListener('timeupdate', function () {
+            if (activeCheckpoint) {
+                videoElement.pause();
+                return;
+            }
+            checkPlaybackTime(videoElement.currentTime);
+        });
+        videoElement.addEventListener('play', function () {
+            if (activeCheckpoint) {
+                videoElement.pause();
+            }
+        });
+    }
     <% } %>
 
     attachSubmitHandler();
