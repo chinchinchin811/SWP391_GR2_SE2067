@@ -17,6 +17,8 @@ public class MentorEvaluation {
     private int evaluatorId;
     private int performanceScore;
     private String feedback;
+    private String publicFeedback;
+    private String privateFeedback;
     private String approvalStatus;
 
     private String menteeName;
@@ -48,6 +50,22 @@ public class MentorEvaluation {
 
     public void setFeedback(String feedback) {
         this.feedback = feedback;
+    }
+
+    public String getPublicFeedback() {
+        return publicFeedback;
+    }
+
+    public void setPublicFeedback(String publicFeedback) {
+        this.publicFeedback = publicFeedback;
+    }
+
+    public String getPrivateFeedback() {
+        return privateFeedback;
+    }
+
+    public void setPrivateFeedback(String privateFeedback) {
+        this.privateFeedback = privateFeedback;
     }
 
     public String getApprovalStatus() {

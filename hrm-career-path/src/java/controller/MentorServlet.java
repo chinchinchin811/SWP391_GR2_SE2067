@@ -142,6 +142,7 @@ public class MentorServlet extends HttpServlet {
                     return;
                 }
                 request.setAttribute("myMentor", myMentor);
+                request.setAttribute("myEvaluations", mentorDAO.getEvaluationsByMentee(currentUser.getUserId()));
                 request.getRequestDispatcher("my-mentor.jsp").forward(request, response);
                 break;
 
@@ -200,16 +201,24 @@ public class MentorServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/mentors?action=pair");
         }else if ("saveEvaluation".equals(action)) {
             String assignmentIdStr = request.getParameter("assignmentId");
-            String feedback = request.getParameter("feedback");
+            String scoreStr = request.getParameter("performanceScore");
+            String publicFeedback = request.getParameter("publicFeedback");
+            String privateFeedback = request.getParameter("privateFeedback");
             
             if (assignmentIdStr != null && !assignmentIdStr.isEmpty()) {
                 int assignmentId = Integer.parseInt(assignmentIdStr);
+                int score = 8;
+                if (scoreStr != null && !scoreStr.trim().isEmpty()) {
+                    try {
+                        score = Integer.parseInt(scoreStr.trim());
+                    } catch (NumberFormatException ignored) {}
+                }
                 
-                // Gọi DAO để lưu vào Database (mặc định cho điểm 8, trạng thái PENDING)
-                boolean success = new MentorDAO().saveEvaluation(assignmentId, currentUser.getUserId(), 8, feedback);
+                // Lưu đánh giá với đầy đủ Public Feedback (Non-anonymous) và Private Feedback (Anonymous)
+                boolean success = new MentorDAO().saveEvaluation(assignmentId, currentUser.getUserId(), score, publicFeedback, privateFeedback);
                 
                 if (success) {
-                    session.setAttribute("successMessage", "Lưu đánh giá thành công!");
+                    session.setAttribute("successMessage", "Lưu đánh giá Mentee thành công!");
                 }
             }
             // LƯU Ý QUAN TRỌNG: Phải có lệnh sendRedirect để tránh màn hình trắng

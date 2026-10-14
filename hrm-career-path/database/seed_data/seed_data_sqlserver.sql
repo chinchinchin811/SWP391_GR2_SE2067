@@ -554,13 +554,33 @@ INSERT INTO dbo.MentorAssignments (mentee_id, mentor_id, position_id, status, as
 (4, 6, 1, 'ACTIVE', 2, DATEADD(DAY, -15, GETDATE()));
 GO
 
--- Tạo đánh giá mẫu của Mentor dành cho Mentee
+-- Tạo đánh giá mẫu của Mentor dành cho Mentee (Phân biệt Công khai Non-anonymous và Nội bộ Anonymous)
 DECLARE @assign_id INT = (SELECT TOP 1 assignment_id FROM dbo.MentorAssignments WHERE mentee_id = 4 AND mentor_id = 6);
 IF @assign_id IS NOT NULL
 BEGIN
-    INSERT INTO dbo.MentorEvaluations (assignment_id, evaluator_id, performance_score, feedback, approval_status, evaluation_date) VALUES
-    (@assign_id, 6, 9, N'Nhân sự nắm bắt nhanh quy trình phát triển Java backend, tiếp thu tốt các tài liệu và có tinh thần tự học cao.', 'APPROVED', DATEADD(DAY, -2, GETDATE()));
+    INSERT INTO dbo.MentorEvaluations (assignment_id, evaluator_id, performance_score, feedback, public_feedback, private_feedback, approval_status, evaluation_date) VALUES
+    (@assign_id, 6, 9, 
+     N'Nhân sự nắm bắt nhanh quy trình phát triển Java backend, tiếp thu tốt các tài liệu và có tinh thần tự học cao.',
+     N'Kỹ năng chuyên môn tốt, hoàn thành đúng hạn các task CRUD cơ bản, chủ động học hỏi các module Spring Boot.',
+     N'Thái độ làm việc hòa đồng, tiếp thu nhanh khi được góp ý 1-on-1. Đề xuất: Đủ điều kiện kết thúc thử việc sớm để bổ nhiệm Junior chính thức.',
+     'APPROVED', DATEADD(DAY, -2, GETDATE()));
 END;
+GO
+
+-- =======================================================
+-- 8.1. SEED DATA: ĐỀ XUẤT VỊ TRÍ CỦA TRƯỞNG PHÒNG (POSITION_REQUESTS)
+-- =======================================================
+-- Đề xuất 1: Đang chờ duyệt (PENDING) từ Trưởng phòng IT (User 3)
+INSERT INTO dbo.Position_Requests (manager_id, department_id, position_name, description, reason, status, created_at)
+VALUES (3, 1, N'AI / Machine Learning Engineer', N'Nghiên cứu và triển khai mô hình học máy cho các sản phẩm nội bộ', N'Dự án quý mới cần bổ sung nhân sự chuyên sâu về xử lý dữ liệu và AI phục vụ khách hàng doanh nghiệp.', 'PENDING', DATEADD(DAY, -3, GETDATE()));
+
+-- Đề xuất 2: Đã được Admin phê duyệt (APPROVED)
+INSERT INTO dbo.Position_Requests (manager_id, department_id, position_name, description, reason, status, decision_note, reviewed_by, created_at, reviewed_at)
+VALUES (3, 1, N'DevOps Engineer', N'Vận hành hệ thống CI/CD, Docker, Kubernetes', N'Đội ngũ backend cần tự động hóa quy trình deploy để giảm tải thời gian release.', 'APPROVED', N'Đồng ý phê duyệt bổ sung vị trí này vào cơ cấu Phòng Công nghệ thông tin.', 1, DATEADD(DAY, -10, GETDATE()), DATEADD(DAY, -8, GETDATE()));
+
+-- Đề xuất 3: Bị từ chối có giải trình lý do (REJECTED kèm Explain Decision)
+INSERT INTO dbo.Position_Requests (manager_id, department_id, position_name, description, reason, status, decision_note, reviewed_by, created_at, reviewed_at)
+VALUES (3, 1, N'Scrum Master Fulltime', N'Điều phối quy trình Agile Scrum cho phòng IT', N'Phòng IT muốn có một nhân sự chuyên trách Scrum Master riêng biệt.', 'REJECTED', N'Ngân sách quý này chưa cho phép tuyển riêng Scrum Master độc lập. Đề xuất Trưởng nhóm Lead kiêm nhiệm vai trò này.', 1, DATEADD(DAY, -20, GETDATE()), DATEADD(DAY, -18, GETDATE()));
 GO
 
 -- =======================================================
@@ -570,6 +590,7 @@ SELECT * FROM dbo.Roles;
 SELECT * FROM dbo.Job_Levels;
 SELECT * FROM dbo.Departments;
 SELECT * FROM dbo.Positions;
+SELECT * FROM dbo.Position_Requests;
 SELECT * FROM dbo.Users;
 SELECT * FROM dbo.Employee_History;
 SELECT * FROM dbo.FlashcardDecks;

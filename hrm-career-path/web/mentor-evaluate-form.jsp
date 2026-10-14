@@ -14,65 +14,45 @@
             <input type="hidden" name="action" value="saveEvaluation">
             <input type="hidden" name="assignmentId" value="<%= request.getAttribute("assignmentId") %>">
             
-            <!-- PHẦN 1: PUBLIC (Mentee xem được) -->
-            <div style="margin-bottom: 30px;">
-                <h2 style="background: #e3f2fd; padding: 10px; border: 1px solid #000; font-size: 16px; margin-bottom: 15px;">
-                    PHẦN 1: KẾT QUẢ CÔNG KHAI (Mentee có thể xem)
-                </h2>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="font-weight: bold;">1. Năng lực chuyên môn & Chất lượng công việc:</label>
-                    <p style="font-size: 12px; color: #555;">Khả năng nắm bắt, tốc độ hoàn thành, độ chính xác của task.</p>
-                    <textarea class="form-control" rows="3" style="width: 100%;"></textarea>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="font-weight: bold;">2. Sự chủ động & Khả năng học hỏi:</label>
-                    <textarea class="form-control" rows="3" style="width: 100%;"></textarea>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="font-weight: bold;">3. Kỹ năng giao tiếp & Làm việc nhóm:</label>
-                    <textarea class="form-control" rows="3" style="width: 100%;"></textarea>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="font-weight: bold;">4. Bảng KPI / OKR - Kết quả Task (Đạt/Chưa đạt):</label>
-                    <textarea class="form-control" rows="2" style="width: 100%;"></textarea>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="font-weight: bold;">5. Feedback trực diện (1-on-1):</label>
-                    <textarea class="form-control" rows="2" style="width: 100%;"></textarea>
+            <!-- ĐIỂM ĐÁNH GIÁ ĐỊNH LƯỢNG -->
+            <div style="margin-bottom: 25px; background: #fff3e0; padding: 15px; border: 1px solid #ffb74d; border-radius: 4px;">
+                <label style="font-weight: bold; font-size: 15px; display: block; margin-bottom: 8px;">
+                    Điểm Đánh Giá Hiệu Suất / Năng Lực (Thang điểm 1 - 10) (*):
+                </label>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <input type="number" name="performanceScore" min="1" max="10" value="8" required class="form-control" style="width: 100px; font-size: 16px; font-weight: bold; text-align: center;">
+                    <span style="font-size: 13px; color: #666;">(1-4: Chưa đạt yêu cầu | 5-6: Trung bình | 7-8: Khá, hoàn thành tốt task | 9-10: Xuất sắc)</span>
                 </div>
             </div>
 
-            <!-- PHẦN 2: PRIVATE (Chỉ Mentor, HR, Manager xem) -->
-            <div style="margin-bottom: 20px;">
-                <h2 style="background: #ffebee; padding: 10px; border: 1px solid #000; font-size: 16px; margin-bottom: 15px;">
-                    PHẦN 2: ĐÁNH GIÁ NỘI BỘ (Mentee KHÔNG nhìn thấy)
+            <!-- PHẦN 1: PUBLIC (Mentee xem được - Non-anonymous Feedback) -->
+            <div style="margin-bottom: 30px; border: 1px solid #90caf9; border-radius: 4px; padding: 15px; background: #fbfdff;">
+                <h2 style="background: #e3f2fd; padding: 10px; border: 1px solid #64b5f6; font-size: 15px; margin: -15px -15px 15px -15px; color: #0d47a1;">
+                    <i class="fa-solid fa-eye"></i> PHẦN 1: KẾT QUẢ CÔNG KHAI (Non-anonymous - Mentee có thể xem)
                 </h2>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: #c62828;">1. Thái độ ẩn & Văn hóa ngầm:</label>
-                    <p style="font-size: 12px; color: #555;">Ứng xử khi áp lực, tinh thần hợp tác thực tế đằng sau vỏ bọc.</p>
-                    <textarea class="form-control" rows="3" style="width: 100%; border: 1px solid #c62828;"></textarea>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: #c62828;">2. Tiềm năng phát triển (Potential) & Rủi ro:</label>
-                    <textarea class="form-control" rows="3" style="width: 100%; border: 1px solid #c62828;"></textarea>
-                </div>
-
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="font-weight: bold; color: #c62828;">3. Ghi chú nội bộ (HR/Manager):</label>
-                    <p style="font-size: 12px; color: #555;">Mức lương kỳ vọng, độ phức tạp quản lý, sự cố ghi nhận.</p>
-                    <textarea class="form-control" rows="3" style="width: 100%; border: 1px solid #c62828;"></textarea>
+                <p style="font-size: 12.5px; color: #555; margin-bottom: 12px;">
+                    Nội dung nhận xét về chuyên môn, thái độ học tập, kết quả task và hướng dẫn phát triển trực tiếp cho Mentee.
+                </p>
+                <div class="form-group">
+                    <textarea name="publicFeedback" class="form-control" rows="5" style="width: 100%; font-size: 13.5px;" placeholder="Nhập nhận xét công khai gửi tới Mentee (ví dụ: Nắm vững kiến thức Java cơ bản, hoàn thành tốt bài test Onboarding...)" required></textarea>
                 </div>
             </div>
 
-            <div style="text-align: center; border-top: 1px solid #000; padding-top: 20px;">
-                <button type="submit" style="padding: 10px 30px; background: #000; color: #fff; font-weight: bold; cursor: pointer;">LƯU ĐÁNH GIÁ</button>
+            <!-- PHẦN 2: PRIVATE (Chỉ Mentor, HR, Manager xem - Anonymous / Nội bộ) -->
+            <div style="margin-bottom: 20px; border: 1px solid #ef9a9a; border-radius: 4px; padding: 15px; background: #fffcfc;">
+                <h2 style="background: #ffebee; padding: 10px; border: 1px solid #e57373; font-size: 15px; margin: -15px -15px 15px -15px; color: #b71c1c;">
+                    <i class="fa-solid fa-user-shield"></i> PHẦN 2: ĐÁNH GIÁ NỘI BỘ (Anonymous / Private - Mentee KHÔNG nhìn thấy)
+                </h2>
+                <p style="font-size: 12.5px; color: #555; margin-bottom: 12px;">
+                    Đánh giá khách quan dành riêng cho Quản lý (Manager) và Nhân sự (HR): tiềm năng phát triển, văn hóa làm việc và đề xuất ký hợp đồng chính thức.
+                </p>
+                <div class="form-group">
+                    <textarea name="privateFeedback" class="form-control" rows="4" style="width: 100%; border: 1px solid #c62828; font-size: 13.5px;" placeholder="Nhập ghi chú nội bộ cho HR/Manager (ví dụ: Đề xuất qua thử việc sớm / Cần theo dõi thêm về kỷ luật giờ giấc...)"></textarea>
+                </div>
+            </div>
+
+            <div style="text-align: center; border-top: 1px solid #eee; padding-top: 20px;">
+                <button type="submit" class="btn btn-primary" style="padding: 10px 30px; font-size: 14px; font-weight: bold; cursor: pointer;">LƯU ĐÁNH GIÁ MENTEE</button>
             </div>
         </form>
     </div>

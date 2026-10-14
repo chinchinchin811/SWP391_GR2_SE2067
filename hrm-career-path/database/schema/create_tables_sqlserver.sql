@@ -133,6 +133,25 @@ WHERE manager_id IS NOT NULL AND is_deleted = 0;
 GO
 
 -- =======================================================
+-- 5.1. BẢNG ĐỀ XUẤT VỊ TRÍ MỚI (POSITION_REQUESTS)
+-- =======================================================
+CREATE TABLE dbo.Position_Requests (
+    request_id INT IDENTITY(1,1) PRIMARY KEY,
+    manager_id INT NOT NULL REFERENCES dbo.Users(user_id),
+    department_id INT NOT NULL REFERENCES dbo.Departments(department_id),
+    position_name NVARCHAR(100) NOT NULL,
+    description NVARCHAR(500) NULL,
+    reason NVARCHAR(1000) NOT NULL, -- Lý do đề xuất của Trưởng phòng
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    decision_note NVARCHAR(1000) NULL, -- Giải trình quyết định của Admin (Accept / Explain decision)
+    reviewed_by INT NULL REFERENCES dbo.Users(user_id), -- Admin duyệt/từ chối
+    created_at DATETIME DEFAULT GETDATE(),
+    reviewed_at DATETIME NULL
+);
+CREATE INDEX IX_PosReq_Dept_Status ON dbo.Position_Requests(department_id, status);
+GO
+
+-- =======================================================
 -- 6. BẢNG LỊCH SỬ BIẾN ĐỘNG (EMPLOYEE_HISTORY)
 -- =======================================================
 CREATE TABLE dbo.Employee_History (
@@ -205,8 +224,10 @@ CREATE TABLE dbo.MentorEvaluations (
     evaluation_id INT IDENTITY(1,1) PRIMARY KEY,
     assignment_id INT NOT NULL,
     evaluator_id INT NOT NULL,
-    performance_score INT,
+    performance_score INT CHECK (performance_score BETWEEN 1 AND 10),
     feedback NVARCHAR(MAX),
+    public_feedback NVARCHAR(MAX) NULL,   -- Non-anonymous feedback (Mentee xem được)
+    private_feedback NVARCHAR(MAX) NULL,  -- Anonymous / Nội bộ (Chỉ Mentor, Manager, HR xem)
     approval_status VARCHAR(20) DEFAULT 'PENDING',
     evaluation_date DATETIME DEFAULT GETDATE(),
     FOREIGN KEY (assignment_id) REFERENCES dbo.MentorAssignments(assignment_id)
