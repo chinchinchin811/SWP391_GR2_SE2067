@@ -207,15 +207,16 @@ CREATE TABLE dbo.Learning_Materials (
     position_id INT NULL REFERENCES dbo.Positions(position_id),
     level_id INT NULL REFERENCES dbo.Job_Levels(level_id),
     
-    -- Dành cho file upload (PDF, SLIDE, file VIDEO mp4/webm)
+    -- Học liệu trực tuyến: Gắn đường dẫn link online (Google Drive, Docs, Slides, YouTube, PDF online...)
+    material_url NVARCHAR(1000) NOT NULL,
+    video_url NVARCHAR(1000) NULL, -- Đồng bộ tương thích ngược
+    duration_minutes INT NULL DEFAULT 15,
+    
+    -- Các trường file offline (Tùy chọn/tương thích cũ nếu có)
     file_name NVARCHAR(255) NULL,
     file_type VARCHAR(100) NULL,
     file_data VARBINARY(MAX) NULL,
     file_size BIGINT NULL,
-    
-    -- Dành cho Video nhúng (YouTube, Google Drive, Vimeo...)
-    video_url NVARCHAR(500) NULL,
-    duration_minutes INT NULL DEFAULT 15,
     
     status BIT DEFAULT 1,             -- 1: Hoạt động/Công bố, 0: Ẩn/Bản nháp
     is_deleted BIT DEFAULT 0,         -- Xóa mềm
@@ -230,6 +231,14 @@ CREATE TABLE dbo.Learning_Materials (
     )
 );
 CREATE INDEX IX_Material_Dept_Type ON dbo.Learning_Materials(department_id, material_type, is_deleted);
+GO
+
+-- Nâng cấp bảng nếu đã tồn tại trước đó: tự động thêm cột material_url
+IF COL_LENGTH('dbo.Learning_Materials', 'material_url') IS NULL
+BEGIN
+    ALTER TABLE dbo.Learning_Materials ADD material_url NVARCHAR(1000) NULL;
+    EXEC('UPDATE dbo.Learning_Materials SET material_url = video_url WHERE material_url IS NULL AND video_url IS NOT NULL');
+END;
 GO
 
 CREATE TABLE dbo.Training_Classes (

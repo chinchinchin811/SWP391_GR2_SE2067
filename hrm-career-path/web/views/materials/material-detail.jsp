@@ -1,11 +1,14 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="java.util.List,model.LearningMaterial,model.VideoCheckpoint,model.User" %>
+<%@ page import="java.util.List,model.LearningMaterial,model.VideoCheckpoint,model.TrainingClass,model.User" %>
 <%
     LearningMaterial material = (LearningMaterial) request.getAttribute("material");
     List<VideoCheckpoint> checkpoints = (List<VideoCheckpoint>) request.getAttribute("checkpoints");
+    List<TrainingClass> relatedClasses = (List<TrainingClass>) request.getAttribute("relatedClasses");
     String fromClassId = request.getParameter("classId");
     User currentUser = (User) session.getAttribute("currentUser");
-    boolean canManage = currentUser != null && currentUser.getRoleId() <= 3;
+    boolean canManage = currentUser != null && (currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3);
+    Boolean hasAccessAttr = (Boolean) request.getAttribute("hasAccess");
+    boolean hasAccess = canManage || (hasAccessAttr != null && hasAccessAttr.booleanValue());
     request.setAttribute("pageTitle", (material != null ? material.getTitle() : "Học liệu") + " | HRM");
 %>
 <jsp:include page="/views/common/header.jsp" />
@@ -19,16 +22,16 @@
             <% } else { %>
             <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials">Quay lại kho học liệu</a>
             <% } %>
-            <% if (material != null) { %>
-            <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=download&id=<%= material.getMaterialId() %>">Tải xuống</a>
-            <% if (canManage) { %>
+            <% if (material != null && material.getMaterialUrl() != null && !material.getMaterialUrl().trim().isEmpty() && hasAccess) { %>
+            <a class="btn btn-primary" href="<%= material.getMaterialUrl() %>" target="_blank">Mở liên kết trực tuyến ↗</a>
+            <% } %>
+            <% if (material != null && canManage) { %>
             <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials?action=edit&id=<%= material.getMaterialId() %>">Sửa</a>
             <form method="post" action="<%= request.getContextPath() %>/materials" style="display:inline-flex;margin:0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa học liệu này?')">
                 <input type="hidden" name="action" value="deleteMaterial">
                 <input type="hidden" name="id" value="<%= material.getMaterialId() %>">
                 <button type="submit" class="btn btn-danger">Xóa học liệu</button>
             </form>
-            <% } %>
             <% } %>
         </div>
     </div>
@@ -37,108 +40,180 @@
         <div class="card">
             <div class="card-header">
                 <h2>Thông Tin Học Liệu</h2>
-                <span class="badge"><%= material.getMaterialType() %></span>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <% if (!hasAccess) { %>
+                    <span class="badge" style="background:#e67e22;color:#fff"><i class="fa-solid fa-lock"></i> Cần tham gia lớp</span>
+                    <% } %>
+                    <span class="badge"><%= material.getMaterialType() %></span>
+                </div>
             </div>
             <div class="card-body">
                 <p style="font-size:13px;color:#333;line-height:1.6">
                     <%= material.getDescription() != null ? material.getDescription() : "<em style='color:#999'>Chưa có mô tả.</em>" %>
                 </p>
-                <p style="margin-top:10px;font-size:13px">
-                    <strong>Thời lượng:</strong> <%= material.getDurationMinutes() %> phút
-                </p>
+                <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:20px;font-size:13px">
+                    <% if ("VIDEO".equals(material.getMaterialType()) && material.getDurationMinutes() > 0) { %>
+                    <div>
+                        <strong>Thời lượng:</strong> <%= material.getDurationMinutes() %> phút
+                    </div>
+                    <% } %>
+                    <% if (hasAccess) { %>
+                    <div>
+                        <strong>Đường dẫn trực tuyến:</strong>
+                        <% if (material.getMaterialUrl() != null && !material.getMaterialUrl().trim().isEmpty()) { %>
+                            <a href="<%= material.getMaterialUrl() %>" target="_blank" style="color:#0056b3;font-weight:600;text-decoration:underline;word-break:break-all">
+                                <%= material.getMaterialUrl() %> ↗
+                            </a>
+                        <% } else { %>
+                            <span style="color:#999">Chưa có đường dẫn</span>
+                        <% } %>
+                    </div>
+                    <% } %>
+                </div>
             </div>
         </div>
 
+        <% if (hasAccess) { %>
         <div class="card">
             <div class="card-header">
-                <h2>Nội Dung Học Liệu</h2>
+                <h2>Nội Dung Học Liệu Trực Tuyến</h2>
             </div>
             <div class="card-body" style="padding:0">
                 <% if ("VIDEO".equals(material.getMaterialType()) && material.getYoutubeEmbedId() != null) { %>
                 <div id="youtubePlayer" style="width:100%;min-height:480px;background:#000"></div>
-                <% } else if ("VIDEO".equals(material.getMaterialType()) && material.getVideoUrl() != null && !material.getVideoUrl().trim().isEmpty()) { %>
+                <% } else if ("VIDEO".equals(material.getMaterialType()) && material.getMaterialUrl() != null && !material.getMaterialUrl().trim().isEmpty()) { %>
                 <video id="learningVideo" controls style="width:100%;max-height:600px;display:block">
-                    <source src="<%= material.getVideoUrl() %>">
+                    <source src="<%= material.getMaterialUrl() %>">
                 </video>
                 <% } else if ("PDF".equals(material.getMaterialType())) { %>
                     <% if (material.getPdfEmbedUrl() != null) { %>
                     <div style="background:#f8f9fa;border-bottom:1px solid #ddd;padding:8px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
                         <div style="display:flex;align-items:center;gap:8px">
                             <span class="badge" style="background:#2c3e50;color:#fff;font-weight:600">PDF Trực Tuyến</span>
-                            <span style="font-size:12.5px;color:#555">Đang xem tài liệu từ liên kết web</span>
+                            <span style="font-size:12.5px;color:#555">Đang hiển thị tài liệu học tập</span>
                         </div>
                         <div style="display:flex;align-items:center;gap:8px">
-                            <button type="button" class="btn btn-secondary" onclick="togglePdfSource()" style="font-size:12px;padding:4px 10px" id="togglePdfBtn">
-                                Đổi chế độ xem (Google Docs Viewer)
-                            </button>
-                            <a class="btn btn-primary" href="<%= material.getVideoUrl() %>" target="_blank" style="font-size:12px;padding:4px 12px">
+                            <a class="btn btn-secondary" href="<%= material.getMaterialUrl() %>" download style="font-size:12px;padding:4px 12px">
+                                ⤓ Tải xuống PDF
+                            </a>
+                            <a class="btn btn-primary" href="<%= material.getMaterialUrl() %>" target="_blank" style="font-size:12px;padding:4px 12px">
                                 Mở tab mới ↗
                             </a>
                         </div>
                     </div>
                     <iframe id="pdfFrame" title="<%= material.getTitle() %>"
                             src="<%= material.getPdfEmbedUrl() %>"
-                            style="width:100%;height:700px;border:none"
-                            allow="autoplay"></iframe>
-                    <script>
-                        let isGoogleDocsMode = false;
-                        const originalPdfUrl = <%= json(material.getPdfEmbedUrl()) %>;
-                        const gdocsPdfUrl = <%= json(material.getGoogleDocsViewerUrl()) %>;
-                        function togglePdfSource() {
-                            const frame = document.getElementById('pdfFrame');
-                            const btn = document.getElementById('togglePdfBtn');
-                            if (!frame) return;
-                            isGoogleDocsMode = !isGoogleDocsMode;
-                            if (isGoogleDocsMode) {
-                                frame.src = gdocsPdfUrl;
-                                btn.textContent = 'Đổi sang Trình xem trực tiếp';
-                            } else {
-                                frame.src = originalPdfUrl;
-                                btn.textContent = 'Đổi sang Google Docs Viewer';
-                            }
-                        }
-                    </script>
-                    <% } else if (material.getFileName() != null && !material.getFileName().isEmpty()) { %>
-                    <div style="background:#f8f9fa;border-bottom:1px solid #ddd;padding:8px 14px;display:flex;align-items:center;justify-content:space-between">
-                        <span style="font-size:12.5px;color:#555">
-                            <strong>Tệp đính kèm:</strong> <%= material.getFileName() %>
-                        </span>
-                        <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials?action=download&id=<%= material.getMaterialId() %>" style="font-size:12px;padding:4px 10px">
-                            Tải xuống tệp
-                        </a>
-                    </div>
-                    <iframe title="<%= material.getTitle() %>"
-                            src="<%= request.getContextPath() %>/materials?action=preview&id=<%= material.getMaterialId() %>"
-                            style="width:100%;height:700px;border:none"></iframe>
+                            style="width:100%;height:750px;border:none"
+                            allow="autoplay">
+                        <p style="padding:24px;text-align:center;font-size:13px;color:#555">
+                            Trình duyệt của bạn không hỗ trợ hiển thị PDF trực tiếp. 
+                            <a href="<%= material.getMaterialUrl() %>" target="_blank" style="color:#0056b3;font-weight:600">Bấm vào đây để mở tài liệu trong tab mới ↗</a>
+                        </p>
+                    </iframe>
                     <% } else { %>
                     <div style="padding:48px 24px;text-align:center;color:#666">
                         <div style="font-size:40px;margin-bottom:12px">📄</div>
-                        <h3 style="font-size:16px;color:#333;margin-bottom:8px">Chưa có tệp PDF hoặc liên kết trực tuyến</h3>
+                        <h3 style="font-size:16px;color:#333;margin-bottom:8px">Chưa có liên kết trực tuyến hợp lệ</h3>
                         <p style="font-size:13px;color:#777;max-width:480px;margin:0 auto 16px;line-height:1.6">
-                            Học liệu này chưa được đính kèm tệp PDF hoặc gắn liên kết xem trực tuyến. Bạn có thể nhấn Sửa để gắn liên kết Google Drive / PDF công khai.
+                            Học liệu này chưa được gắn đường dẫn PDF hoặc Google Drive công khai. Bạn có thể nhấn Sửa để cập nhật.
                         </p>
+                        <% if (canManage) { %>
                         <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=edit&id=<%= material.getMaterialId() %>">
                             Sửa và Gắn Liên Kết
                         </a>
+                        <% } %>
                     </div>
                     <% } %>
                 <% } else if ("SLIDE".equals(material.getMaterialType()) && material.getSlideEmbedUrl() != null) { %>
+                <div style="background:#f8f9fa;border-bottom:1px solid #ddd;padding:8px 14px;display:flex;align-items:center;justify-content:space-between">
+                    <span class="badge" style="background:#d35400;color:#fff;font-weight:600">SLIDE Trực Tuyến</span>
+                    <a class="btn btn-primary" href="<%= material.getMaterialUrl() %>" target="_blank" style="font-size:12px;padding:4px 12px">
+                        Mở tab mới ↗
+                    </a>
+                </div>
                 <iframe title="<%= material.getTitle() %>"
                         src="<%= material.getSlideEmbedUrl() %>"
                         allowfullscreen
                         style="width:100%;height:650px;border:none"></iframe>
                 <% } else { %>
-                <div style="padding:32px;text-align:center;color:#666;font-size:13px;line-height:1.7">
-                    Slide tải lên từ máy không thể xem trực tiếp trên trình duyệt.<br>
-                    Hãy cập nhật liên kết công khai Google Slides, Google Drive hoặc Office Online để trình chiếu tại đây.
+                <div style="padding:40px 20px;text-align:center;color:#666;font-size:13px;line-height:1.7">
+                    <div style="font-size:36px;margin-bottom:10px">🔗</div>
+                    <h3 style="font-size:15px;color:#333;margin-bottom:8px">Liên kết học liệu trực tuyến</h3>
+                    <p style="max-width:500px;margin:0 auto 14px;color:#777">
+                        Bạn có thể mở trực tiếp học liệu này qua liên kết bên dưới nếu trình duyệt không hỗ trợ xem nhúng:
+                    </p>
+                    <% if (material.getMaterialUrl() != null && !material.getMaterialUrl().trim().isEmpty()) { %>
+                    <a class="btn btn-primary" href="<%= material.getMaterialUrl() %>" target="_blank">
+                        Mở học liệu trong tab mới ↗
+                    </a>
+                    <% } %>
                 </div>
                 <% } %>
             </div>
         </div>
+        <% } else { %>
+        <!-- THÔNG BÁO DÀNH CHO NHÂN VIÊN CHƯA THAM GIA LỚP ĐÀO TẠO -->
+        <div class="card" style="border: 2px dashed #e67e22; background: #fffcf8; box-shadow: 0 4px 16px rgba(230,126,34,0.12); margin-top: 20px">
+            <div class="card-body" style="padding: 44px 24px; text-align: center">
+                <div style="font-size: 56px; margin-bottom: 12px; line-height: 1">🔒</div>
+                <h2 style="font-size: 21px; font-weight: 700; color: #d35400; margin-bottom: 10px">
+                    Vui Lòng Tham Gia Lớp Đào Tạo Để Xem Học Liệu
+                </h2>
+                <p style="font-size: 14px; color: #555; max-width: 620px; margin: 0 auto 22px; line-height: 1.6">
+                    Nội dung học liệu này thuộc lộ trình đào tạo chuyên biệt. Chỉ <strong>Mentor</strong> phụ trách và <strong>Học viên (Mentee)</strong> đã được ghi danh vào lớp đào tạo mới có quyền truy cập bài học và làm bài kiểm tra.
+                </p>
+
+                <% if (relatedClasses != null && !relatedClasses.isEmpty()) { %>
+                <div style="max-width: 740px; margin: 0 auto 24px; text-align: left; background: #fff; border: 1px solid #ebd4b8; border-radius: 6px; padding: 18px 22px; box-shadow: 0 2px 6px rgba(0,0,0,0.04)">
+                    <div style="font-size: 14px; font-weight: 700; color: #2c3e50; margin-bottom: 12px; display: flex; align-items: center; gap: 8px">
+                        <i class="fa-solid fa-graduation-cap" style="color:#e67e22"></i> Các lớp đào tạo đang giảng dạy học liệu này:
+                    </div>
+                    <table class="data-table" style="margin: 0; font-size: 13px">
+                        <thead>
+                            <tr>
+                                <th style="width:25%">Mã lớp</th>
+                                <th style="width:40%">Tên lớp đào tạo</th>
+                                <th style="width:22%">Mentor phụ trách</th>
+                                <th style="width:13%;text-align:center">Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% for (TrainingClass rc : relatedClasses) { %>
+                            <tr>
+                                <td style="font-weight: 600; color: #2980b9"><%= rc.getClassCode() %></td>
+                                <td style="font-weight: 600"><%= rc.getClassName() %></td>
+                                <td><%= rc.getMentorName() != null ? rc.getMentorName() : "—" %></td>
+                                <td style="text-align: center"><span class="badge"><%= rc.getStatus() %></span></td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 14px; font-size: 12.5px; color: #7f8c8d; text-align: center; line-height: 1.5">
+                        💡 Bạn chưa được ghi danh vào các lớp trên. Vui lòng liên hệ <strong>Trưởng phòng (Manager)</strong> hoặc <strong>Phòng Nhân Sự (HR)</strong> để được phê duyệt vào lớp học.
+                    </div>
+                </div>
+                <% } else { %>
+                <div style="display: inline-block; padding: 12px 20px; background: #fff; border: 1px solid #ebd4b8; border-radius: 6px; font-size: 13px; color: #7f8c8d; margin-bottom: 24px">
+                    ℹ️ Học liệu này hiện chưa được mở trong lớp đào tạo nào. Vui lòng liên hệ HR/Manager để biết lịch mở lớp tiếp theo.
+                </div>
+                <% } %>
+
+                <div style="display: flex; justify-content: center; gap: 14px; flex-wrap: wrap">
+                    <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials">
+                        ← Quay lại kho học liệu
+                    </a>
+                    <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=classList">
+                        Xem danh sách tất cả lớp đào tạo
+                    </a>
+                </div>
+            </div>
+        </div>
+        <% } %>
         <% } %>
     </div>
 </main>
 
+<% if (hasAccess) { %>
 <div id="questionModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:99999;align-items:center;justify-content:center;backdrop-filter:blur(2px)">
     <div style="width:540px;max-width:92%;background:#fff;border:1px solid #111;box-shadow:0 12px 36px rgba(0,0,0,0.35);padding:24px;border-radius:6px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid #eee;padding-bottom:10px">
@@ -466,6 +541,7 @@
 
     attachSubmitHandler();
 </script>
+<% } %>
 <%!
     String json(String s) {
         return s == null ? "null" : "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", " ") + "\"";

@@ -22,6 +22,7 @@ public class LearningMaterial implements Serializable {
     private String fileType;
     private Long fileSize;
     private byte[] fileData;
+    private String materialUrl;
     private String videoUrl;
     private int durationMinutes;
     private boolean status;
@@ -35,9 +36,38 @@ public class LearningMaterial implements Serializable {
     private String userProgressStatus; // 'NOT_STARTED', 'IN_PROGRESS', 'COMPLETED'
     private int checkpointCount;       // Số mốc câu hỏi trong video
 
+    // Phân quyền truy cập học liệu theo lớp
+    private boolean userHasAccess = true; // Mặc định true cho admin/quản lý
+    private String userAccessRole;        // 'MANAGER', 'HR', 'MENTOR', 'MENTEE', 'LOCKED'
+    private int enrolledClassCount;       // Số lớp người dùng tham gia có chứa học liệu này
+
     public LearningMaterial() {
         this.status = true;
         this.durationMinutes = 15;
+    }
+
+    public boolean isUserHasAccess() {
+        return userHasAccess;
+    }
+
+    public void setUserHasAccess(boolean userHasAccess) {
+        this.userHasAccess = userHasAccess;
+    }
+
+    public String getUserAccessRole() {
+        return userAccessRole;
+    }
+
+    public void setUserAccessRole(String userAccessRole) {
+        this.userAccessRole = userAccessRole;
+    }
+
+    public int getEnrolledClassCount() {
+        return enrolledClassCount;
+    }
+
+    public void setEnrolledClassCount(int enrolledClassCount) {
+        this.enrolledClassCount = enrolledClassCount;
     }
 
     public int getMaterialId() {
@@ -160,12 +190,29 @@ public class LearningMaterial implements Serializable {
         this.fileData = fileData;
     }
 
-    public String getVideoUrl() {
+    public String getMaterialUrl() {
+        if (materialUrl != null && !materialUrl.trim().isEmpty()) {
+            return materialUrl;
+        }
         return videoUrl;
+    }
+
+    public void setMaterialUrl(String materialUrl) {
+        this.materialUrl = materialUrl;
+        if (this.videoUrl == null || this.videoUrl.trim().isEmpty()) {
+            this.videoUrl = materialUrl;
+        }
+    }
+
+    public String getVideoUrl() {
+        return getMaterialUrl();
     }
 
     public void setVideoUrl(String videoUrl) {
         this.videoUrl = videoUrl;
+        if (this.materialUrl == null || this.materialUrl.trim().isEmpty()) {
+            this.materialUrl = videoUrl;
+        }
     }
 
     public int getDurationMinutes() {
@@ -242,25 +289,26 @@ public class LearningMaterial implements Serializable {
 
     // Helper: trích xuất YouTube Embed ID nếu là link YouTube
     public String getYoutubeEmbedId() {
-        if (videoUrl == null || videoUrl.isEmpty()) {
+        String url = getMaterialUrl();
+        if (url == null || url.isEmpty()) {
             return null;
         }
-        if (videoUrl.contains("v=")) {
-            String[] parts = videoUrl.split("v=");
+        if (url.contains("v=")) {
+            String[] parts = url.split("v=");
             if (parts.length > 1) {
                 String id = parts[1];
                 int amp = id.indexOf('&');
                 return amp != -1 ? id.substring(0, amp) : id;
             }
-        } else if (videoUrl.contains("youtu.be/")) {
-            String[] parts = videoUrl.split("youtu.be/");
+        } else if (url.contains("youtu.be/")) {
+            String[] parts = url.split("youtu.be/");
             if (parts.length > 1) {
                 String id = parts[1];
                 int q = id.indexOf('?');
                 return q != -1 ? id.substring(0, q) : id;
             }
-        } else if (videoUrl.contains("/embed/")) {
-            String[] parts = videoUrl.split("/embed/");
+        } else if (url.contains("/embed/")) {
+            String[] parts = url.split("/embed/");
             if (parts.length > 1) {
                 String id = parts[1];
                 int q = id.indexOf('?');
@@ -268,8 +316,8 @@ public class LearningMaterial implements Serializable {
                 int cut = (q != -1 && amp != -1) ? Math.min(q, amp) : (q != -1 ? q : amp);
                 return cut != -1 ? id.substring(0, cut) : id;
             }
-        } else if (videoUrl.contains("/shorts/")) {
-            String[] parts = videoUrl.split("/shorts/");
+        } else if (url.contains("/shorts/")) {
+            String[] parts = url.split("/shorts/");
             if (parts.length > 1) {
                 String id = parts[1];
                 int q = id.indexOf('?');
@@ -283,8 +331,9 @@ public class LearningMaterial implements Serializable {
 
     /** Returns a browser-friendly embed URL for public Google Slides/Drive or Office links. */
     public String getSlideEmbedUrl() {
-        if (videoUrl == null || videoUrl.trim().isEmpty()) return null;
-        String url = videoUrl.trim();
+        String url = getMaterialUrl();
+        if (url == null || url.trim().isEmpty()) return null;
+        url = url.trim();
         if (url.contains("docs.google.com/presentation/")) {
             return url.replaceFirst("/(edit|view)(\\?.*)?$", "/embed");
         }
@@ -301,10 +350,11 @@ public class LearningMaterial implements Serializable {
 
     /** Returns a browser-friendly embed URL for public PDF online links (Google Drive, Docs, direct PDF). */
     public String getPdfEmbedUrl() {
-        if (videoUrl == null || videoUrl.trim().isEmpty()) {
+        String url = getMaterialUrl();
+        if (url == null || url.trim().isEmpty()) {
             return null;
         }
-        String url = videoUrl.trim();
+        url = url.trim();
         // Google Drive /file/d/{id}/...
         if (url.contains("drive.google.com/file/d/")) {
             int start = url.indexOf("/file/d/") + 8;
@@ -335,10 +385,11 @@ public class LearningMaterial implements Serializable {
 
     /** Returns Google Docs Viewer embed URL as a reliable cross-origin fallback for web PDFs. */
     public String getGoogleDocsViewerUrl() {
-        if (videoUrl == null || videoUrl.trim().isEmpty()) {
+        String url = getMaterialUrl();
+        if (url == null || url.trim().isEmpty()) {
             return null;
         }
-        String url = videoUrl.trim();
+        url = url.trim();
         if (url.contains("drive.google.com") || url.contains("docs.google.com")) {
             return getPdfEmbedUrl();
         }

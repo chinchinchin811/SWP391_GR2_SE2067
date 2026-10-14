@@ -3,7 +3,11 @@
 <%
     List<TrainingClass> classes = (List<TrainingClass>) request.getAttribute("classes");
     User currentUser = (User) session.getAttribute("currentUser");
-    boolean canManage = currentUser != null && currentUser.getRoleId() <= 3;
+    boolean canManage = currentUser != null && (currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3);
+    String successMessage = (String) session.getAttribute("successMessage");
+    String errorMessage = (String) session.getAttribute("errorMessage");
+    session.removeAttribute("successMessage");
+    session.removeAttribute("errorMessage");
     request.setAttribute("pageTitle", "Quản lý lớp đào tạo | HRM");
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 %>
@@ -20,6 +24,12 @@
         </div>
     </div>
     <div class="content-body">
+        <% if (successMessage != null) { %>
+        <div class="alert alert-success"><%= successMessage %></div>
+        <% } %>
+        <% if (errorMessage != null) { %>
+        <div class="alert alert-danger"><%= errorMessage %></div>
+        <% } %>
         <div class="card">
             <div class="card-header">
                 <h2>Danh Sách Lớp Đào Tạo</h2>
@@ -28,13 +38,13 @@
             <div class="card-body" style="padding:0">
                 <table class="data-table">
                     <colgroup>
+                        <col style="width:14%">
+                        <col style="width:24%">
                         <col style="width:16%">
-                        <col style="width:26%">
-                        <col style="width:17%">
-                        <col style="width:12%">
-                        <col style="width:8%">
-                        <col style="width:10%">
                         <col style="width:11%">
+                        <col style="width:8%">
+                        <col style="width:9%">
+                        <col style="width:18%">
                     </colgroup>
                     <thead>
                         <tr>
@@ -62,10 +72,15 @@
                             <td style="text-align:center;font-weight:700;font-size:14px"><%= c.getEnrollmentCount() %></td>
                             <td style="text-align:center"><span class="badge"><%= c.getStatus() %></span></td>
                             <td style="text-align:center">
-                                <div class="action-btn-group">
+                                <div class="action-btn-group" style="display:flex;gap:4px;justify-content:center;align-items:center;">
                                     <a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=classDetail&id=<%= c.getClassId() %>">Chi tiết</a>
                                     <% if (canManage) { %>
-                                    <a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=classAssign&id=<%= c.getClassId() %>">Gán nhân sự</a>
+                                    <a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=classAssign&id=<%= c.getClassId() %>">Gán NV</a>
+                                    <form method="post" action="<%= request.getContextPath() %>/materials" style="display:inline;margin:0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa lớp đào tạo này không?');">
+                                        <input type="hidden" name="action" value="deleteClass">
+                                        <input type="hidden" name="id" value="<%= c.getClassId() %>">
+                                        <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
+                                    </form>
                                     <% } %>
                                 </div>
                             </td>
