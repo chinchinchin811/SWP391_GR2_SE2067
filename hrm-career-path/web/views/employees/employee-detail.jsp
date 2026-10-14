@@ -33,10 +33,6 @@
                 <a href="<%= request.getContextPath() %>/employees" class="btn btn-secondary">
                     Quay lại danh sách
                 </a>
-            <% } else if (roleId == 4) { %>
-                <a href="<%= request.getContextPath() %>/employees?action=edit" class="btn btn-primary">
-                    <i class="fa-solid fa-user-pen"></i> Cập Nhật Thông Tin Cá Nhân
-                </a>
             <% } %>
         </div>
     </div>

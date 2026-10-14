@@ -48,13 +48,9 @@ public class EmployeeServlet extends HttpServlet {
             return;
         }
 
-        // Nhân viên thường (role 4): Được xem hồ sơ của chính mình hoặc tự sửa hồ sơ của mình
+        // Nhân viên thường (role 4): Chỉ được xem hồ sơ của chính mình (không có quyền tự chỉnh sửa)
         if (currentUser.getRoleId() == 4) {
-            if ("edit".equals(action)) {
-                showEditForm(request, response, currentUser);
-            } else {
-                showDetail(request, response, currentUser.getUserId());
-            }
+            showDetail(request, response, currentUser.getUserId());
             return;
         }
 
@@ -115,12 +111,8 @@ public class EmployeeServlet extends HttpServlet {
             action = "list";
         }
 
-        // Nhân viên thường (role 4): Chỉ được tự sửa hồ sơ của chính mình
+        // Nhân viên thường (role 4): Không có quyền chỉnh sửa hồ sơ (chỉ HR có quyền cập nhật)
         if (currentUser.getRoleId() == 4) {
-            if ("edit".equals(action)) {
-                updateMyProfile(request, response, currentUser);
-                return;
-            }
             response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + currentUser.getUserId());
             return;
         }

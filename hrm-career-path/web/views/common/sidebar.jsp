@@ -60,11 +60,6 @@
                     <i class="fa-solid fa-id-card nav-icon"></i> <span>Hồ Sơ Của Tôi</span>
                 </a>
             </li>
-            <li class="<%= currentURI.contains("/employees") && "edit".equals(action) ? "active" : "" %>">
-                <a href="<%= request.getContextPath() %>/employees?action=edit">
-                    <i class="fa-solid fa-user-pen nav-icon"></i> <span>Cập Nhật Thông Tin</span>
-                </a>
-            </li>
             <li class="<%= currentURI.contains("/transfer") ? "active" : "" %>">
                 <a href="<%= request.getContextPath() %>/transfer?action=myRequests">
                     <i class="fa-solid fa-arrows-split-up-and-left nav-icon"></i> <span>Nguyện Vọng Điều Chuyển</span>
