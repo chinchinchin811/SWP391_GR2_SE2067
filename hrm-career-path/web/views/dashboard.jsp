@@ -3,6 +3,8 @@
 <%@ page import="java.util.List" %>
 <%@ page import="model.Department" %>
 <%@ page import="model.EmployeeHistory" %>
+<%@ page import="model.PositionRequest" %>
+<%@ page import="model.TransferRequest" %>
 <%@ page import="model.User" %>
 <%
     User currentUser = (User) session.getAttribute("currentUser");
@@ -15,49 +17,110 @@
 <jsp:include page="/views/common/sidebar.jsp" />
 
 <main class="main-content">
-    <% if (roleId == 1 || roleId == 2) { %>
+    <% if (roleId == 1) { %>
     <!-- =========================================================
-         1. GIAO DIEN DASHBOARD DANG NHAP BANG HR / ADMIN
+         1. GIAO DIEN DASHBOARD DANG NHAP BANG ADMIN (QUAN TRI VIEN)
          ========================================================= -->
     <div class="topbar">
-        <h1>Báo Cáo Tổng Quan Hệ Thống (HR / Admin)</h1>
         <div>
-            <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
-                + Khai Báo Nhân Viên Mới
+            <h1>Báo Cáo Quản Trị Hệ Thống (Admin Dashboard)</h1>
+            <span style="color: #64748b; font-size: 13px;">Quản lý cơ cấu phòng ban, danh mục vị trí và xét duyệt đề xuất chuyên môn</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="<%= request.getContextPath() %>/departments?action=create" class="btn btn-secondary">
+                <i class="fa-solid fa-plus"></i> Thêm Phòng Ban
+            </a>
+            <a href="<%= request.getContextPath() %>/positions?action=create" class="btn btn-secondary">
+                <i class="fa-solid fa-plus"></i> Thêm Vị Trí
+            </a>
+            <a href="<%= request.getContextPath() %>/positions?action=requests" class="btn btn-primary">
+                <i class="fa-solid fa-clipboard-check"></i> Duyệt Đề Xuất Vị Trí
+                <% 
+                    Object pendingReqCountObj = request.getAttribute("countPendingRequests");
+                    int pendingReqCount = (pendingReqCountObj != null) ? (Integer) pendingReqCountObj : 0;
+                    if (pendingReqCount > 0) { 
+                %>
+                    <span class="badge" style="background-color: #ef4444; color: #fff; margin-left: 5px;"><%= pendingReqCount %></span>
+                <% } %>
             </a>
         </div>
     </div>
 
     <div class="content-body">
-        <!-- Stats toan cong ty -->
+        <!-- Stats Admin -->
         <div class="stats-grid">
             <div class="stat-box">
-                <h3><%= request.getAttribute("totalDepartments") %></h3>
+                <h3><%= request.getAttribute("totalDepartments") != null ? request.getAttribute("totalDepartments") : 0 %></h3>
                 <p>Phòng ban hoạt động</p>
             </div>
             <div class="stat-box">
-                <h3><%= request.getAttribute("totalPositions") %></h3>
+                <h3><%= request.getAttribute("totalPositions") != null ? request.getAttribute("totalPositions") : 0 %></h3>
                 <p>Vị trí chuyên môn</p>
             </div>
             <div class="stat-box">
-                <h3><%= request.getAttribute("totalEmployees") %></h3>
+                <h3><%= request.getAttribute("totalEmployees") != null ? request.getAttribute("totalEmployees") : 0 %></h3>
                 <p>Tổng số nhân sự</p>
             </div>
             <div class="stat-box">
-                <h3><%= request.getAttribute("totalNewHires") %></h3>
-                <p>Nhân sự mới vào công ty</p>
-            </div>
-            <div class="stat-box">
-                <h3><%= request.getAttribute("totalRoleChanges") %></h3>
-                <p>Mới đổi chuyên môn/ngạch</p>
+                <h3 style="color: #ef4444;"><%= pendingReqCount %></h3>
+                <p>Yêu cầu vị trí chờ duyệt</p>
             </div>
         </div>
 
         <div style="display: flex; gap: 15px;">
+            <!-- De xuat vi tri cho duyet -->
+            <div class="card" style="flex: 1.2;">
+                <div class="card-header">
+                    <h2>Đề Xuất Vị Trí Mới Chờ Duyệt</h2>
+                    <a href="<%= request.getContextPath() %>/positions?action=requests" class="btn btn-sm btn-secondary">Tất cả</a>
+                </div>
+                <div class="card-body">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Vị Trí Đề Xuất</th>
+                                <th>Phòng Ban</th>
+                                <th>Người Đề Xuất</th>
+                                <th>Ngày Gửi</th>
+                                <th>Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <%
+                                List<PositionRequest> pendingPosRequests = (List<PositionRequest>) request.getAttribute("pendingPositionRequests");
+                                if (pendingPosRequests != null && !pendingPosRequests.isEmpty()) {
+                                    for (PositionRequest pr : pendingPosRequests) {
+                            %>
+                            <tr>
+                                <td><b><%= pr.getPositionName() %></b></td>
+                                <td><%= pr.getDepartmentName() != null ? pr.getDepartmentName() : "-" %></td>
+                                <td><%= pr.getManagerName() != null ? pr.getManagerName() : "Trưởng phòng" %></td>
+                                <td><%= pr.getCreatedAt() != null ? sdfDate.format(pr.getCreatedAt()) : "-" %></td>
+                                <td>
+                                    <a href="<%= request.getContextPath() %>/positions?action=requests" class="btn btn-sm btn-primary">
+                                        Xem & Duyệt
+                                    </a>
+                                </td>
+                            </tr>
+                            <%
+                                    }
+                                } else {
+                            %>
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 15px; color: #64748b;">
+                                    Hiện không có đề xuất vị trí nào chờ phê duyệt.
+                                </td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Co cau phong ban -->
             <div class="card" style="flex: 1;">
                 <div class="card-header">
-                    <h2>Cơ Cấu Phòng Ban</h2>
+                    <h2>Cơ Cấu Phòng Ban & Trưởng Phòng</h2>
                     <a href="<%= request.getContextPath() %>/departments" class="btn btn-sm btn-secondary">Quản lý</a>
                 </div>
                 <div class="card-body">
@@ -71,9 +134,9 @@
                         </thead>
                         <tbody>
                             <%
-                                List<Department> departments = (List<Department>) request.getAttribute("departments");
-                                if (departments != null && !departments.isEmpty()) {
-                                    for (Department d : departments) {
+                                List<Department> adminDepts = (List<Department>) request.getAttribute("departments");
+                                if (adminDepts != null && !adminDepts.isEmpty()) {
+                                    for (Department d : adminDepts) {
                             %>
                             <tr>
                                 <td><b><%= d.getDepartmentName() %></b></td>
@@ -85,7 +148,121 @@
                                 } else {
                             %>
                             <tr>
-                                <td colspan="3" style="text-align: center;">Chưa có phòng ban nào</td>
+                                <td colspan="3" style="text-align: center; padding: 15px; color: #64748b;">Chưa có phòng ban nào</td>
+                            </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <% } else if (roleId == 2) { %>
+    <!-- =========================================================
+         2. GIAO DIEN DASHBOARD DANG NHAP BANG HR (QUAN LY NHAN SU)
+         ========================================================= -->
+    <div class="topbar">
+        <div>
+            <h1>Báo Cáo Tổng Quan Nhân Sự (HR Dashboard)</h1>
+            <span style="color: #64748b; font-size: 13px;">Khai báo nhân viên mới, điều chuyển nội bộ và quản lý đội ngũ nhân sự</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
+                <i class="fa-solid fa-user-plus"></i> + Khai Báo Nhân Viên Mới
+            </a>
+            <a href="<%= request.getContextPath() %>/transfer?action=hrRequests" class="btn btn-secondary">
+                <i class="fa-solid fa-people-arrows"></i> Điều Chuyển Nhân Sự
+                <% 
+                    Object pendingTransferCountObj = request.getAttribute("countPendingTransfers");
+                    int pendingTransferCount = (pendingTransferCountObj != null) ? (Integer) pendingTransferCountObj : 0;
+                    if (pendingTransferCount > 0) { 
+                %>
+                    <span class="badge" style="background-color: #ef4444; color: #fff; margin-left: 5px;"><%= pendingTransferCount %></span>
+                <% } %>
+            </a>
+            <a href="<%= request.getContextPath() %>/mentors?action=pair" class="btn btn-secondary">
+                <i class="fa-solid fa-handshake"></i> Ghép Nối Mentor
+            </a>
+        </div>
+    </div>
+
+    <div class="content-body">
+        <!-- Stats HR -->
+        <div class="stats-grid">
+            <div class="stat-box">
+                <h3><%= request.getAttribute("totalEmployees") != null ? request.getAttribute("totalEmployees") : 0 %></h3>
+                <p>Tổng số nhân sự</p>
+            </div>
+            <div class="stat-box">
+                <h3 style="color: #059669;"><%= request.getAttribute("totalNewHires") != null ? request.getAttribute("totalNewHires") : 0 %></h3>
+                <p>Nhân sự mới vào công ty</p>
+            </div>
+            <div class="stat-box">
+                <h3 style="color: #2563eb;"><%= request.getAttribute("totalRoleChanges") != null ? request.getAttribute("totalRoleChanges") : 0 %></h3>
+                <p>Mới đổi chuyên môn/ngạch</p>
+            </div>
+            <div class="stat-box">
+                <h3 style="color: #d97706;"><%= pendingTransferCountObj != null ? pendingTransferCountObj : 0 %></h3>
+                <p>Yêu cầu điều chuyển chờ xử lý</p>
+            </div>
+            <div class="stat-box">
+                <h3><%= request.getAttribute("totalDepartments") != null ? request.getAttribute("totalDepartments") : 0 %></h3>
+                <p>Phòng ban hoạt động</p>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 15px;">
+            <!-- De xuat dieu chuyen cho HR xu ly -->
+            <div class="card" style="flex: 1.2;">
+                <div class="card-header">
+                    <h2>Đề Xuất Điều Chuyển Chờ HR Xử Lý</h2>
+                    <a href="<%= request.getContextPath() %>/transfer?action=hrRequests" class="btn btn-sm btn-secondary">Tất cả</a>
+                </div>
+                <div class="card-body">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nhân Viên</th>
+                                <th>Phòng Ban Chuyển</th>
+                                <th>Vị Trí Mới</th>
+                                <th>Trưởng Phòng Duyệt</th>
+                                <th>Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <%
+                                List<TransferRequest> pendingTransfers = (List<TransferRequest>) request.getAttribute("pendingTransfers");
+                                if (pendingTransfers != null && !pendingTransfers.isEmpty()) {
+                                    for (TransferRequest tr : pendingTransfers) {
+                            %>
+                            <tr>
+                                <td><b><%= tr.getEmployeeName() %></b></td>
+                                <td>
+                                    <small style="color: #64748b;"><%= tr.getCurrentDepartmentName() != null ? tr.getCurrentDepartmentName() : "Chưa có" %></small>
+                                    <i class="fa-solid fa-arrow-right" style="font-size: 10px; margin: 0 4px; color: #94a3b8;"></i>
+                                    <b><%= tr.getTargetDepartmentName() != null ? tr.getTargetDepartmentName() : "-" %></b>
+                                </td>
+                                <td><%= tr.getTargetPositionName() != null ? tr.getTargetPositionName() : "Chưa xếp" %></td>
+                                <td>
+                                    <span class="badge" style="background-color: #dcfce7; color: #166534;">
+                                        <%= tr.getManagerReviewerName() != null ? tr.getManagerReviewerName() : "Đã duyệt" %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <a href="<%= request.getContextPath() %>/transfer?action=hrRequests" class="btn btn-sm btn-primary">
+                                        Xử lý
+                                    </a>
+                                </td>
+                            </tr>
+                            <%
+                                    }
+                                } else {
+                            %>
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 15px; color: #64748b;">
+                                    Không có đề xuất điều chuyển nào cần xử lý.
+                                </td>
                             </tr>
                             <% } %>
                         </tbody>
@@ -96,7 +273,7 @@
             <!-- Nhan su moi cap nhat -->
             <div class="card" style="flex: 1;">
                 <div class="card-header">
-                    <h2>Nhân Sự Cập Nhật Gần Đây</h2>
+                    <h2>Nhân Sự Toàn Công Ty Gần Đây</h2>
                     <a href="<%= request.getContextPath() %>/employees" class="btn btn-sm btn-secondary">Tất cả</a>
                 </div>
                 <div class="card-body">
@@ -128,7 +305,7 @@
                                 } else {
                             %>
                             <tr>
-                                <td colspan="3" style="text-align: center;">Chưa có nhân sự nào</td>
+                                <td colspan="3" style="text-align: center; padding: 15px; color: #64748b;">Chưa có nhân sự nào</td>
                             </tr>
                             <% } %>
                         </tbody>

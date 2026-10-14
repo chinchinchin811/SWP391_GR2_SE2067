@@ -2,9 +2,13 @@ package controller;
 
 import dal.DepartmentDAO;
 import dal.PositionDAO;
+import dal.PositionRequestDAO;
+import dal.TransferRequestDAO;
 import dal.UserDAO;
 import model.Department;
 import model.EmployeeHistory;
+import model.PositionRequest;
+import model.TransferRequest;
 import model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -18,6 +22,8 @@ public class DashboardServlet extends HttpServlet {
 
     private final DepartmentDAO departmentDAO = new DepartmentDAO();
     private final PositionDAO positionDAO = new PositionDAO();
+    private final PositionRequestDAO positionRequestDAO = new PositionRequestDAO();
+    private final TransferRequestDAO transferRequestDAO = new TransferRequestDAO();
     private final UserDAO userDAO = new UserDAO();
 
     @Override
@@ -32,12 +38,33 @@ public class DashboardServlet extends HttpServlet {
         User currentUser = (User) session.getAttribute("currentUser");
         int roleId = currentUser.getRoleId();
 
-        if (roleId == 1 || roleId == 2) {
+        if (roleId == 1) {
+            // Dashboard cho Quản trị viên (Admin)
+            int totalDepartments = departmentDAO.countDepartments();
+            int totalPositions = positionDAO.countPositions();
+            int totalEmployees = userDAO.countEmployees();
+
+            List<PositionRequest> pendingPositionRequests = positionRequestDAO.getAllRequests("PENDING");
+            int countPendingRequests = (pendingPositionRequests != null) ? pendingPositionRequests.size() : 0;
+            List<Department> departments = departmentDAO.getAllDepartments();
+
+            request.setAttribute("totalDepartments", totalDepartments);
+            request.setAttribute("totalPositions", totalPositions);
+            request.setAttribute("totalEmployees", totalEmployees);
+            request.setAttribute("countPendingRequests", countPendingRequests);
+            request.setAttribute("pendingPositionRequests", pendingPositionRequests);
+            request.setAttribute("departments", departments);
+
+        } else if (roleId == 2) {
+            // Dashboard cho Bộ phận Nhân sự (HR)
             int totalDepartments = departmentDAO.countDepartments();
             int totalPositions = positionDAO.countPositions();
             int totalEmployees = userDAO.countEmployees();
             int totalNewHires = userDAO.countNewHires();
             int totalRoleChanges = userDAO.countRoleChanges();
+
+            List<TransferRequest> pendingTransfers = transferRequestDAO.getAllRequestsForHR("PENDING_HR");
+            int countPendingTransfers = (pendingTransfers != null) ? pendingTransfers.size() : 0;
 
             List<Department> departments = departmentDAO.getAllDepartments();
             List<User> recentEmployees = userDAO.getAllEmployees("", null, null, null);
@@ -50,6 +77,8 @@ public class DashboardServlet extends HttpServlet {
             request.setAttribute("totalEmployees", totalEmployees);
             request.setAttribute("totalNewHires", totalNewHires);
             request.setAttribute("totalRoleChanges", totalRoleChanges);
+            request.setAttribute("countPendingTransfers", countPendingTransfers);
+            request.setAttribute("pendingTransfers", pendingTransfers);
             request.setAttribute("departments", departments);
             request.setAttribute("recentEmployees", recentEmployees);
 
