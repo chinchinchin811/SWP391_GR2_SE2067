@@ -110,9 +110,10 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="dob">Ngày sinh:</label>
+                            <label for="dob">Ngày sinh (*):</label>
                             <input type="date" id="dob" name="dob" class="form-control" 
-                                   value="<%= emp != null && emp.getDob() != null ? emp.getDob().toString() : "" %>">
+                                   value="<%= emp != null && emp.getDob() != null ? emp.getDob().toString() : "" %>" required>
+                            <small style="color: #64748b; font-size: 11px;">Nhân viên phải từ đủ 18 tuổi trở lên.</small>
                         </div>
                     </div>
 
