@@ -10,6 +10,61 @@ USE HRM_Project_DB;
 GO
 
 -- =======================================================
+-- 0. TƯƠNG THÍCH BẢNG FLASHCARD VỚI DATABASE CŨ
+-- Nếu đã chạy schema mới, các cột và ràng buộc bên dưới đã có nên sẽ được bỏ qua.
+-- Khối này cần chạy trước phần seed bộ thẻ ở mục 7.
+-- =======================================================
+IF COL_LENGTH('dbo.FlashcardDecks', 'deck_type') IS NULL
+BEGIN
+    ALTER TABLE dbo.FlashcardDecks
+        ADD deck_type NVARCHAR(20) NOT NULL
+            CONSTRAINT DF_FlashcardDecks_Type DEFAULT 'professional';
+END;
+GO
+
+IF COL_LENGTH('dbo.FlashcardDecks', 'position_id') IS NULL
+BEGIN
+    ALTER TABLE dbo.FlashcardDecks ADD position_id INT NULL;
+END;
+GO
+
+UPDATE dbo.FlashcardDecks
+SET deck_type = 'culture', position_id = NULL
+WHERE title = N'Văn hóa công ty';
+GO
+
+UPDATE d
+SET d.position_id = p.position_id
+FROM dbo.FlashcardDecks d
+JOIN dbo.Positions p ON p.position_name = N'Java Developer' AND p.is_deleted = 0
+WHERE d.deck_type = 'professional'
+  AND d.position_id IS NULL
+  AND d.title LIKE N'%Java%';
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_FlashcardDecks_Position')
+BEGIN
+    ALTER TABLE dbo.FlashcardDecks WITH CHECK
+        ADD CONSTRAINT FK_FlashcardDecks_Position FOREIGN KEY (position_id)
+            REFERENCES dbo.Positions(position_id) ON DELETE SET NULL;
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_FlashcardDecks_Type')
+BEGIN
+    ALTER TABLE dbo.FlashcardDecks WITH CHECK
+        ADD CONSTRAINT CK_FlashcardDecks_Type CHECK (deck_type IN ('culture', 'professional'));
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_FlashcardDecks_CulturePosition')
+BEGIN
+    ALTER TABLE dbo.FlashcardDecks WITH CHECK
+        ADD CONSTRAINT CK_FlashcardDecks_CulturePosition CHECK (deck_type <> 'culture' OR position_id IS NULL);
+END;
+GO
+
+-- =======================================================
 -- 1. SEED DATA: BẢNG PHÂN QUYỀN (ROLES)
 -- =======================================================
 INSERT INTO dbo.Roles (role_name, description) VALUES
@@ -103,9 +158,10 @@ GO
 -- =======================================================
 -- 7. SEED DATA: FLASHCARDS HỌC TẬP
 -- =======================================================
-INSERT INTO dbo.FlashcardDecks (title, description) VALUES
-(N'Văn hóa công ty', N'Kiến thức nhập môn và văn hóa công ty'),
-(N'Chuyên môn Java Backend', N'Kiến thức chuyên môn lập trình Java');
+INSERT INTO dbo.FlashcardDecks (title, description, deck_type, position_id) VALUES
+(N'Văn hóa công ty', N'Kiến thức nhập môn và văn hóa công ty', 'culture', NULL),
+(N'Java Backend', N'Kiến thức chuyên môn lập trình Java', 'professional',
+    (SELECT TOP (1) position_id FROM dbo.Positions WHERE position_name = N'Java Developer' AND is_deleted = 0));
 GO
 
 INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES

@@ -214,7 +214,13 @@ CREATE TABLE dbo.FlashcardDecks (
     deck_id INT IDENTITY(1,1) PRIMARY KEY,
     title NVARCHAR(150) NOT NULL,
     description NVARCHAR(MAX) NULL,
-    created_at DATETIME NOT NULL CONSTRAINT DF_FlashcardDecks_CreatedAt DEFAULT GETDATE()
+    deck_type NVARCHAR(20) NOT NULL CONSTRAINT DF_FlashcardDecks_Type DEFAULT 'professional',
+    position_id INT NULL,
+    created_at DATETIME NOT NULL CONSTRAINT DF_FlashcardDecks_CreatedAt DEFAULT GETDATE(),
+    CONSTRAINT CK_FlashcardDecks_Type CHECK (deck_type IN ('culture', 'professional')),
+    CONSTRAINT CK_FlashcardDecks_CulturePosition CHECK (deck_type <> 'culture' OR position_id IS NULL),
+    CONSTRAINT FK_FlashcardDecks_Position FOREIGN KEY (position_id)
+        REFERENCES dbo.Positions(position_id) ON DELETE SET NULL
 );
 GO
 

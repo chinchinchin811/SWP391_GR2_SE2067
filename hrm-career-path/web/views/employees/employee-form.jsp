@@ -227,9 +227,9 @@
                                     }
                                 %>
                             </select>
-                            <small id="posHelp" style="color: #7f8c8d; font-size: 12px; display: block; margin-top: 3px;">
+<!--                            <small id="posHelp" style="color: #7f8c8d; font-size: 12px; display: block; margin-top: 3px;">
                                 Danh sách vị trí tự động lọc theo Phòng ban tương ứng.
-                            </small>
+                            </small>-->
                         </div>
 
                         <div class="form-group">
