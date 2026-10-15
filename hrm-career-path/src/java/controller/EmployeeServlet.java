@@ -277,7 +277,21 @@ public class EmployeeServlet extends HttpServlet {
         user.setPassword(password != null && !password.trim().isEmpty() ? password.trim() : "123");
         user.setFullName(fullName.trim());
         user.setEmail(email.trim());
-        user.setPhone(phone);
+        if (phone != null && !phone.trim().isEmpty()) {
+            String cleanPhone = phone.trim();
+            if (!cleanPhone.matches("^0[0-9]{9}$") && !cleanPhone.matches("^\\+84[0-9]{9}$")) {
+                request.setAttribute("error", "Số điện thoại không hợp lệ! Vui lòng nhập đúng 10 chữ số bắt đầu bằng số 0 (Ví dụ: 0912345678).");
+                user.setPhone(phone);
+                request.setAttribute("employee", user);
+                loadFormData(request);
+                request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                return;
+            }
+            user.setPhone(cleanPhone);
+        } else {
+            user.setPhone(null);
+        }
+
         user.setGender(gender);
         user.setStatus(true);
         user.setRoleId(roleId);
@@ -423,7 +437,20 @@ public class EmployeeServlet extends HttpServlet {
             user.setUserId(id);
             user.setFullName(fullName.trim());
             user.setEmail(email.trim());
-            user.setPhone(phone);
+            if (phone != null && !phone.trim().isEmpty()) {
+                String cleanPhone = phone.trim();
+                if (!cleanPhone.matches("^0[0-9]{9}$") && !cleanPhone.matches("^\\+84[0-9]{9}$")) {
+                    request.setAttribute("error", "Số điện thoại không hợp lệ! Vui lòng nhập đúng 10 chữ số bắt đầu bằng số 0 (Ví dụ: 0912345678).");
+                    user.setPhone(phone);
+                    request.setAttribute("employee", user);
+                    loadFormData(request);
+                    request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                    return;
+                }
+                user.setPhone(cleanPhone);
+            } else {
+                user.setPhone(null);
+            }
             user.setGender(gender);
             if (dobStr != null && !dobStr.trim().isEmpty()) {
                 try {
