@@ -17,6 +17,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -261,8 +262,8 @@ public class EmployeeServlet extends HttpServlet {
         String levelIdStr = request.getParameter("levelId");
         String hireDateStr = request.getParameter("hireDate");
 
-        if (username == null || username.trim().isEmpty() || fullName == null || fullName.trim().isEmpty() || email == null || email.trim().isEmpty()) {
-            request.setAttribute("error", "Vui lòng điền đầy đủ Tên tài khoản, Họ tên và Email!");
+        if (username == null || username.trim().isEmpty() || fullName == null || fullName.trim().isEmpty() || email == null || email.trim().isEmpty() || dobStr == null || dobStr.trim().isEmpty()) {
+            request.setAttribute("error", "Vui lòng điền đầy đủ Tên tài khoản, Họ tên, Email và Ngày sinh!");
             loadFormData(request);
             request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
             return;
@@ -276,7 +277,21 @@ public class EmployeeServlet extends HttpServlet {
         user.setPassword(password != null && !password.trim().isEmpty() ? password.trim() : "123");
         user.setFullName(fullName.trim());
         user.setEmail(email.trim());
-        user.setPhone(phone);
+        if (phone != null && !phone.trim().isEmpty()) {
+            String cleanPhone = phone.trim();
+            if (!cleanPhone.matches("^0[0-9]{9}$") && !cleanPhone.matches("^\\+84[0-9]{9}$")) {
+                request.setAttribute("error", "Số điện thoại không hợp lệ! Vui lòng nhập đúng 10 chữ số bắt đầu bằng số 0 (Ví dụ: 0912345678).");
+                user.setPhone(phone);
+                request.setAttribute("employee", user);
+                loadFormData(request);
+                request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                return;
+            }
+            user.setPhone(cleanPhone);
+        } else {
+            user.setPhone(null);
+        }
+
         user.setGender(gender);
         user.setStatus(true);
         user.setRoleId(roleId);
@@ -284,11 +299,31 @@ public class EmployeeServlet extends HttpServlet {
         user.setPositionId(parseInteger(posIdStr));
         user.setLevelId(parseInteger(levelIdStr));
 
-        if (dobStr != null && !dobStr.isEmpty()) {
-            try {
-                user.setDob(Date.valueOf(dobStr));
-            } catch (IllegalArgumentException ignored) {
+        try {
+            Date dob = Date.valueOf(dobStr.trim());
+            LocalDate dobLocal = dob.toLocalDate();
+            LocalDate today = LocalDate.now();
+            if (dobLocal.isAfter(today)) {
+                request.setAttribute("error", "Ngày sinh không được ở thời điểm tương lai!");
+                request.setAttribute("employee", user);
+                loadFormData(request);
+                request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                return;
             }
+            if (dobLocal.plusYears(18).isAfter(today)) {
+                request.setAttribute("error", "Nhân viên phải từ đủ 18 tuổi trở lên (tính theo ngày sinh)!");
+                request.setAttribute("employee", user);
+                loadFormData(request);
+                request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                return;
+            }
+            user.setDob(dob);
+        } catch (IllegalArgumentException ex) {
+            request.setAttribute("error", "Định dạng Ngày sinh không hợp lệ!");
+            request.setAttribute("employee", user);
+            loadFormData(request);
+            request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+            return;
         }
 
         if (hireDateStr != null && !hireDateStr.isEmpty()) {
@@ -402,13 +437,50 @@ public class EmployeeServlet extends HttpServlet {
             user.setUserId(id);
             user.setFullName(fullName.trim());
             user.setEmail(email.trim());
-            user.setPhone(phone);
-            user.setGender(gender);
-            if (dobStr != null && !dobStr.isEmpty()) {
-                try {
-                    user.setDob(Date.valueOf(dobStr));
-                } catch (IllegalArgumentException ignored) {
+            if (phone != null && !phone.trim().isEmpty()) {
+                String cleanPhone = phone.trim();
+                if (!cleanPhone.matches("^0[0-9]{9}$") && !cleanPhone.matches("^\\+84[0-9]{9}$")) {
+                    request.setAttribute("error", "Số điện thoại không hợp lệ! Vui lòng nhập đúng 10 chữ số bắt đầu bằng số 0 (Ví dụ: 0912345678).");
+                    user.setPhone(phone);
+                    request.setAttribute("employee", user);
+                    loadFormData(request);
+                    request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                    return;
                 }
+                user.setPhone(cleanPhone);
+            } else {
+                user.setPhone(null);
+            }
+            user.setGender(gender);
+            if (dobStr != null && !dobStr.trim().isEmpty()) {
+                try {
+                    Date dob = Date.valueOf(dobStr.trim());
+                    LocalDate dobLocal = dob.toLocalDate();
+                    LocalDate today = LocalDate.now();
+                    if (dobLocal.isAfter(today)) {
+                        request.setAttribute("error", "Ngày sinh không được ở thời điểm tương lai!");
+                        request.setAttribute("employee", user);
+                        loadFormData(request);
+                        request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                        return;
+                    }
+                    if (dobLocal.plusYears(18).isAfter(today)) {
+                        request.setAttribute("error", "Nhân viên phải từ đủ 18 tuổi trở lên (tính theo ngày sinh)!");
+                        request.setAttribute("employee", user);
+                        loadFormData(request);
+                        request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                        return;
+                    }
+                    user.setDob(dob);
+                } catch (IllegalArgumentException ex) {
+                    request.setAttribute("error", "Định dạng Ngày sinh không hợp lệ!");
+                    request.setAttribute("employee", user);
+                    loadFormData(request);
+                    request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                    return;
+                }
+            } else if (existingUser.getDob() != null) {
+                user.setDob(existingUser.getDob());
             }
             user.setRoleId(newRoleId);
             user.setStatus("1".equals(statusStr) || "true".equalsIgnoreCase(statusStr));

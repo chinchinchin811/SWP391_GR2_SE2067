@@ -96,8 +96,12 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="phone">Số điện thoại:</label>
-                            <input type="text" id="phone" name="phone" class="form-control" 
+                            <input type="tel" id="phone" name="phone" class="form-control" 
+                                   pattern="^(0|\+84)[0-9]{9}$"
+                                   placeholder="Ví dụ: 0912345678"
+                                   title="Số điện thoại gồm 10 chữ số bắt đầu bằng số 0 (hoặc +84)"
                                    value="<%= emp != null && emp.getPhone() != null ? emp.getPhone() : "" %>">
+                            <small style="color: #64748b; font-size: 11px;">10 chữ số bắt đầu bằng số 0 (Ví dụ: 0912345678).</small>
                         </div>
 
                         <div class="form-group">
@@ -110,9 +114,10 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="dob">Ngày sinh:</label>
+                            <label for="dob">Ngày sinh (*):</label>
                             <input type="date" id="dob" name="dob" class="form-control" 
-                                   value="<%= emp != null && emp.getDob() != null ? emp.getDob().toString() : "" %>">
+                                   value="<%= emp != null && emp.getDob() != null ? emp.getDob().toString() : "" %>" required>
+                            <small style="color: #64748b; font-size: 11px;">Nhân viên phải từ đủ 18 tuổi trở lên.</small>
                         </div>
                     </div>
 
