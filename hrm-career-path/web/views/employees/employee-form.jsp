@@ -1,4 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page import="java.time.LocalDate" %>
 <%@ page import="java.util.List" %>
 <%@ page import="model.Department" %>
 <%@ page import="model.JobLevel" %>
@@ -18,6 +19,9 @@
     List<Position> positions = (List<Position>) request.getAttribute("positions");
     List<JobLevel> jobLevels = (List<JobLevel>) request.getAttribute("jobLevels");
     List<Role> roles = (List<Role>) request.getAttribute("roles");
+
+    LocalDate maxDob = LocalDate.now().minusYears(18);
+    LocalDate minDob = LocalDate.now().minusYears(100);
 %>
 <jsp:include page="/views/common/header.jsp" />
 <jsp:include page="/views/common/sidebar.jsp" />
@@ -48,7 +52,7 @@
                 <h2><%= isEdit ? "Thông Tin Nhân Viên" : "Khai Báo Thông Tin & Xếp Phòng Ban / Vị Trí" %></h2>
             </div>
             <div class="card-body">
-                <form action="<%= request.getContextPath() %>/employees" method="POST">
+                <form action="<%= request.getContextPath() %>/employees" method="POST" onsubmit="return validateEmployeeForm()">
                     <input type="hidden" name="action" value="<%= isEdit ? "edit" : "create" %>">
                     <% if (isEdit) { %>
                     <input type="hidden" name="userId" value="<%= emp.getUserId() %>">
@@ -116,8 +120,9 @@
                         <div class="form-group">
                             <label for="dob">Ngày sinh (*):</label>
                             <input type="date" id="dob" name="dob" class="form-control" 
+                                   min="<%= minDob %>" max="<%= maxDob %>"
                                    value="<%= emp != null && emp.getDob() != null ? emp.getDob().toString() : "" %>" required>
-                            <small style="color: #64748b; font-size: 11px;">Nhân viên phải từ đủ 18 tuổi trở lên.</small>
+                            <small style="color: #64748b; font-size: 11px;">Nhân viên phải từ đủ 18 tuổi trở lên (sinh trước ngày <%= maxDob.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) %>).</small>
                         </div>
                     </div>
 
@@ -347,6 +352,42 @@
     function onDepartmentChange() {
         checkManagerWarning();
         filterPositionsByDepartment(false);
+    }
+
+    function validateEmployeeForm() {
+        var dobInput = document.getElementById("dob");
+        if (dobInput && dobInput.value) {
+            var parts = dobInput.value.split("-");
+            if (parts.length === 3) {
+                var year = parseInt(parts[0], 10);
+                var month = parseInt(parts[1], 10) - 1;
+                var day = parseInt(parts[2], 10);
+                var dob = new Date(year, month, day);
+                var today = new Date();
+
+                if (dob > today || year > today.getFullYear()) {
+                    alert("Ngày sinh không được ở thời điểm tương lai (Bạn đang nhập năm " + year + ")!");
+                    dobInput.focus();
+                    return false;
+                }
+                if (year > 2099 || year < 1920) {
+                    alert("Năm sinh không hợp lệ!");
+                    dobInput.focus();
+                    return false;
+                }
+                var age = today.getFullYear() - year;
+                var m = today.getMonth() - month;
+                if (m < 0 || (m === 0 && today.getDate() < day)) {
+                    age--;
+                }
+                if (age < 18) {
+                    alert("Nhân viên phải từ đủ 18 tuổi trở lên (Hiện tại tính theo ngày sinh mới " + age + " tuổi)!");
+                    dobInput.focus();
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     document.addEventListener("DOMContentLoaded", function () {
