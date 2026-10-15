@@ -26,11 +26,11 @@
     <div class="topbar">
         <h1>
             <% if ("EMPLOYEE".equals(viewRole)) { %>
-                <i class="fa-solid fa-arrows-split-up-and-left"></i> Nguyện Vọng Điều Chuyển Của Tôi
+                <i class="fa-solid"></i> Nguyện Vọng Điều Chuyển Của Tôi
             <% } else if ("MANAGER".equals(viewRole)) { %>
-                <i class="fa-solid fa-clipboard-check"></i> Duyệt Đề Xuất Điều Chuyển Phòng Ban
+                <i class="fa-solid"></i> Duyệt Đề Xuất Điều Chuyển Phòng Ban
             <% } else { %>
-                <i class="fa-solid fa-people-arrows"></i> Thực Hiện Điều Chuyển Nhân Sự (HR)
+                <i class="fa-solid"></i> Thực Hiện Điều Chuyển Nhân Sự
             <% } %>
         </h1>
         <div>

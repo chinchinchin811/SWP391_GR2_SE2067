@@ -23,8 +23,7 @@
          ========================================================= -->
     <div class="topbar">
         <div>
-            <h1>Báo Cáo Quản Trị Hệ Thống (Admin Dashboard)</h1>
-            <span style="color: #64748b; font-size: 13px;">Quản lý cơ cấu phòng ban, danh mục vị trí và xét duyệt đề xuất chuyên môn</span>
+            <h1>Báo Cáo Quản Trị Hệ Thống</h1>            
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
             <a href="<%= request.getContextPath() %>/departments?action=create" class="btn btn-secondary">
@@ -164,8 +163,7 @@
          ========================================================= -->
     <div class="topbar">
         <div>
-            <h1>Báo Cáo Tổng Quan Nhân Sự (HR Dashboard)</h1>
-            <span style="color: #64748b; font-size: 13px;">Khai báo nhân viên mới, điều chuyển nội bộ và quản lý đội ngũ nhân sự</span>
+            <h1>Báo Cáo Tổng Quan Nhân Sự</h1>            
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
             <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">

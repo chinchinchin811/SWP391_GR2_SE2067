@@ -25,7 +25,7 @@
 <jsp:include page="/views/common/sidebar.jsp" />
 <main class="main-content test-module">
     <link rel="stylesheet" href="<%= request.getContextPath() %>/assets/css/tests.css">
-    <div class="topbar"><h1>Bài test & Đánh giá</h1>
+    <div class="topbar"><h2>Bài test &amp; Đánh giá</h2>
         <% if (actor.cultureManager() || actor.departmentManager()) { %>
         <a class="btn btn-primary" href="<%= base %>?action=<%= ("bank".equals(view) || "bankDetail".equals(view) || "newSet".equals(view) || "editSet".equals(view)) ? "newSet" : "new" %>">
             <%= ("bank".equals(view) || "bankDetail".equals(view) || "newSet".equals(view) || "editSet".equals(view)) ? "+ Tạo bộ đề" : "+ Tạo đợt giao bài" %>

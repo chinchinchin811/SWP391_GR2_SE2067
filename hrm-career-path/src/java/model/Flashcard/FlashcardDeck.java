@@ -13,6 +13,9 @@ public class FlashcardDeck {
     private String title;
     private String description;
     private Timestamp createdAt;
+    private String type;
+    private Integer positionId;
+    private String positionName;
 
     public FlashcardDeck() {
     }
@@ -47,5 +50,29 @@ public class FlashcardDeck {
 
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public Integer getPositionId() {
+        return positionId;
+    }
+
+    public void setPositionId(Integer positionId) {
+        this.positionId = positionId;
+    }
+
+    public String getPositionName() {
+        return positionName;
+    }
+
+    public void setPositionName(String positionName) {
+        this.positionName = positionName;
     }
 }

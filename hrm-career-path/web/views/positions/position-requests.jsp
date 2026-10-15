@@ -47,9 +47,9 @@
     <div class="topbar">
         <h1>
             <% if (roleId == 3) { %>
-                <i class="fa-solid fa-paper-plane" style="color: var(--primary);"></i> Đề Xuất Vị Trí Của Phòng Ban
+                <i class="fa-solid " style="color: var(--primary);"></i> Đề Xuất Vị Trí Của Phòng Ban
             <% } else { %>
-                <i class="fa-solid fa-clipboard-check" style="color: var(--primary);"></i> Duyệt Đề Xuất Vị Trí Chuyên Môn
+                <i class="fa-solid" style="color: var(--primary);"></i> Duyệt Đề Xuất Vị Trí Chuyên Môn
             <% } %>
         </h1>
         <div style="display: flex; gap: 8px;">
