@@ -133,14 +133,111 @@ GO
 -- =======================================================
 -- 5. SEED DATA: BẢNG TÀI KHOẢN NGƯỜI DÙNG (USERS)
 -- =======================================================
-INSERT INTO dbo.Users (username, password, full_name, email, phone, gender, role_id, department_id, position_id, level_id, hire_date, status, is_deleted) VALUES
-('admin', '123', N'Quản Trị Viên', 'admin@hrm.com', '0901000001', N'Nam', 1, 1, 1, 6, '2022-01-01', 1, 0),
-('hr_manager', '123', N'Phạm Thu Hà', 'ha.pt@hrm.com', '0901000002', N'Nữ', 2, 2, 4, 5, '2022-03-15', 1, 0),
-('manager_it', '123', N'Trần Văn Minh', 'minh.tv@hrm.com', '0901000003', N'Nam', 3, 1, 1, 6, '2022-02-01', 1, 0),
-('dev_fresher', '123', N'Phạm Đức Trọng', 'trong.pd@hrm.com', '0901000006', N'Nam', 4, 1, 1, 2, '2026-08-01', 1, 0),
-('dev_tester', '123', N'Ngô Mai Phương', 'phuong.nm@hrm.com', '0901000007', N'Nữ', 4, 1, 3, 3, '2023-06-01', 1, 0),
-('mentor_java', '123', N'Lê Hữu Mentor', 'mentor.java@hrm.com', '0988888888', N'Nam', 4, 1, 1, 5, '2021-01-01', 1, 0),
-('locked_user', '123', N'Nguyễn Khóa Khoản', 'locked.user@hrm.com', '0901999999', N'Nam', 4, 1, 1, 2, '2026-01-01', 0, 0);
+INSERT INTO dbo.Users (username, password, full_name, email, phone, gender, dob, role_id, department_id, position_id, level_id, hire_date, status, is_deleted) VALUES
+-- 1. Tài khoản cốt lõi và nhân sự khởi tạo ban đầu
+('admin', '123', N'Quản Trị Viên', 'admin@hrm.com', '0901000001', N'Nam', '1990-01-15', 1, 1, 1, 6, '2022-01-01', 1, 0),
+('hr_manager', '123', N'Phạm Thu Hà', 'ha.pt@hrm.com', '0901000002', N'Nữ', '1992-06-20', 2, 2, 4, 5, '2022-03-15', 1, 0),
+('manager_it', '123', N'Trần Văn Minh', 'minh.tv@hrm.com', '0901000003', N'Nam', '1988-11-10', 3, 1, 1, 6, '2022-02-01', 1, 0),
+('dev_fresher', '123', N'Phạm Đức Trọng', 'trong.pd@hrm.com', '0901000006', N'Nam', '2002-08-15', 4, 1, 1, 2, '2026-08-01', 1, 0),
+('dev_tester', '123', N'Ngô Mai Phương', 'phuong.nm@hrm.com', '0901000007', N'Nữ', '1998-04-25', 4, 1, 3, 3, '2023-06-01', 1, 0),
+('mentor_java', '123', N'Lê Hữu Mentor', 'mentor.java@hrm.com', '0988888888', N'Nam', '1993-09-05', 4, 1, 1, 5, '2021-01-01', 1, 0),
+('locked_user', '123', N'Nguyễn Khóa Khoản', 'locked.user@hrm.com', '0901999999', N'Nam', '2000-02-14', 4, 1, 1, 2, '2026-01-01', 0, 0),
+
+-- =======================================================
+-- SEED BỔ SUNG: MỖI VỊ TRÍ CÓ ÍT NHẤT 3 NHÂN VIÊN
+-- =======================================================
+-- [Vị trí 1: Java Developer - Phòng IT (Dept 1)] (Đã có dev_fresher, mentor_java, locked_user)
+('java_trunghieu', '123', N'Đỗ Trung Hiếu', 'hieu.dt@hrm.com', '0901000010', N'Nam', '1999-05-14', 4, 1, 1, 3, '2024-03-01', 1, 0),
+('java_quanghuy', '123', N'Vũ Quang Huy', 'huy.vq@hrm.com', '0901000011', N'Nam', '1996-08-20', 4, 1, 1, 4, '2023-05-15', 1, 0),
+
+-- [Vị trí 2: Frontend Developer - Phòng IT (Dept 1)]
+('fe_hoangnam', '123', N'Lê Hoàng Nam', 'nam.lh@hrm.com', '0901000012', N'Nam', '2001-09-12', 4, 1, 2, 2, '2026-07-01', 1, 0),
+('fe_thuytien', '123', N'Nguyễn Thủy Tiên', 'tien.nt@hrm.com', '0901000013', N'Nữ', '1998-12-05', 4, 1, 2, 3, '2024-02-10', 1, 0),
+('fe_anhduc', '123', N'Trần Anh Đức', 'duc.ta@hrm.com', '0901000014', N'Nam', '1995-04-18', 4, 1, 2, 5, '2022-09-01', 1, 0),
+
+-- [Vị trí 3: QA / Software Tester - Phòng IT (Dept 1)] (Đã có dev_tester)
+('qa_tuananh', '123', N'Bùi Tuấn Anh', 'anh.bt@hrm.com', '0901000015', N'Nam', '2002-03-22', 4, 1, 3, 2, '2026-06-15', 1, 0),
+('qa_hongnhung', '123', N'Đặng Hồng Nhung', 'nhung.dh@hrm.com', '0901000016', N'Nữ', '1996-10-30', 4, 1, 3, 4, '2023-08-01', 1, 0),
+
+-- [Vị trí 4: HR Officer - Phòng Nhân Sự (Dept 2)] (Đã có hr_manager)
+('hr_minhnguyet', '123', N'Hoàng Minh Nguyệt', 'nguyet.hm@hrm.com', '0901000017', N'Nữ', '2000-07-19', 4, 2, 4, 2, '2026-05-01', 1, 0),
+('hr_baongoc', '123', N'Trần Bảo Ngọc', 'ngoc.tb@hrm.com', '0901000018', N'Nữ', '1997-01-25', 4, 2, 4, 3, '2024-04-12', 1, 0),
+('hr_thanhtruc', '123', N'Lê Thanh Trúc', 'truc.lt@hrm.com', '0901000019', N'Nữ', '1995-03-14', 4, 2, 4, 4, '2023-02-20', 1, 0),
+
+-- [Vị trí 5: Sales Executive - Phòng Kinh Doanh (Dept 3)]
+('sales_quangthang', '123', N'Lý Quang Thắng', 'thang.lq@hrm.com', '0901000020', N'Nam', '1998-06-14', 4, 3, 5, 3, '2024-01-15', 1, 0),
+('sales_thanhhang', '123', N'Phan Thanh Hằng', 'hang.pt@hrm.com', '0901000021', N'Nữ', '1996-02-28', 4, 3, 5, 4, '2023-04-01', 1, 0),
+('sales_ducmanh', '123', N'Nguyễn Đức Mạnh', 'manh.nd@hrm.com', '0901000022', N'Nam', '1993-11-09', 4, 3, 5, 5, '2022-07-20', 1, 0),
+
+-- [Vị trí 6: DevOps Engineer - Phòng IT (Dept 1)]
+('devops_quocbao', '123', N'Trịnh Quốc Bảo', 'bao.tq@hrm.com', '0901000023', N'Nam', '1999-08-11', 4, 1, 6, 3, '2024-06-01', 1, 0),
+('devops_hoanglong', '123', N'Võ Hoàng Long', 'long.vh@hrm.com', '0901000024', N'Nam', '1995-12-03', 4, 1, 6, 4, '2023-02-15', 1, 0),
+('devops_vietkhoi', '123', N'Đinh Việt Khôi', 'khoi.dv@hrm.com', '0901000025', N'Nam', '1992-05-24', 4, 1, 6, 5, '2021-10-10', 1, 0),
+
+-- [Vị trí 7: Business Analyst (BA) - Phòng IT (Dept 1)]
+('ba_thaochieu', '123', N'Nguyễn Phương Thảo', 'thao.np@hrm.com', '0901000026', N'Nữ', '2001-04-16', 4, 1, 7, 2, '2026-08-01', 1, 0),
+('ba_quockhanh', '123', N'Phạm Quốc Khánh', 'khanh.pq@hrm.com', '0901000027', N'Nam', '1997-09-08', 4, 1, 7, 3, '2024-03-20', 1, 0),
+('ba_camtu', '123', N'Lê Cẩm Tú', 'tu.lc@hrm.com', '0901000028', N'Nữ', '1994-01-30', 4, 1, 7, 5, '2022-04-05', 1, 0),
+
+-- [Vị trí 8: Mobile App Developer - Phòng IT (Dept 1)]
+('mobile_duyquang', '123', N'Lương Duy Quang', 'quang.ld@hrm.com', '0901000029', N'Nam', '2000-11-27', 4, 1, 8, 2, '2026-07-15', 1, 0),
+('mobile_minhtri', '123', N'Hồ Minh Trí', 'tri.hm@hrm.com', '0901000030', N'Nam', '1998-03-05', 4, 1, 8, 3, '2024-05-02', 1, 0),
+('mobile_xuantung', '123', N'Dương Xuân Tùng', 'tung.dx@hrm.com', '0901000031', N'Nam', '1995-07-19', 4, 1, 8, 4, '2023-01-10', 1, 0),
+
+-- [Vị trí 9: Talent Acquisition Specialist - Phòng Nhân Sự (Dept 2)]
+('ta_khanhlinh', '123', N'Đỗ Khánh Linh', 'linh.dk@hrm.com', '0901000032', N'Nữ', '2001-10-14', 4, 2, 9, 2, '2026-09-01', 1, 0),
+('ta_ngocthach', '123', N'Vũ Ngọc Thạch', 'thach.vn@hrm.com', '0901000033', N'Nam', '1997-05-22', 4, 2, 9, 3, '2024-02-18', 1, 0),
+('ta_thanhhuyen', '123', N'Ngô Thanh Huyền', 'huyen.nt@hrm.com', '0901000034', N'Nữ', '1994-12-10', 4, 2, 9, 5, '2022-08-01', 1, 0),
+
+-- [Vị trí 10: C&B Specialist - Phòng Nhân Sự (Dept 2)]
+('cb_minhtam', '123', N'Phan Minh Tâm', 'tam.pm@hrm.com', '0901000035', N'Nữ', '2000-02-18', 4, 2, 10, 2, '2026-04-10', 1, 0),
+('cb_thanhhai', '123', N'Trần Thanh Hải', 'hai.tt@hrm.com', '0901000036', N'Nam', '1996-07-09', 4, 2, 10, 4, '2023-09-15', 1, 0),
+('cb_kimchi', '123', N'Hoàng Kim Chi', 'chi.hk@hrm.com', '0901000037', N'Nữ', '1993-04-03', 4, 2, 10, 5, '2021-11-20', 1, 0),
+
+-- [Vị trí 11: Training & Development Executive - Phòng Nhân Sự (Dept 2)]
+('td_huonggiang', '123', N'Bùi Hương Giang', 'giang.bh@hrm.com', '0901000038', N'Nữ', '1999-09-25', 4, 2, 11, 3, '2024-07-01', 1, 0),
+('td_vankhang', '123', N'Đặng Văn Khang', 'khang.dv@hrm.com', '0901000039', N'Nam', '1995-03-17', 4, 2, 11, 4, '2023-03-12', 1, 0),
+('td_lananh', '123', N'Nguyễn Lan Anh', 'anh.nl@hrm.com', '0901000040', N'Nữ', '1992-08-14', 4, 2, 11, 5, '2022-01-15', 1, 0),
+
+-- [Vị trí 12: Key Account Manager (KAM) - Phòng Kinh Doanh (Dept 3)]
+('kam_minhtriet', '123', N'Lê Minh Triết', 'triet.lm@hrm.com', '0901000041', N'Nam', '1996-01-11', 4, 3, 12, 3, '2024-04-01', 1, 0),
+('kam_thuha', '123', N'Đỗ Thu Hà', 'ha.dt@hrm.com', '0901000042', N'Nữ', '1994-06-29', 4, 3, 12, 4, '2023-05-18', 1, 0),
+('kam_hoangviet', '123', N'Trần Hoàng Việt', 'viet.th@hrm.com', '0901000043', N'Nam', '1991-10-05', 4, 3, 12, 5, '2021-08-01', 1, 0),
+
+-- [Vị trí 13: Business Development Rep (BDR) - Phòng Kinh Doanh (Dept 3)]
+('bdr_thienan', '123', N'Ngô Thiên Ân', 'an.nt@hrm.com', '0901000044', N'Nam', '2001-08-19', 4, 3, 13, 2, '2026-08-15', 1, 0),
+('bdr_ngoctuyen', '123', N'Phạm Ngọc Tuyền', 'tuyen.pn@hrm.com', '0901000045', N'Nữ', '1998-11-23', 4, 3, 13, 3, '2024-06-10', 1, 0),
+('bdr_vanphuong', '123', N'Vũ Văn Phương', 'phuong.vv@hrm.com', '0901000046', N'Nam', '1995-02-14', 4, 3, 13, 4, '2023-06-01', 1, 0),
+
+-- [Vị trí 14: Digital Marketing Specialist - Phòng Marketing (Dept 4)]
+('mkt_quynhnga', '123', N'Lê Quỳnh Nga', 'nga.lq@hrm.com', '0901000047', N'Nữ', '2000-04-08', 4, 4, 14, 2, '2026-05-20', 1, 0),
+('mkt_theanh', '123', N'Đinh Thế Anh', 'anh.dt@hrm.com', '0901000048', N'Nam', '1997-12-15', 4, 4, 14, 3, '2024-03-01', 1, 0),
+('mkt_maily', '123', N'Hoàng Mai Ly', 'ly.hm@hrm.com', '0901000049', N'Nữ', '1994-09-02', 4, 4, 14, 5, '2022-02-15', 1, 0),
+
+-- [Vị trí 15: Content Creator & Copywriter - Phòng Marketing (Dept 4)]
+('content_traanh', '123', N'Nguyễn Trà Anh', 'traanh.nt@hrm.com', '0901000050', N'Nữ', '2002-01-17', 4, 4, 15, 2, '2026-09-10', 1, 0),
+('content_xuanbac', '123', N'Trần Xuân Bắc', 'bac.tx@hrm.com', '0901000051', N'Nam', '1999-05-26', 4, 4, 15, 3, '2024-08-05', 1, 0),
+('content_anhthu', '123', N'Phan Anh Thư', 'thu.pa@hrm.com', '0901000052', N'Nữ', '1996-08-11', 4, 4, 15, 4, '2023-07-15', 1, 0),
+
+-- [Vị trí 16: UI/UX Product Designer - Phòng Marketing (Dept 4)]
+('uiux_minhchau', '123', N'Vũ Minh Châu', 'chau.vm@hrm.com', '0901000053', N'Nữ', '2001-06-30', 4, 4, 16, 2, '2026-06-01', 1, 0),
+('uiux_giahuong', '123', N'Lâm Gia Hưởng', 'huong.lg@hrm.com', '0901000054', N'Nam', '1997-03-14', 4, 4, 16, 3, '2024-01-20', 1, 0),
+('uiux_thanhvan', '123', N'Đặng Thanh Vân', 'van.dt@hrm.com', '0901000055', N'Nữ', '1993-10-22', 4, 4, 16, 5, '2021-12-01', 1, 0),
+
+-- [Vị trí 17: Kế Toán Tổng Hợp (General Accountant) - Phòng Tài Chính (Dept 5)]
+('acc_thuhien', '123', N'Bùi Thu Hiền', 'hien.bt@hrm.com', '0901000056', N'Nữ', '1999-07-04', 4, 5, 17, 3, '2024-04-15', 1, 0),
+('acc_vanquy', '123', N'Lê Văn Quý', 'quy.lv@hrm.com', '0901000057', N'Nam', '1996-11-18', 4, 5, 17, 4, '2023-05-01', 1, 0),
+('acc_bichngoc', '123', N'Nguyễn Bích Ngọc', 'ngoc.nb@hrm.com', '0901000058', N'Nữ', '1992-02-09', 4, 5, 17, 5, '2021-09-10', 1, 0),
+
+-- [Vị trí 18: Chuyên Viên Kiểm Toán Nội Bộ - Phòng Tài Chính (Dept 5)]
+('audit_hongphuc', '123', N'Trần Hồng Phúc', 'phuc.th@hrm.com', '0901000059', N'Nam', '1998-04-12', 4, 5, 18, 3, '2024-05-10', 1, 0),
+('audit_haivan', '123', N'Phạm Hải Vân', 'van.ph@hrm.com', '0901000060', N'Nữ', '1995-08-27', 4, 5, 18, 4, '2023-08-20', 1, 0),
+('audit_quangdinh', '123', N'Đỗ Quang Định', 'dinh.dq@hrm.com', '0901000061', N'Nam', '1991-03-15', 4, 5, 18, 5, '2021-07-01', 1, 0),
+
+-- [Vị trí 19: Financial Planning & Analysis (FP&A) - Phòng Tài Chính (Dept 5)]
+('fpa_nguyenhoa', '123', N'Hoàng Nguyên Hòa', 'hoa.hn@hrm.com', '0901000062', N'Nam', '2000-12-08', 4, 5, 19, 2, '2026-07-01', 1, 0),
+('fpa_thanhmai', '123', N'Lê Thanh Mai', 'mai.lt@hrm.com', '0901000063', N'Nữ', '1997-01-20', 4, 5, 19, 3, '2024-02-25', 1, 0),
+('fpa_trongnghia', '123', N'Nguyễn Trọng Nghĩa', 'nghia.nt@hrm.com', '0901000064', N'Nam', '1993-09-11', 4, 5, 19, 5, '2022-03-01', 1, 0);
 GO
 
 -- Cập nhật Trưởng phòng cho các phòng ban
