@@ -207,4 +207,26 @@ public class DepartmentDAO {
         }
         return 0;
     }
+
+    public boolean isDepartmentNameExists(String name, Integer excludeId) {
+        if (name == null || name.trim().isEmpty()) {
+            return false;
+        }
+        String sql = "SELECT COUNT(*) FROM Departments WHERE LOWER(department_name) = LOWER(?) AND is_deleted = 0"
+                   + (excludeId != null ? " AND department_id != ?" : "");
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, name.trim());
+            if (excludeId != null) {
+                ps.setInt(2, excludeId);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
 }

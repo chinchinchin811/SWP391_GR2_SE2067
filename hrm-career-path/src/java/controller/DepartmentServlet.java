@@ -73,15 +73,21 @@ public class DepartmentServlet extends HttpServlet {
 
         User currentUser = (User) session.getAttribute("currentUser");
 
-        // Chỉ Admin (role 1) mới có quyền tạo/sửa/xóa phòng ban hoặc gán manager
-        if (currentUser.getRoleId() != 1) {
-            response.sendRedirect(request.getContextPath() + "/departments");
-            return;
-        }
-
         String action = request.getParameter("action");
         if (action == null) {
             action = "list";
+        }
+
+        // Admin (role 1) có toàn quyền tạo/sửa/xóa/gán manager
+        // HR (role 2) có quyền gán/thay đổi/miễn nhiệm Trưởng phòng (assign-manager)
+        if (currentUser.getRoleId() == 2) {
+            if (!"assign-manager".equals(action)) {
+                response.sendRedirect(request.getContextPath() + "/departments");
+                return;
+            }
+        } else if (currentUser.getRoleId() != 1) {
+            response.sendRedirect(request.getContextPath() + "/departments");
+            return;
         }
 
         switch (action) {
@@ -114,11 +120,11 @@ public class DepartmentServlet extends HttpServlet {
                 departments.add(myDept);
             }
         } else {
-            // HR: Xem tất cả
+            // Admin & HR: Xem tất cả
             departments = departmentDAO.getAllDepartments();
         }
 
-        List<User> managerCandidates = userDAO.getManagersCandidates();
+        List<User> managerCandidates = userDAO.getAvailableManagerCandidates(null);
         request.setAttribute("departments", departments);
         request.setAttribute("managerCandidates", managerCandidates);
         request.getRequestDispatcher("/views/departments/department-list.jsp").forward(request, response);
@@ -126,7 +132,7 @@ public class DepartmentServlet extends HttpServlet {
 
     private void showCreateForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        List<User> managerCandidates = userDAO.getManagersCandidates();
+        List<User> managerCandidates = userDAO.getAvailableManagerCandidates(null);
         request.setAttribute("managerCandidates", managerCandidates);
         request.getRequestDispatcher("/views/departments/department-form.jsp").forward(request, response);
     }
@@ -139,7 +145,7 @@ public class DepartmentServlet extends HttpServlet {
                 int id = Integer.parseInt(idStr);
                 Department dept = departmentDAO.getDepartmentById(id);
                 if (dept != null) {
-                    List<User> managerCandidates = userDAO.getManagersCandidates();
+                    List<User> managerCandidates = userDAO.getAvailableManagerCandidates(dept.getDepartmentId());
                     request.setAttribute("department", dept);
                     request.setAttribute("managerCandidates", managerCandidates);
                     request.getRequestDispatcher("/views/departments/department-form.jsp").forward(request, response);
@@ -161,6 +167,18 @@ public class DepartmentServlet extends HttpServlet {
 
         if (name == null || name.trim().isEmpty()) {
             request.setAttribute("error", "Tên phòng ban không được để trống!");
+            showCreateForm(request, response);
+            return;
+        }
+
+        // Kiểm tra trùng tên phòng ban TRƯỚC KHI insert để tránh nhảy IDENTITY trong SQL Server
+        if (departmentDAO.isDepartmentNameExists(name, null)) {
+            request.setAttribute("error", "Tên phòng ban '" + name.trim() + "' đã tồn tại trên hệ thống!");
+            Department dept = new Department();
+            dept.setDepartmentName(name.trim());
+            dept.setDescription(description);
+            dept.setStatus("1".equals(statusStr) || "true".equalsIgnoreCase(statusStr));
+            request.setAttribute("department", dept);
             showCreateForm(request, response);
             return;
         }
@@ -190,7 +208,7 @@ public class DepartmentServlet extends HttpServlet {
             request.getSession().setAttribute("successMessage", "Thêm mới phòng ban thành công!");
             response.sendRedirect(request.getContextPath() + "/departments");
         } else {
-            request.setAttribute("error", "Không thể thêm phòng ban (Có thể tên đã tồn tại)!");
+            request.setAttribute("error", "Không thể thêm phòng ban! Vui lòng kiểm tra lại thông tin.");
             request.setAttribute("department", dept);
             showCreateForm(request, response);
         }
@@ -212,6 +230,20 @@ public class DepartmentServlet extends HttpServlet {
 
         try {
             int id = Integer.parseInt(idStr);
+
+            // Kiểm tra trùng tên phòng ban TRƯỚC KHI update
+            if (departmentDAO.isDepartmentNameExists(name, id)) {
+                request.setAttribute("error", "Tên phòng ban '" + name.trim() + "' đã tồn tại trên hệ thống!");
+                Department dept = new Department();
+                dept.setDepartmentId(id);
+                dept.setDepartmentName(name.trim());
+                dept.setDescription(description);
+                dept.setStatus("1".equals(statusStr) || "true".equalsIgnoreCase(statusStr));
+                request.setAttribute("department", dept);
+                showEditForm(request, response);
+                return;
+            }
+
             Department dept = new Department();
             dept.setDepartmentId(id);
             dept.setDepartmentName(name.trim());
@@ -260,14 +292,29 @@ public class DepartmentServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/departments");
                     return;
                 }
+
+                // Kiểm tra người này đã là manager của phòng ban khác chưa
+                Department existingManaging = departmentDAO.getDepartmentByManagerId(mid);
+                if (existingManaging != null && existingManaging.getDepartmentId() != deptId) {
+                    request.getSession().setAttribute("errorMessage", "Nhân sự " + (cand != null ? cand.getFullName() : "") + " hiện đang là Trưởng phòng của " + existingManaging.getDepartmentName() + "!");
+                    response.sendRedirect(request.getContextPath() + "/departments");
+                    return;
+                }
                 managerId = mid;
             }
 
             boolean success = departmentDAO.assignManager(deptId, managerId);
             if (success) {
-                request.getSession().setAttribute("successMessage", "Gán Trưởng phòng thành công!");
+                if (managerId != null) {
+                    User cand = userDAO.getUserById(managerId);
+                    int targetRole = (cand != null && cand.getRoleId() == 2) ? 2 : 3;
+                    userDAO.updateUserDepartmentAndRole(managerId, deptId, targetRole);
+                    request.getSession().setAttribute("successMessage", "Bổ nhiệm Trưởng phòng thành công!");
+                } else {
+                    request.getSession().setAttribute("successMessage", "Đã miễn nhiệm Trưởng phòng thành công!");
+                }
             } else {
-                request.getSession().setAttribute("errorMessage", "Không thể gán Trưởng phòng!");
+                request.getSession().setAttribute("errorMessage", "Không thể cập nhật Trưởng phòng!");
             }
         } catch (NumberFormatException e) {
             e.printStackTrace();

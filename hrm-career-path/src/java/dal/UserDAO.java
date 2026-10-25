@@ -99,20 +99,46 @@ public class UserDAO {
     }
 
     public List<User> getManagersCandidates() {
+        return getAvailableManagerCandidates(null);
+    }
+
+    public List<User> getAvailableManagerCandidates(Integer currentDepartmentId) {
         List<User> list = new ArrayList<>();
-        String sql = """
+        StringBuilder sql = new StringBuilder("""
             SELECT u.*, r.role_name, d.department_name, p.position_name, l.level_name
             FROM Users u
             JOIN Roles r ON u.role_id = r.role_id
             LEFT JOIN Departments d ON u.department_id = d.department_id
             LEFT JOIN Positions p ON u.position_id = p.position_id
             LEFT JOIN Job_Levels l ON u.level_id = l.level_id
-            WHERE u.is_deleted = 0 AND u.status = 1 AND u.role_id IN (2, 3)
-            ORDER BY u.full_name ASC
-            """;
-        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                list.add(mapUserFromResultSet(rs));
+            WHERE u.is_deleted = 0 AND u.status = 1 AND u.role_id != 1
+            """);
+
+        if (currentDepartmentId != null && currentDepartmentId > 0) {
+            sql.append("""
+               AND u.user_id NOT IN (
+                   SELECT manager_id FROM Departments 
+                   WHERE manager_id IS NOT NULL AND is_deleted = 0 AND department_id != ?
+               )
+            """);
+        } else {
+            sql.append("""
+               AND u.user_id NOT IN (
+                   SELECT manager_id FROM Departments 
+                   WHERE manager_id IS NOT NULL AND is_deleted = 0
+               )
+            """);
+        }
+        sql.append(" ORDER BY u.role_id ASC, u.full_name ASC");
+
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            if (currentDepartmentId != null && currentDepartmentId > 0) {
+                ps.setInt(1, currentDepartmentId);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapUserFromResultSet(rs));
+                }
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -617,6 +643,19 @@ public class UserDAO {
                     return rs.getInt(1) > 0;
                 }
             }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean updateUserDepartmentAndRole(int userId, int departmentId, int roleId) {
+        String sql = "UPDATE Users SET department_id = ?, role_id = ? WHERE user_id = ? AND is_deleted = 0";
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, departmentId);
+            ps.setInt(2, roleId);
+            ps.setInt(3, userId);
+            return ps.executeUpdate() > 0;
         } catch (SQLException e) {
             e.printStackTrace();
         }

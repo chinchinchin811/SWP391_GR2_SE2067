@@ -43,6 +43,9 @@
                                value="<%= dept != null && dept.getDepartmentName() != null ? dept.getDepartmentName() : "" %>" required>
                     </div>
 
+                    <% if (!isEdit) { %>
+                    <input type="hidden" name="managerId" value="0">
+                    <% } else { %>
                     <div class="form-group">
                         <label for="managerId">Trưởng Phòng (Manager):</label>
                         <select id="managerId" name="managerId" class="form-control">
@@ -50,11 +53,11 @@
                             <%
                                 if (managerCandidates != null) {
                                     for (User u : managerCandidates) {
-                                        if (u.getRoleId() == 1) continue; // Không cho phép bổ nhiệm Admin làm Trưởng phòng
+                                        if (u.getRoleId() == 1) continue;
                                         boolean isSelected = (dept != null && dept.getManagerId() != null && dept.getManagerId().equals(u.getUserId()));
                             %>
                             <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>>
-                                <%= u.getFullName() %> (<%= u.getRoleName() %>)
+                                <%= u.getFullName() %> (<%= u.getRoleName() %><%= u.getPositionName() != null ? " - " + u.getPositionName() : "" %>)
                             </option>
                             <%
                                     }
@@ -62,6 +65,7 @@
                             %>
                         </select>
                     </div>
+                    <% } %>
 
                     <div class="form-group">
                         <label for="description">Mô Tả Chức Năng:</label>
