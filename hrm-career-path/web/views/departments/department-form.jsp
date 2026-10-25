@@ -47,7 +47,7 @@
                     <input type="hidden" name="managerId" value="0">
                     <% } else { %>
                     <div class="form-group">
-                        <label for="managerId">Trưởng Phòng (Manager):</label>
+                        <label for="managerId">Trưởng Phòng:</label>
                         <select id="managerId" name="managerId" class="form-control">
                             <option value="0">-- Chưa bổ nhiệm --</option>
                             <%

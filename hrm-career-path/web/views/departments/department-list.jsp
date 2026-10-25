@@ -47,7 +47,7 @@
                         <tr>
                             <th style="width: 50px;">ID</th>
                             <th>Tên Phòng Ban</th>
-                            <th>Trưởng Phòng (Manager)</th>
+                            <th>Trưởng Phòng</th>
                             <th>Mô Tả Chức Năng</th>
                             <th>Số Nhân Sự</th>
                             <th>Trạng Thái</th>
@@ -67,33 +67,26 @@
                             <td>
                                 <% boolean hasManager = (d.getManagerName() != null && !d.getManagerName().trim().isEmpty() && !"Chưa bổ nhiệm".equalsIgnoreCase(d.getManagerName().trim())); %>
                                 <% if (hasManager) { %>
-                                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                                    <div class="user-cell">
-                                        <div class="avatar-sm">
-                                            <%= d.getManagerName().substring(0, 1).toUpperCase() %>
-                                        </div>
-                                        <div>
-                                            <div class="user-fullname"><%= d.getManagerName() %></div>
-                                            <div class="user-sub"><span class="badge badge-manager" style="font-size: 10px; padding: 1px 6px;">Trưởng phòng</span></div>
-                                        </div>
+                                <div class="user-cell">
+                                    <div class="avatar-sm">
+                                        <%= d.getManagerName().substring(0, 1).toUpperCase() %>
                                     </div>
-                                    <% if (roleId == 1 || roleId == 2) { %>
-                                    <button type="button" class="btn btn-sm btn-action-edit" style="padding: 2px 7px; font-size: 11px;" 
-                                            title="Đổi hoặc miễn nhiệm Trưởng phòng"
-                                            onclick="openAssignModal(<%= d.getDepartmentId() %>, '<%= d.getDepartmentName().replace("'", "\\'") %>', <%= d.getManagerId() != null ? d.getManagerId() : 0 %>)">
-                                        <i class="fa-solid fa-user-pen"></i> Đổi
-                                    </button>
-                                    <% } %>
+                                    <div>
+                                        <div class="user-fullname"><%= d.getManagerName() %></div>
+                                        <div class="user-sub"><span class="badge badge-manager" style="font-size: 10px; padding: 1px 6px;">Trưởng phòng</span></div>
+                                    </div>
                                 </div>
                                 <% } else { %>
                                     <% if (roleId == 1 || roleId == 2) { %>
-                                    <button type="button" class="btn btn-sm btn-primary" style="padding: 4px 10px; font-size: 12px; font-weight: 500;"
-                                            title="Bổ nhiệm Trưởng phòng cho phòng ban này"
-                                            onclick="openAssignModal(<%= d.getDepartmentId() %>, '<%= d.getDepartmentName().replace("'", "\\'") %>', 0)">
-                                        <i class="fa-solid fa-user-plus"></i> Bổ nhiệm
-                                    </button>
+                                    <div style="display: flex; align-items: center; justify-content: center;">
+                                        <button type="button" class="btn btn-sm btn-primary" style="padding: 4px 12px; font-size: 12px; font-weight: 500;"
+                                                title="Bổ nhiệm Trưởng phòng cho phòng ban này"
+                                                onclick="openAssignModal(<%= d.getDepartmentId() %>, '<%= d.getDepartmentName().replace("'", "\\'") %>', 0)">
+                                            <i class="fa-solid fa-user-plus"></i> Bổ nhiệm
+                                        </button>
+                                    </div>
                                     <% } else { %>
-                                    <span style="color: #94a3b8; font-size: 13px;">Chưa bổ nhiệm</span>
+                                    <div style="text-align: center; color: #94a3b8; font-size: 13px;">Chưa bổ nhiệm</div>
                                     <% } %>
                                 <% } %>
                             </td>
