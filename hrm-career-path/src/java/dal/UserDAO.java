@@ -107,7 +107,7 @@ public class UserDAO {
             LEFT JOIN Departments d ON u.department_id = d.department_id
             LEFT JOIN Positions p ON u.position_id = p.position_id
             LEFT JOIN Job_Levels l ON u.level_id = l.level_id
-            WHERE u.is_deleted = 0 AND u.status = 1 AND u.role_id IN (1, 2, 3)
+            WHERE u.is_deleted = 0 AND u.status = 1 AND u.role_id IN (2, 3)
             ORDER BY u.full_name ASC
             """;
         try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {

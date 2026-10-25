@@ -172,7 +172,15 @@ public class DepartmentServlet extends HttpServlet {
 
         if (managerIdStr != null && !managerIdStr.trim().isEmpty() && !managerIdStr.equals("0")) {
             try {
-                dept.setManagerId(Integer.parseInt(managerIdStr));
+                int mid = Integer.parseInt(managerIdStr);
+                User cand = userDAO.getUserById(mid);
+                if (cand != null && cand.getRoleId() == 1) {
+                    request.setAttribute("error", "Quản trị viên (Admin) không thể được bổ nhiệm làm Trưởng phòng!");
+                    request.setAttribute("department", dept);
+                    showCreateForm(request, response);
+                    return;
+                }
+                dept.setManagerId(mid);
             } catch (NumberFormatException ignored) {
             }
         }
@@ -211,7 +219,15 @@ public class DepartmentServlet extends HttpServlet {
             dept.setStatus("1".equals(statusStr) || "true".equalsIgnoreCase(statusStr));
 
             if (managerIdStr != null && !managerIdStr.trim().isEmpty() && !managerIdStr.equals("0")) {
-                dept.setManagerId(Integer.parseInt(managerIdStr));
+                int mid = Integer.parseInt(managerIdStr);
+                User cand = userDAO.getUserById(mid);
+                if (cand != null && cand.getRoleId() == 1) {
+                    request.setAttribute("error", "Quản trị viên (Admin) không thể được bổ nhiệm làm Trưởng phòng!");
+                    request.setAttribute("department", dept);
+                    showEditForm(request, response);
+                    return;
+                }
+                dept.setManagerId(mid);
             }
 
             boolean success = departmentDAO.updateDepartment(dept);
@@ -237,7 +253,14 @@ public class DepartmentServlet extends HttpServlet {
             int deptId = Integer.parseInt(deptIdStr);
             Integer managerId = null;
             if (managerIdStr != null && !managerIdStr.isEmpty() && !managerIdStr.equals("0")) {
-                managerId = Integer.parseInt(managerIdStr);
+                int mid = Integer.parseInt(managerIdStr);
+                User cand = userDAO.getUserById(mid);
+                if (cand != null && cand.getRoleId() == 1) {
+                    request.getSession().setAttribute("errorMessage", "Quản trị viên (Admin) không thể được bổ nhiệm làm Trưởng phòng!");
+                    response.sendRedirect(request.getContextPath() + "/departments");
+                    return;
+                }
+                managerId = mid;
             }
 
             boolean success = departmentDAO.assignManager(deptId, managerId);

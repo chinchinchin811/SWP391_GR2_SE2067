@@ -50,6 +50,7 @@
                             <%
                                 if (managerCandidates != null) {
                                     for (User u : managerCandidates) {
+                                        if (u.getRoleId() == 1) continue; // Không cho phép bổ nhiệm Admin làm Trưởng phòng
                                         boolean isSelected = (dept != null && dept.getManagerId() != null && dept.getManagerId().equals(u.getUserId()));
                             %>
                             <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>>
