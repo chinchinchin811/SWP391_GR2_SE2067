@@ -6,7 +6,7 @@
 <%@ page import="model.User" %>
 <%
     User emp = (User) request.getAttribute("employee");
-    request.setAttribute("pageTitle", "Điều chuyển vị trí | HRM");
+    request.setAttribute("pageTitle", "Điều chuyển vị trí | CPMS");
 
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<Position> positions = (List<Position>) request.getAttribute("positions");

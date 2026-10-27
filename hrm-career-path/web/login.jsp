@@ -4,7 +4,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Đăng nhập | HRM System</title>
+        <title>Đăng nhập | Career Path Management System (CPMS)</title>
         <!-- Google Fonts: Plus Jakarta Sans -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -20,7 +20,7 @@
                 <i class="fa-solid fa-graduation-cap"></i>
             </div>
             <h2>ĐĂNG NHẬP HỆ THỐNG</h2>
-            <p class="subtitle">Quản Lý Nhân Sự &amp; Lộ Trình Phát Triển</p>
+            <p class="subtitle">Career Path Management System (CPMS)</p>
 
             <% if (request.getAttribute("error") != null) { %>
             <div class="alert alert-danger">

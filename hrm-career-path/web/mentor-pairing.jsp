@@ -8,7 +8,7 @@
     List<MentorAssignment> assignments = (List<MentorAssignment>) request.getAttribute("assignments");
     String successMsg = (String) session.getAttribute("successMessage");
     session.removeAttribute("successMessage");
-    request.setAttribute("pageTitle", "Ghép Nối Mentor & Mentee | HRM");
+    request.setAttribute("pageTitle", "Ghép Nối Mentor & Mentee | CPMS");
 %>
 <jsp:include page="/views/common/header.jsp" />
 <jsp:include page="/views/common/sidebar.jsp" />

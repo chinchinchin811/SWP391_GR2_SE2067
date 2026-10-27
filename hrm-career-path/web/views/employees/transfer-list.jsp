@@ -17,7 +17,7 @@
     session.removeAttribute("errorMessage");
 
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-    request.setAttribute("pageTitle", "Quản Lý Đề Xuất Điều Chuyển | HRM");
+    request.setAttribute("pageTitle", "Quản Lý Đề Xuất Điều Chuyển | CPMS");
 %>
 <jsp:include page="/views/common/header.jsp" />
 <jsp:include page="/views/common/sidebar.jsp" />

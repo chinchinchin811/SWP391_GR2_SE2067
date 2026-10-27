@@ -9,7 +9,7 @@
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-    request.setAttribute("pageTitle", "Tổng quan hệ thống | HRM");
+    request.setAttribute("pageTitle", "Tổng quan hệ thống | CPMS");
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
     SimpleDateFormat sdfDate = new SimpleDateFormat("dd/MM/yyyy");
 %>

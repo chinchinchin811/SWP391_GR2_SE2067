@@ -9,7 +9,7 @@
     List<Position> positions = (List<Position>) request.getAttribute("positions");
     String errorMessage = (String) session.getAttribute("errorMessage");
     session.removeAttribute("errorMessage");
-    request.setAttribute("pageTitle", "Đề Xuất Điều Chuyển Vị Trí | HRM");
+    request.setAttribute("pageTitle", "Đề Xuất Điều Chuyển Vị Trí | CPMS");
 %>
 <jsp:include page="/views/common/header.jsp" />
 <jsp:include page="/views/common/sidebar.jsp" />

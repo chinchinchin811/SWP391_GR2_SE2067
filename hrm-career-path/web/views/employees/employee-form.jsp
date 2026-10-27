@@ -13,7 +13,7 @@
     int currentUserRole = (currentUser != null) ? currentUser.getRoleId() : 4;
     boolean isSelfEdit = (isEdit && currentUserRole == 4 && emp != null && emp.getUserId() == currentUser.getUserId());
 
-    request.setAttribute("pageTitle", (isSelfEdit ? "Cập Nhật Thông Tin Cá Nhân" : (isEdit ? "Cập Nhật Nhân Sự" : "Khai Báo Nhân Sự Mới")) + " | HRM");
+    request.setAttribute("pageTitle", (isSelfEdit ? "Cập Nhật Thông Tin Cá Nhân" : (isEdit ? "Cập Nhật Nhân Sự" : "Khai Báo Nhân Sự Mới")) + " | CPMS");
 
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<Position> positions = (List<Position>) request.getAttribute("positions");

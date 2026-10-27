@@ -29,7 +29,7 @@
     session.removeAttribute("errorMessage");
 
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-    request.setAttribute("pageTitle", "Duyệt Đề Xuất Vị Trí | HRM");
+    request.setAttribute("pageTitle", "Duyệt Đề Xuất Vị Trí | CPMS");
 
     int pendingCount = 0;
     if (requests != null) {

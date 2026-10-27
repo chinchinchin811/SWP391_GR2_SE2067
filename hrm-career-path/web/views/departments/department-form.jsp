@@ -5,7 +5,7 @@
 <%
     Department dept = (Department) request.getAttribute("department");
     boolean isEdit = (dept != null && dept.getDepartmentId() > 0);
-    request.setAttribute("pageTitle", (isEdit ? "Chỉnh sửa Phòng Ban" : "Tạo Phòng Ban Mới") + " | HRM");
+    request.setAttribute("pageTitle", (isEdit ? "Chỉnh sửa Phòng Ban" : "Tạo Phòng Ban Mới") + " | CPMS");
     List<User> managerCandidates = (List<User>) request.getAttribute("managerCandidates");
 %>
 <jsp:include page="/views/common/header.jsp" />

@@ -30,8 +30,8 @@
     <a href="<%= request.getContextPath() %>/dashboard" class="sidebar-brand" title="Trang tổng quan">
         <div class="brand-icon"><i class="fa-solid fa-layer-group"></i></div>
         <div class="brand-text">
-            <h3>HRM Career Path</h3>
-            <span>Hệ thống Quản trị</span>
+            <h3>CPMS</h3>
+            <span>Career Path Management</span>
         </div>
     </a>
 

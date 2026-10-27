@@ -72,7 +72,7 @@ public class EmailUtil {
 
         try {
             Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(SENDER_EMAIL, "Hệ Thống Quản Trị Nhân Sự (HRM)",
+            message.setFrom(new InternetAddress(SENDER_EMAIL, "Career Path Management System (CPMS)",
                     StandardCharsets.UTF_8.name()));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail.trim()));
             message.setSubject(subject);

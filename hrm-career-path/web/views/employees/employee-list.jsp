@@ -7,7 +7,7 @@
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-    request.setAttribute("pageTitle", "Danh Sách Nhân Viên | HRM");
+    request.setAttribute("pageTitle", "Danh Sách Nhân Viên | CPMS");
     List<User> employees = (List<User>) request.getAttribute("employees");
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<Position> positions = (List<Position>) request.getAttribute("positions");

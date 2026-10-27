@@ -7,7 +7,7 @@
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-    request.setAttribute("pageTitle", "Vị trí & Cấp bậc | HRM");
+    request.setAttribute("pageTitle", "Vị trí & Cấp bậc | CPMS");
     List<Position> positions = (List<Position>) request.getAttribute("positions");
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<JobLevel> jobLevels = (List<JobLevel>) request.getAttribute("jobLevels");

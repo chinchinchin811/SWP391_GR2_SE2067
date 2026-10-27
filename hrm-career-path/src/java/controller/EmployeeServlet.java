@@ -412,14 +412,18 @@ public class EmployeeServlet extends HttpServlet {
         if (success) {
             // Tự động gửi email thông tin tài khoản làm việc cho nhân viên mới
             try {
-                String loginUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath() + "/login";
+                int port = request.getServerPort();
+                if (port == 8080) {
+                    port = 8084;
+                }
+                String loginUrl = request.getScheme() + "://" + request.getServerName() + ":" + port + request.getContextPath() + "/login";
                 String rawPassword = (password != null && !password.trim().isEmpty()) ? password.trim() : "123";
                 EmailUtil.sendNewAccountEmail(user.getEmail(), user.getFullName(), user.getUsername(), rawPassword, loginUrl);
             } catch (Exception e) {
                 System.err.println("[EmployeeServlet] Không thể gửi email thông báo: " + e.getMessage());
             }
 
-            request.getSession().setAttribute("successMessage", "Khai báo nhân sự mới thành công! Thông tin tài khoản đã được tự động gửi về email của nhân sự.");
+            request.getSession().setAttribute("successMessage", "Khai báo nhân sự mới thành công! Thông tin tài khoản đã được tự động gửi về email của nhân sự qua hệ thống CPMS.");
             response.sendRedirect(request.getContextPath() + "/employees");
         } else {
             request.setAttribute("error",

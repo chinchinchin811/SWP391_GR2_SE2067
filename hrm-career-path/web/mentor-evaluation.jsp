@@ -12,7 +12,7 @@
         response.sendRedirect(request.getContextPath() + "/dashboard");
         return;
     }
-    request.setAttribute("pageTitle", "Quản Lý Đánh Giá Mentee | HRM");
+    request.setAttribute("pageTitle", "Quản Lý Đánh Giá Mentee | CPMS");
     List<MentorEvaluation> evaluations = (List<MentorEvaluation>) request.getAttribute("evaluations");
 %>
 <jsp:include page="/views/common/header.jsp" />

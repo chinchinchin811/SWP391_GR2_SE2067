@@ -7,7 +7,7 @@
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
     User emp = (User) request.getAttribute("employee");
-    request.setAttribute("pageTitle", "Hồ sơ: " + emp.getFullName() + " | HRM");
+    request.setAttribute("pageTitle", "Hồ sơ: " + emp.getFullName() + " | CPMS");
     List<EmployeeHistory> historyList = (List<EmployeeHistory>) request.getAttribute("historyList");
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm");
     SimpleDateFormat sdfDate = new SimpleDateFormat("dd/MM/yyyy");

@@ -4,7 +4,7 @@
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     Department dept = (Department) request.getAttribute("managerDepartment");
-    request.setAttribute("pageTitle", "Tạo Đề Xuất Vị Trí Mới | HRM");
+    request.setAttribute("pageTitle", "Tạo Đề Xuất Vị Trí Mới | CPMS");
 %>
 <jsp:include page="/views/common/header.jsp" />
 <jsp:include page="/views/common/sidebar.jsp" />

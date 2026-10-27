@@ -5,7 +5,7 @@
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-    request.setAttribute("pageTitle", "Quản lý Phòng Ban | HRM");
+    request.setAttribute("pageTitle", "Quản lý Phòng Ban | CPMS");
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<User> managerCandidates = (List<User>) request.getAttribute("managerCandidates");
     String successMessage = (String) session.getAttribute("successMessage");
