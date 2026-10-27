@@ -20,6 +20,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import utils.EmailUtil;
 
 public class EmployeeServlet extends HttpServlet {
 
@@ -49,13 +50,15 @@ public class EmployeeServlet extends HttpServlet {
             return;
         }
 
-        // Nhân viên thường (role 4): Chỉ được xem hồ sơ của chính mình (không có quyền tự chỉnh sửa)
+        // Nhân viên thường (role 4): Chỉ được xem hồ sơ của chính mình (không có quyền
+        // tự chỉnh sửa)
         if (currentUser.getRoleId() == 4) {
             showDetail(request, response, currentUser.getUserId());
             return;
         }
 
-        // Manager (role 3): Chỉ được xem danh sách hoặc xem chi tiết nhân sự phòng ban mình
+        // Manager (role 3): Chỉ được xem danh sách hoặc xem chi tiết nhân sự phòng ban
+        // mình
         if (currentUser.getRoleId() == 3 && !"list".equals(action) && !"detail".equals(action)) {
             response.sendRedirect(request.getContextPath() + "/employees");
             return;
@@ -112,7 +115,8 @@ public class EmployeeServlet extends HttpServlet {
             action = "list";
         }
 
-        // Nhân viên thường (role 4): Không có quyền chỉnh sửa hồ sơ (chỉ HR có quyền cập nhật)
+        // Nhân viên thường (role 4): Không có quyền chỉnh sửa hồ sơ (chỉ HR có quyền
+        // cập nhật)
         if (currentUser.getRoleId() == 4) {
             response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + currentUser.getUserId());
             return;
@@ -262,7 +266,8 @@ public class EmployeeServlet extends HttpServlet {
         String levelIdStr = request.getParameter("levelId");
         String hireDateStr = request.getParameter("hireDate");
 
-        if (username == null || username.trim().isEmpty() || fullName == null || fullName.trim().isEmpty() || email == null || email.trim().isEmpty() || dobStr == null || dobStr.trim().isEmpty()) {
+        if (username == null || username.trim().isEmpty() || fullName == null || fullName.trim().isEmpty()
+                || email == null || email.trim().isEmpty() || dobStr == null || dobStr.trim().isEmpty()) {
             request.setAttribute("error", "Vui lòng điền đầy đủ Tên tài khoản, Họ tên, Email và Ngày sinh!");
             loadFormData(request);
             request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
@@ -280,7 +285,8 @@ public class EmployeeServlet extends HttpServlet {
         if (phone != null && !phone.trim().isEmpty()) {
             String cleanPhone = phone.trim();
             if (!cleanPhone.matches("^0[0-9]{9}$") && !cleanPhone.matches("^\\+84[0-9]{9}$")) {
-                request.setAttribute("error", "Số điện thoại không hợp lệ! Vui lòng nhập đúng 10 chữ số bắt đầu bằng số 0 (Ví dụ: 0912345678).");
+                request.setAttribute("error",
+                        "Số điện thoại không hợp lệ! Vui lòng nhập đúng 10 chữ số bắt đầu bằng số 0 (Ví dụ: 0912345678).");
                 user.setPhone(phone);
                 request.setAttribute("employee", user);
                 loadFormData(request);
@@ -339,7 +345,8 @@ public class EmployeeServlet extends HttpServlet {
         // 1. RÀNG BUỘC ADMIN: Chỉ duy nhất 1 Admin trên toàn hệ thống
         if (roleId == 1) {
             if (userDAO.countAdmin() >= 1) {
-                request.setAttribute("error", "Hệ thống chỉ cho phép duy nhất 1 Quản trị viên (Admin) và tài khoản này đã tồn tại!");
+                request.setAttribute("error",
+                        "Hệ thống chỉ cho phép duy nhất 1 Quản trị viên (Admin) và tài khoản này đã tồn tại!");
                 request.setAttribute("employee", user);
                 loadFormData(request);
                 request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
@@ -347,10 +354,12 @@ public class EmployeeServlet extends HttpServlet {
             }
         }
 
-        // 2. RÀNG BUỘC MANAGER: Bắt buộc chọn phòng ban và mỗi phòng chỉ có tối đa 1 Manager
+        // 2. RÀNG BUỘC MANAGER: Bắt buộc chọn phòng ban và mỗi phòng chỉ có tối đa 1
+        // Manager
         if (roleId == 3) {
             if (deptId == null || deptId <= 0) {
-                request.setAttribute("error", "Vui lòng chọn Phòng ban khi khai báo nhân sự với vai trò Trưởng phòng (Manager)!");
+                request.setAttribute("error",
+                        "Vui lòng chọn Phòng ban khi khai báo nhân sự với vai trò Trưởng phòng (Manager)!");
                 request.setAttribute("employee", user);
                 loadFormData(request);
                 request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
@@ -359,10 +368,13 @@ public class EmployeeServlet extends HttpServlet {
 
             Department currentDept = departmentDAO.getDepartmentById(deptId);
             User existingMgr = userDAO.getManagerByDepartment(deptId);
-            if (existingMgr != null || (currentDept != null && currentDept.getManagerId() != null && currentDept.getManagerId() > 0)) {
-                String mgrName = (existingMgr != null) ? existingMgr.getFullName() : (currentDept != null ? currentDept.getManagerName() : "Đã có Trưởng phòng");
+            if (existingMgr != null
+                    || (currentDept != null && currentDept.getManagerId() != null && currentDept.getManagerId() > 0)) {
+                String mgrName = (existingMgr != null) ? existingMgr.getFullName()
+                        : (currentDept != null ? currentDept.getManagerName() : "Đã có Trưởng phòng");
                 String deptName = (currentDept != null) ? currentDept.getDepartmentName() : "này";
-                request.setAttribute("error", "Phòng ban '" + deptName + "' đã có Trưởng phòng (" + mgrName + "). Mỗi phòng ban chỉ được phép có tối đa 1 Trưởng phòng!");
+                request.setAttribute("error", "Phòng ban '" + deptName + "' đã có Trưởng phòng (" + mgrName
+                        + "). Mỗi phòng ban chỉ được phép có tối đa 1 Trưởng phòng!");
                 request.setAttribute("employee", user);
                 loadFormData(request);
                 request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
@@ -385,7 +397,8 @@ public class EmployeeServlet extends HttpServlet {
             if (pos != null && pos.getDepartmentId() != null && !pos.getDepartmentId().equals(deptId)) {
                 Department d = departmentDAO.getDepartmentById(deptId);
                 String deptName = (d != null) ? d.getDepartmentName() : "đã chọn";
-                request.setAttribute("error", "Vị trí chuyên môn '" + pos.getPositionName() + "' không thuộc phòng ban " + deptName + "! Vui lòng chọn đúng vị trí của phòng ban.");
+                request.setAttribute("error", "Vị trí chuyên môn '" + pos.getPositionName() + "' không thuộc phòng ban "
+                        + deptName + "! Vui lòng chọn đúng vị trí của phòng ban.");
                 request.setAttribute("employee", user);
                 loadFormData(request);
                 request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
@@ -397,10 +410,20 @@ public class EmployeeServlet extends HttpServlet {
 
         boolean success = userDAO.addEmployee(user, creatorId);
         if (success) {
-            request.getSession().setAttribute("successMessage", "Khai báo nhân sự mới thành công!");
+            // Tự động gửi email thông tin tài khoản làm việc cho nhân viên mới
+            try {
+                String loginUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath() + "/login";
+                String rawPassword = (password != null && !password.trim().isEmpty()) ? password.trim() : "123";
+                EmailUtil.sendNewAccountEmail(user.getEmail(), user.getFullName(), user.getUsername(), rawPassword, loginUrl);
+            } catch (Exception e) {
+                System.err.println("[EmployeeServlet] Không thể gửi email thông báo: " + e.getMessage());
+            }
+
+            request.getSession().setAttribute("successMessage", "Khai báo nhân sự mới thành công! Thông tin tài khoản đã được tự động gửi về email của nhân sự.");
             response.sendRedirect(request.getContextPath() + "/employees");
         } else {
-            request.setAttribute("error", "Khai báo thất bại! Có thể Tên tài khoản/Email đã tồn tại hoặc vi phạm ràng buộc dữ liệu.");
+            request.setAttribute("error",
+                    "Khai báo thất bại! Có thể Tên tài khoản/Email đã tồn tại hoặc vi phạm ràng buộc dữ liệu.");
             request.setAttribute("employee", user);
             loadFormData(request);
             request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
@@ -440,7 +463,8 @@ public class EmployeeServlet extends HttpServlet {
             if (phone != null && !phone.trim().isEmpty()) {
                 String cleanPhone = phone.trim();
                 if (!cleanPhone.matches("^0[0-9]{9}$") && !cleanPhone.matches("^\\+84[0-9]{9}$")) {
-                    request.setAttribute("error", "Số điện thoại không hợp lệ! Vui lòng nhập đúng 10 chữ số bắt đầu bằng số 0 (Ví dụ: 0912345678).");
+                    request.setAttribute("error",
+                            "Số điện thoại không hợp lệ! Vui lòng nhập đúng 10 chữ số bắt đầu bằng số 0 (Ví dụ: 0912345678).");
                     user.setPhone(phone);
                     request.setAttribute("employee", user);
                     loadFormData(request);
@@ -499,7 +523,8 @@ public class EmployeeServlet extends HttpServlet {
             // 2. RÀNG BUỘC MANAGER
             if (newRoleId == 3) {
                 if (existingUser.getDepartmentId() == null || existingUser.getDepartmentId() <= 0) {
-                    request.setAttribute("error", "Nhân sự này chưa thuộc phòng ban nào! Vui lòng vào chức năng 'Phân bổ vị trí' để xếp phòng ban trước khi bổ nhiệm Trưởng phòng.");
+                    request.setAttribute("error",
+                            "Nhân sự này chưa thuộc phòng ban nào! Vui lòng vào chức năng 'Phân bổ vị trí' để xếp phòng ban trước khi bổ nhiệm Trưởng phòng.");
                     request.setAttribute("employee", user);
                     loadFormData(request);
                     request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
@@ -509,11 +534,14 @@ public class EmployeeServlet extends HttpServlet {
                 int deptId = existingUser.getDepartmentId();
                 boolean hasOtherMgr = userDAO.hasManagerInDepartment(deptId, existingUser.getUserId());
                 Department dept = departmentDAO.getDepartmentById(deptId);
-                if (hasOtherMgr || (dept != null && dept.getManagerId() != null && dept.getManagerId() != existingUser.getUserId())) {
+                if (hasOtherMgr || (dept != null && dept.getManagerId() != null
+                        && dept.getManagerId() != existingUser.getUserId())) {
                     User otherMgr = userDAO.getManagerByDepartment(deptId);
-                    String mgrName = (otherMgr != null) ? otherMgr.getFullName() : (dept != null ? dept.getManagerName() : "Đã có Trưởng phòng");
+                    String mgrName = (otherMgr != null) ? otherMgr.getFullName()
+                            : (dept != null ? dept.getManagerName() : "Đã có Trưởng phòng");
                     String deptName = (dept != null) ? dept.getDepartmentName() : "này";
-                    request.setAttribute("error", "Phòng ban '" + deptName + "' đã có Trưởng phòng (" + mgrName + "). Mỗi phòng ban chỉ được phép có tối đa 1 Trưởng phòng!");
+                    request.setAttribute("error", "Phòng ban '" + deptName + "' đã có Trưởng phòng (" + mgrName
+                            + "). Mỗi phòng ban chỉ được phép có tối đa 1 Trưởng phòng!");
                     request.setAttribute("employee", user);
                     loadFormData(request);
                     request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
@@ -564,10 +592,12 @@ public class EmployeeServlet extends HttpServlet {
         if (dobStr != null && !dobStr.isEmpty()) {
             try {
                 dob = java.sql.Date.valueOf(dobStr);
-            } catch (IllegalArgumentException ignored) {}
+            } catch (IllegalArgumentException ignored) {
+            }
         }
 
-        boolean ok = userDAO.updateMyProfile(currentUser.getUserId(), fullName.trim(), phone != null ? phone.trim() : null, gender, dob);
+        boolean ok = userDAO.updateMyProfile(currentUser.getUserId(), fullName.trim(),
+                phone != null ? phone.trim() : null, gender, dob);
         if (ok) {
             currentUser.setFullName(fullName.trim());
             request.getSession().setAttribute("currentUser", currentUser);
@@ -609,7 +639,9 @@ public class EmployeeServlet extends HttpServlet {
             if (targetUser.getRoleId() == 3 && newDeptId != null && !newDeptId.equals(targetUser.getDepartmentId())) {
                 User newDeptMgr = userDAO.getManagerByDepartment(newDeptId);
                 if (newDeptMgr != null && newDeptMgr.getUserId() != userId) {
-                    request.getSession().setAttribute("errorMessage", "Phòng ban mới đã có Trưởng phòng (" + newDeptMgr.getFullName() + "). Không thể điều chuyển Trưởng phòng sang phòng ban đã có quản lý!");
+                    request.getSession().setAttribute("errorMessage",
+                            "Phòng ban mới đã có Trưởng phòng (" + newDeptMgr.getFullName()
+                                    + "). Không thể điều chuyển Trưởng phòng sang phòng ban đã có quản lý!");
                     response.sendRedirect(request.getContextPath() + "/employees?action=assign&id=" + userId);
                     return;
                 }
@@ -617,9 +649,11 @@ public class EmployeeServlet extends HttpServlet {
 
             // Kiểm tra Vị trí chuyên môn mới có thuộc phòng ban được chọn không
             if (newPosId != null && newPosId > 0) {
-                Integer effectiveDeptId = (newDeptId != null && newDeptId > 0) ? newDeptId : targetUser.getDepartmentId();
+                Integer effectiveDeptId = (newDeptId != null && newDeptId > 0) ? newDeptId
+                        : targetUser.getDepartmentId();
                 if (effectiveDeptId == null || effectiveDeptId <= 0) {
-                    request.getSession().setAttribute("errorMessage", "Nhân sự chưa có phòng ban! Vui lòng chọn phòng ban mới khi gán vị trí chuyên môn.");
+                    request.getSession().setAttribute("errorMessage",
+                            "Nhân sự chưa có phòng ban! Vui lòng chọn phòng ban mới khi gán vị trí chuyên môn.");
                     response.sendRedirect(request.getContextPath() + "/employees?action=assign&id=" + userId);
                     return;
                 }
@@ -627,7 +661,8 @@ public class EmployeeServlet extends HttpServlet {
                 if (pos != null && pos.getDepartmentId() != null && !pos.getDepartmentId().equals(effectiveDeptId)) {
                     Department d = departmentDAO.getDepartmentById(effectiveDeptId);
                     String deptName = (d != null) ? d.getDepartmentName() : "đã chọn";
-                    request.getSession().setAttribute("errorMessage", "Vị trí '" + pos.getPositionName() + "' không thuộc phòng ban " + deptName + "!");
+                    request.getSession().setAttribute("errorMessage",
+                            "Vị trí '" + pos.getPositionName() + "' không thuộc phòng ban " + deptName + "!");
                     response.sendRedirect(request.getContextPath() + "/employees?action=assign&id=" + userId);
                     return;
                 }
@@ -635,17 +670,20 @@ public class EmployeeServlet extends HttpServlet {
 
             int creatorId = currentUser != null ? currentUser.getUserId() : 1;
 
-            boolean success = userDAO.updateEmployeeAssignment(userId, newDeptId, newPosId, newLevelId, changeType, notes, creatorId);
+            boolean success = userDAO.updateEmployeeAssignment(userId, newDeptId, newPosId, newLevelId, changeType,
+                    notes, creatorId);
             if (success) {
                 // Nếu là Manager và chuyển phòng: cập nhật lại quan hệ quản lý
-                if (targetUser.getRoleId() == 3 && newDeptId != null && !newDeptId.equals(targetUser.getDepartmentId())) {
+                if (targetUser.getRoleId() == 3 && newDeptId != null
+                        && !newDeptId.equals(targetUser.getDepartmentId())) {
                     if (targetUser.getDepartmentId() != null) {
                         departmentDAO.assignManager(targetUser.getDepartmentId(), null);
                     }
                     departmentDAO.assignManager(newDeptId, userId);
                 }
 
-                request.getSession().setAttribute("successMessage", "Phân bổ / Chuyển vị trí thành công! Lịch sử biến động đã được lưu.");
+                request.getSession().setAttribute("successMessage",
+                        "Phân bổ / Chuyển vị trí thành công! Lịch sử biến động đã được lưu.");
                 response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + userId);
             } else {
                 request.getSession().setAttribute("errorMessage", "Phân bổ thất bại!");
