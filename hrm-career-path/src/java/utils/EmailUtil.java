@@ -93,16 +93,19 @@ public class EmailUtil {
      */
     public static void sendNewAccountEmail(String toEmail, String fullName, String username, String password,
             String loginUrl) {
-        // Đảm bảo nếu loginUrl rỗng hoặc chứa cổng 8080 thì tự động chuyển về đúng cổng 8084 của hệ thống
+        // Đảm bảo nếu loginUrl rỗng hoặc chứa cổng 8080 thì tự động chuyển về đúng cổng
+        // 8084 của hệ thống
         if (loginUrl == null || loginUrl.trim().isEmpty()) {
             loginUrl = "http://localhost:8084/hrm-career-path/login";
         } else if (loginUrl.contains(":8080/")) {
             loginUrl = loginUrl.replace(":8080/", ":8084/");
         }
 
-        String timeStr = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
-        String refCode = String.format("%06d", (int)(Math.random() * 1000000));
-        // Đặt tiêu đề email kèm theo Tên và Username của nhân sự để Gmail không gộp các mail lại thành 1 luồng gây ẩn nội dung (trimmed content)
+        String timeStr = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
+        String refCode = String.format("%06d", (int) (Math.random() * 1000000));
+        // Đặt tiêu đề email kèm theo Tên và Username của nhân sự để Gmail không gộp các
+        // mail lại thành 1 luồng gây ẩn nội dung (trimmed content)
         String subject = "[CPMS] Thông tin tài khoản làm việc - " + fullName + " (" + username + ")";
 
         String htmlContent = """
@@ -134,14 +137,10 @@ public class EmailUtil {
                         </div>
                     </div>
 
-                    <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 12px 16px; margin: 18px 0; font-size: 13px; color: #1e40af; line-height: 1.5;">
-                         <strong>Lưu ý bảo mật:</strong> Để đảm bảo an toàn dữ liệu, vui lòng đăng nhập và đổi lại mật khẩu cá nhân ngay trong lần đầu truy cập.
-                    </div>
-
-                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 22px 0 12px 0;">
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 25px 0 15px 0;">
                     <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
                         Email này được gửi tự động từ Career Path Management System (CPMS). Vui lòng không phản hồi thư này.<br>
-                        <span style="font-size: 11px; color: #cbd5e1;">Mã giao dịch: CPMS-%s | Khởi tạo lúc: %s</span>
+                        <span style="font-size: 11px; color: #cbd5e1;">Mã mail: CPMS-%s | Khởi tạo lúc: %s</span>
                     </p>
                 </div>
                 """
@@ -161,7 +160,8 @@ public class EmailUtil {
             loginUrl = loginUrl.replace(":8080/", ":8084/");
         }
 
-        String timeStr = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
+        String timeStr = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
         String refCode = String.format("%06d", (int) (Math.random() * 1000000));
         String subject = "[CPMS] Cấp lại mật khẩu tài khoản - " + fullName + " (" + username + ")";
 
@@ -194,14 +194,10 @@ public class EmailUtil {
                         </div>
                     </div>
 
-                    <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px 16px; margin: 18px 0; font-size: 13px; color: #991b1b; line-height: 1.5;">
-                         <strong>Khuyến nghị an toàn:</strong> Nếu bạn không thực hiện yêu cầu này, vui lòng liên hệ ngay với bộ phận Quản trị hệ thống (Admin). Để đảm bảo an toàn, vui lòng đăng nhập và đổi lại mật khẩu cá nhân tại mục Hồ Sơ Cá Nhân.
-                    </div>
-
-                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 22px 0 12px 0;">
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 25px 0 15px 0;">
                     <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
                         Email này được gửi tự động từ Career Path Management System (CPMS). Vui lòng không phản hồi thư này.<br>
-                        <span style="font-size: 11px; color: #cbd5e1;">Mã giao dịch: CPMS-PW-%s | Khởi tạo lúc: %s</span>
+                        <span style="font-size: 11px; color: #cbd5e1;">Mã mail: CPMS-PW-%s | Khởi tạo lúc: %s</span>
                     </p>
                 </div>
                 """
