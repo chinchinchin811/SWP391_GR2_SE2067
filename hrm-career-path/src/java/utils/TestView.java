@@ -6,6 +6,11 @@ import java.time.format.DateTimeFormatter;
 /** Helper hiển thị dữ liệu người dùng an toàn trong JSP, không chứa nghiệp vụ phân quyền. */
 public final class TestView {
     private TestView() { }
+    public static String typeLabel(String type) {
+        if ("culture".equals(type)) return "Văn hóa";
+        if ("learning".equals(type)) return "Học liệu";
+        return "Chuyên môn";
+    }
     /** Escape cả nội dung văn bản và thuộc tính HTML để đề/bài nộp không chèn script. */
     public static String h(Object value) {
         if (value == null) return "";

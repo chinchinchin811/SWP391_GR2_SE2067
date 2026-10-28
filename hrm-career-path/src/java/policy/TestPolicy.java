@@ -14,6 +14,9 @@ public final class TestPolicy {
 
     /** ADMIN quản lý Văn hóa; MANAGER quản lý Chuyên môn đúng phòng. HR làm bài như EMPLOYEE. */
     public boolean canManage(TestActor actor, TestTemplate t) {
+        if (t.classId() != null) {
+            return "learning".equals(t.type()) && actor.mentoredClassIds().contains(t.classId());
+        }
         return "culture".equals(t.type()) ? actor.cultureManager()
                 : actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId());
     }

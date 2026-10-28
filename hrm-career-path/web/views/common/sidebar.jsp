@@ -148,7 +148,7 @@
                         <a href="<%= request.getContextPath() %>/tests?action=calendar"><i class="fa-regular fa-calendar-days nav-icon"></i> <span>Lịch bài test</span></a>
                     </li>
                     <% } %>
-                    <% if (roleId == 1 || roleId == 3) { %>
+                    <% if (roleId == 1 || roleId == 3 || (request.getAttribute("testActor") instanceof model.TestActor && ((model.TestActor)request.getAttribute("testActor")).classMentor())) { %>
                     <li class="<%= currentURI.contains("/tests") && ("bank".equals(action) || "bankDetail".equals(action)) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/tests?action=bank"><i class="fa-solid fa-box-archive nav-icon"></i> <span>Bộ đề &amp; Câu hỏi</span></a>
                     </li>

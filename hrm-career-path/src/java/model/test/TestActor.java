@@ -4,7 +4,19 @@ package model;
  * Quyền hiện tại đọc từ DB mỗi request, không tin role/phòng lưu lâu trong
  * session.
  */
-public record TestActor(int id, String name, String role, Integer departmentId, Integer managedDepartmentId) {
+public record TestActor(int id, String name, String role, Integer departmentId, Integer managedDepartmentId,
+        java.util.Set<Integer> mentoredClassIds) {
+
+    public TestActor {
+        mentoredClassIds = java.util.Set.copyOf(mentoredClassIds);
+    }
+
+    public TestActor(int id, String name, String role, Integer departmentId, Integer managedDepartmentId) {
+        this(id, name, role, departmentId, managedDepartmentId, java.util.Set.of());
+    }
+
+    public boolean classMentor() { return !mentoredClassIds.isEmpty(); }
+    public boolean testManager() { return cultureManager() || departmentManager() || classMentor(); }
 
     /** ADMIN quản lý bài văn hóa; HR làm bài như nhân viên thường. */
     public boolean cultureManager() {

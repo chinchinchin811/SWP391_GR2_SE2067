@@ -126,11 +126,16 @@ public final class TestService {
 
     public int createTemplate(int userId, String title, String description, String type,
             Instant start, Instant end, Integer contentId) throws SQLException {
+        return createTemplate(userId, title, description, type, start, end, contentId, null);
+    }
+
+    public int createTemplate(int userId, String title, String description, String type,
+            Instant start, Instant end, Integer contentId, Integer classId) throws SQLException {
         final String checkedTitle = text(title, 200, true);
         final String checkedDescription = text(description, 20000, true);
         validateTemplate(type, start, end);
         return transaction(dao -> insertTemplate(dao, dao.actor(userId), checkedTitle,
-                checkedDescription, type, start, end, contentId));
+                checkedDescription, type, start, end, contentId, classId));
     }
 
     private void validateTemplate(String type, Instant start, Instant end) {
@@ -148,7 +153,7 @@ public final class TestService {
                 || start.isBefore(Instant.parse("2000-01-01T00:00:00Z")) || end.isAfter(Instant.parse("2100-01-01T00:00:00Z"))) {
             throw new TestException(400, "Lịch phải hợp lệ, bắt đầu trước kết thúc và chưa hết hạn (năm 2000–2099).");
         }
-        if (!"culture".equals(type) && !"department".equals(type)) {
+        if (!"culture".equals(type) && !"department".equals(type) && !"learning".equals(type)) {
             throw new TestException(400, "Loại bài test không hợp lệ.");
         }
     }
@@ -167,18 +172,33 @@ public final class TestService {
     }
 
     private int insertTemplate(TestDAO dao, TestActor actor, String title, String description,
-            String type, Instant start, Instant end, Integer contentId) throws SQLException {
-        Integer department = templateDepartment(actor, type);
+            String type, Instant start, Instant end, Integer contentId, Integer classId) throws SQLException {
+        Integer department;
+        if (classId != null) {
+            if (!"learning".equals(type) || contentId == null) {
+                throw new TestException(400, "Đợt giao bài cho lớp phải chọn đề Học liệu của lớp.");
+            }
+            TestClass trainingClass = dao.requireMentor(actor, classId);
+            if (!Set.of("OPEN", "IN_PROGRESS").contains(trainingClass.status())) {
+                throw new TestException(409, "Chỉ tạo đợt giao bài cho lớp đang mở hoặc đang học.");
+            }
+            department = trainingClass.departmentId();
+        } else {
+            if (actor.classMentor() && "learning".equals(type)) {
+                throw new TestException(400, "Hãy chọn lớp đào tạo để tạo đợt giao đề Học liệu.");
+            }
+            department = templateDepartment(actor, type);
+        }
         if (contentId != null) {
-            TestContent selected = dao.managedContent(actor, contentId);
-            if (!type.equals(selected.type()) || (selected.departmentId() != null
+            TestContent selected = dao.managedContent(actor, contentId, classId);
+            if (!type.equals(selected.type()) || (classId == null && selected.departmentId() != null
                     && !Objects.equals(department, selected.departmentId()))) {
                 throw new TestException(400, "Bộ đề phải cùng loại với đợt giao bài.");
             }
         }
-        int id = dao.insertId("INSERT INTO Test_Templates(title,description,type,department_id,created_by,start_time,end_time,default_content_id) "
-                + "OUTPUT INSERTED.id VALUES (?,?,?,?,?,?,?,?)", title, description, type,
-                department, actor.id(), start, end, contentId);
+        int id = dao.insertId("INSERT INTO Test_Templates(title,description,type,department_id,created_by,start_time,end_time,default_content_id,class_id) "
+                + "OUTPUT INSERTED.id VALUES (?,?,?,?,?,?,?,?,?)", title, description, type,
+                department, actor.id(), start, end, contentId, classId);
         return id;
     }
 
@@ -192,7 +212,7 @@ public final class TestService {
             TestTemplate t = dao.template(actor, id);
             manage(actor, t);
             if ("published".equals(to) && t.defaultContentId() != null
-                    && !"ready".equals(dao.managedContent(actor, t.defaultContentId()).status())) {
+                    && !"ready".equals(dao.managedContent(actor, t.defaultContentId(), t.classId()).status())) {
                 throw new TestException(409, "Hãy hoàn tất và chốt bộ trắc nghiệm trước khi công bố đợt giao bài.");
             }
             if ("published".equals(to) && !clock.instant().isBefore(t.endTime())) {
@@ -308,11 +328,11 @@ public final class TestService {
                 throw new TestException(403, "Không có quyền giao bài hoặc đề đã hết hạn.");
             }
             if (selectedContentId != null) {
-                TestContent selected = dao.managedContent(actor, selectedContentId);
+                TestContent selected = dao.managedContent(actor, selectedContentId, t.classId());
                 if (!"ready".equals(selected.status())) {
                     throw new TestException(409, "Bộ đề/câu hỏi chưa sẵn sàng để giao.");
                 }
-                if (!selected.type().equals(t.type()) || (selected.departmentId() != null && !Objects.equals(selected.departmentId(), t.departmentId()))) {
+                if (!selected.type().equals(t.type()) || (t.classId() == null && selected.departmentId() != null && !Objects.equals(selected.departmentId(), t.departmentId()))) {
                     throw new TestException(403, "Bộ đề/câu hỏi phải cùng phạm vi với đợt giao bài.");
                 }
             }
@@ -321,7 +341,10 @@ public final class TestService {
                 if ("ADMIN".equals(recipient.role())) {
                     throw new TestException(403, "Không thể giao bài đánh giá cho tài khoản ADMIN.");
                 }
-                if (actor.departmentManager()
+                if (t.classId() != null && !dao.enrolled(t.classId(), id)) {
+                    throw new TestException(403, "Chỉ được giao bài cho học viên thuộc lớp đào tạo này.");
+                }
+                if (t.classId() == null && actor.departmentManager()
                         && (!"EMPLOYEE".equals(recipient.role())
                         || !Objects.equals(actor.managedDepartmentId(), recipient.departmentId()))) {
                     throw new TestException(403, "MANAGER chỉ được giao bài cho nhân viên trong phòng ban mình quản lý.");
@@ -509,7 +532,7 @@ public final class TestService {
      * Kho nội dung chỉ mở cho ADMIN hoặc MANAGER đang quản lý một phòng.
      */
     private void bankManager(TestActor actor) {
-        if (!actor.cultureManager() && !actor.departmentManager()) {
+        if (!actor.testManager()) {
             throw new TestException(403, "Bạn không có quyền quản lý bộ đề/câu hỏi.");
         }
     }
@@ -518,11 +541,15 @@ public final class TestService {
      * Xem kho có phân trang, không cho nhân viên dò ID lấy đáp án.
      */
     public List<TestContent> listContent(int userId, int page, int size) throws SQLException {
+        return listContent(userId, null, page, size);
+    }
+
+    public List<TestContent> listContent(int userId, Integer classId, int page, int size) throws SQLException {
         int start = offset(page, size);
         return transaction(dao -> {
             TestActor actor = dao.actor(userId);
             bankManager(actor);
-            return dao.contents(actor, null, start, size);
+            return dao.contents(actor, null, classId, start, size);
         });
     }
 
@@ -535,11 +562,23 @@ public final class TestService {
      * giao.
      */
     public ContentDetail getContent(int userId, int id) throws SQLException {
+        return getContent(userId, id, null);
+    }
+
+    public ContentDetail getContent(int userId, int id, Integer classId) throws SQLException {
         return transaction(dao -> {
             TestActor actor = dao.actor(userId);
-            TestContent content = dao.managedContent(actor, id);
+            TestContent content = dao.managedContent(actor, id, classId);
             return new ContentDetail(content, dao.questions(id, true), Map.of());
         });
+    }
+
+    public List<TestClass> getMentoredClasses(int userId) throws SQLException {
+        return transaction(dao -> { TestActor actor = dao.actor(userId); return dao.mentoredClasses(actor.id()); });
+    }
+
+    public TestClass getMentoredClass(int userId, int classId) throws SQLException {
+        return transaction(dao -> dao.requireMentor(dao.actor(userId), classId));
     }
 
     /**

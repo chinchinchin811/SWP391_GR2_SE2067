@@ -16,8 +16,11 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Build failed' }
 
     $testClasspath = "build/web/WEB-INF/classes;build/web/WEB-INF/lib/*;$TomcatHome/lib/*;$TomcatHome/bin/tomcat-juli.jar;$testOutput"
-    & javac -encoding UTF-8 -source 17 -target 17 -cp $testClasspath -d $testOutput test/TestModuleIntegrationTest.java test/TestModuleHttpTest.java
+    & javac -encoding UTF-8 -source 17 -target 17 -cp $testClasspath -d $testOutput test/TestModuleIntegrationTest.java test/TestModuleHttpTest.java test/SeedDataIntegrationTest.java
     if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed' }
+
+    & java -cp $testClasspath SeedDataIntegrationTest
+    if ($LASTEXITCODE -ne 0) { throw 'Seed data integration tests failed' }
 
     & java -cp $testClasspath TestModuleIntegrationTest
     if ($LASTEXITCODE -ne 0) { throw 'SQL Server integration tests failed' }

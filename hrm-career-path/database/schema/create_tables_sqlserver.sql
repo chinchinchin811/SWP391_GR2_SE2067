@@ -346,6 +346,13 @@ GO
 -- Migration bổ sung, chạy trên database HRM hiện có; không xóa dữ liệu.
 -- Thời gian trong module luôn lưu UTC. Có thể chạy lại migration này.
 SET XACT_ABORT ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
 BEGIN TRANSACTION;
 
 IF OBJECT_ID('dbo.Test_Content', 'U') IS NULL
@@ -526,6 +533,45 @@ BEGIN
         evaluated_at DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
     );
 END;
+
+-- Chạy trên database hiện có, không reset dữ liệu. Có thể chạy lại.
+SET XACT_ABORT ON;
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+SET ANSI_PADDING ON;
+SET ANSI_WARNINGS ON;
+SET ARITHABORT ON;
+SET CONCAT_NULL_YIELDS_NULL ON;
+SET NUMERIC_ROUNDABORT OFF;
+
+IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name='CK_Content_Scope' AND parent_object_id=OBJECT_ID('dbo.Test_Content'))
+    ALTER TABLE dbo.Test_Content DROP CONSTRAINT CK_Content_Scope;
+ALTER TABLE dbo.Test_Content WITH CHECK ADD CONSTRAINT CK_Content_Scope CHECK (type IN ('culture','department','learning'));
+IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name='CK_Test_Type' AND parent_object_id=OBJECT_ID('dbo.Test_Templates'))
+    ALTER TABLE dbo.Test_Templates DROP CONSTRAINT CK_Test_Type;
+ALTER TABLE dbo.Test_Templates WITH CHECK ADD CONSTRAINT CK_Test_Type CHECK (type IN ('culture','department','learning'));
+IF COL_LENGTH('dbo.Test_Content','learning_material_id') IS NULL
+    ALTER TABLE dbo.Test_Content ADD learning_material_id INT NULL;
+IF OBJECT_ID('dbo.Learning_Materials','U') IS NOT NULL
+   AND NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Test_Content_Learning_Material')
+    ALTER TABLE dbo.Test_Content ADD CONSTRAINT FK_Test_Content_Learning_Material
+        FOREIGN KEY (learning_material_id) REFERENCES dbo.Learning_Materials(material_id);
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name='UX_Test_Content_Learning_Material' AND object_id=OBJECT_ID('dbo.Test_Content'))
+    EXEC(N'CREATE UNIQUE INDEX UX_Test_Content_Learning_Material ON dbo.Test_Content(learning_material_id) WHERE learning_material_id IS NOT NULL AND is_deleted=0');
+
+
+-- Gắn đợt giao bài với lớp; không đổi dữ liệu của các đợt giao hiện có.
+SET XACT_ABORT ON;
+
+IF COL_LENGTH('dbo.Test_Templates','class_id') IS NULL
+    ALTER TABLE dbo.Test_Templates ADD class_id INT NULL;
+IF OBJECT_ID('dbo.Training_Classes','U') IS NOT NULL
+    AND NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name='FK_Test_Template_Class')
+    ALTER TABLE dbo.Test_Templates ADD CONSTRAINT FK_Test_Template_Class
+        FOREIGN KEY (class_id) REFERENCES dbo.Training_Classes(class_id);
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name='CK_Test_Class_Type')
+    EXEC(N'ALTER TABLE dbo.Test_Templates ADD CONSTRAINT CK_Test_Class_Type CHECK (class_id IS NULL OR type=''learning'')');
+
 
 COMMIT;
 -- END TEST MODULE

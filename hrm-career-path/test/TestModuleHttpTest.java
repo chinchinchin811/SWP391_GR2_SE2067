@@ -131,6 +131,20 @@ public class TestModuleHttpTest {
                 "score", "9", "comment", "Tự chấm").statusCode() == 403, "HR self evaluation rejected by server");
         HttpResponse<String> form = get(manager, "/hrm/tests?action=new");
         check(form.statusCode() == 200, "render create form");
+        check(form.body().contains("value=\"department\"") && form.body().contains("value=\"learning\""),
+                "manager can select professional and learning tests");
+        int learningContent = insertId(conn, "INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by,status) "
+                + "OUTPUT INSERTED.id VALUES (N'Học liệu HTTP',N'Ôn tập','quiz','learning',NULL,1,'ready')");
+        HttpResponse<String> learningForm = get(manager, "/hrm/tests?action=new");
+        check(learningForm.body().contains("data-test-type=\"learning\"") && learningForm.body().contains("Học liệu HTTP"),
+                "learning bank appears in typed selector");
+        String learningTemplate = newId(post(manager, "/hrm/tests", "csrf", csrf(learningForm.body()), "action", "create",
+                "title", "Đợt Học liệu HTTP", "description", "Ôn tập học liệu", "type", "learning",
+                "contentId", String.valueOf(learningContent),
+                "startDate", LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(1).toString(), "startTime", "08:00",
+                "endDate", LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(1).toString(), "endTime", "09:00"));
+        check(get(manager, "/hrm/tests?action=detail&id=" + learningTemplate).statusCode() == 200, "learning template detail renders");
+        check(get(manager, "/hrm/tests?action=bank").body().contains("Đề thi Học liệu"), "learning bank section renders");
         String token = csrf(form.body());
         check(post(manager, "/hrm/tests", "action", "create").statusCode() == 403, "missing CSRF rejected");
         check(post(manager, "/hrm/tests", "csrf", "bad-token", "action", "create").statusCode() == 403, "invalid CSRF rejected");
@@ -256,7 +270,55 @@ public class TestModuleHttpTest {
                 "start essay assignment");
         essayPage = get(member, "/hrm/tests?action=assignment&id=" + essayAssignment).body();
         check(essayPage.contains("Xử lý phản hồi khách hàng như thế nào?") && essayPage.contains("multipart/form-data") && !essayPage.contains("type=\"radio\""), "essay selection displays correct prompt and submission form");
+        runClassMentorHttp(conn, member, outsider, manager);
         System.out.println("PASS: " + assertions + " HTTP assertions on isolated Tomcat and SQL Server.");
+    }
+
+    private static void runClassMentorHttp(Connection conn, HttpClient mentor, HttpClient learner, HttpClient other) throws Exception {
+        int material = insertId(conn, "INSERT INTO Learning_Materials(title,material_type,scope_type,created_by) "
+                + "OUTPUT INSERTED.material_id VALUES (N'Nguồn lớp A','PDF','CULTURE',1)");
+        int unrelated = insertId(conn, "INSERT INTO Learning_Materials(title,material_type,scope_type,created_by) "
+                + "OUTPUT INSERTED.material_id VALUES (N'Nguồn lớp B','PDF','CULTURE',1)");
+        int classA = insertId(conn, "INSERT INTO Training_Classes(class_code,class_name,mentor_id,start_date,created_by) "
+                + "OUTPUT INSERTED.class_id VALUES ('MENTOR-A',N'Lớp mentor A',2,CAST(GETDATE() AS DATE),1)");
+        int classB = insertId(conn, "INSERT INTO Training_Classes(class_code,class_name,mentor_id,start_date,created_by) "
+                + "OUTPUT INSERTED.class_id VALUES ('MENTOR-B',N'Lớp mentor B',2,CAST(GETDATE() AS DATE),1)");
+        execute(conn, "INSERT INTO Class_Materials(class_id,material_id) VALUES (" + classA + "," + material + "),(" + classB + "," + unrelated + "); "
+                + "INSERT INTO Class_Enrollments(class_id,user_id,enrolled_by) VALUES (" + classA + ",3,1)");
+        int bankA = insertId(conn, "INSERT INTO Test_Content(title,prompt,kind,type,created_by,status,learning_material_id) "
+                + "OUTPUT INSERTED.id VALUES (N'Đề riêng lớp A',N'Nội dung A','quiz','learning',1,'ready',?)", material);
+        int bankB = insertId(conn, "INSERT INTO Test_Content(title,prompt,kind,type,created_by,status,learning_material_id) "
+                + "OUTPUT INSERTED.id VALUES (N'Đề riêng lớp B',N'Nội dung B','quiz','learning',1,'ready',?)", unrelated);
+        String bankHtml = get(mentor, "/hrm/tests?action=bank&classId=" + classA).body();
+        check(bankHtml.contains("Đề riêng lớp A") && !bankHtml.contains("Đề riêng lớp B") && !bankHtml.contains("Đề thi Chuyên môn"),
+                "employee mentor class bank only displays related learning content");
+        check(bankHtml.contains("action=bankDetail&amp;id=" + bankA + "&amp;classId=" + classA), "bank links preserve class scope");
+        check(get(mentor, "/hrm/tests?action=bankDetail&id=" + bankB + "&classId=" + classA).statusCode() == 404,
+                "bank detail rejects unrelated content even when mentoring both classes");
+        check(get(other, "/hrm/tests?action=bank&classId=" + classA).statusCode() == 404, "manager outside class cannot browse class bank");
+        HttpResponse<String> form = get(mentor, "/hrm/tests?action=new&classId=" + classA);
+        check(form.statusCode() == 200 && form.body().contains("value=\"learning\"") && !form.body().contains("value=\"department\"")
+                && form.body().contains("Đề riêng lớp A") && !form.body().contains("Đề riêng lớp B"), "mentor create form filters types and banks by class");
+        String tomorrow = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(1).toString();
+        String token = csrf(form.body());
+        check(post(mentor, "/hrm/tests", "action", "create", "csrf", token, "title", "Đợt sai đề", "description", "Mô tả", "type", "learning",
+                "classId", String.valueOf(classA), "contentId", String.valueOf(bankB), "startDate", tomorrow, "startTime", "08:00",
+                "endDate", tomorrow, "endTime", "09:00").statusCode() == 404, "tampered content id rejected at POST");
+        String template = newId(post(mentor, "/hrm/tests", "action", "create", "csrf", token, "title", "Đợt lớp A", "description", "Mô tả", "type", "learning",
+                "classId", String.valueOf(classA), "contentId", String.valueOf(bankA), "startDate", tomorrow, "startTime", "08:00",
+                "endDate", tomorrow, "endTime", "09:00"));
+        check(post(mentor, "/hrm/tests", "csrf", token, "action", "publish", "id", template).statusCode() == 303, "employee mentor can publish class test");
+        String detail = get(mentor, "/hrm/tests?action=detail&id=" + template).body();
+        check(detail.contains("Chọn học viên của lớp") && detail.contains("Outsider") && !detail.contains("name=\"assigneeId\" value=\"1\""),
+                "class recipient selector only lists enrolled users");
+        check(post(mentor, "/hrm/tests", "csrf", token, "action", "assign", "id", template, "assigneeId", "1").statusCode() == 403,
+                "mentor cannot assign outside class by forged recipient id");
+        check(post(mentor, "/hrm/tests", "csrf", token, "action", "assign", "id", template, "assigneeId", "3").statusCode() == 303,
+                "employee mentor can assign to class member in another department");
+        check(get(learner, "/hrm/tests?action=mine").body().contains("Đợt lớp A"), "learner sees assigned class test");
+        check(get(other, "/hrm/tests?action=detail&id=" + template).statusCode() == 404, "published class test remains private to class");
+        check(get(mentor, "/hrm/materials?action=classDetail&id=" + classA).body().contains("tests?action=bank&amp;classId=" + classA),
+                "class detail links mentor to related learning banks");
     }
 
     /**

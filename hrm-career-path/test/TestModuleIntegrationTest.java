@@ -111,7 +111,12 @@ public class TestModuleIntegrationTest {
      * Bảng nền tối thiểu, tên cột/role tương thích với schema HRM thật.
      */
     private static void fixture() throws SQLException {
-        sql("CREATE TABLE Roles(role_id INT PRIMARY KEY,role_name VARCHAR(50)); "
+        sql("CREATE TABLE Training_Classes(class_id INT PRIMARY KEY,class_name NVARCHAR(200),department_id INT,mentor_id INT,status VARCHAR(20),is_deleted BIT DEFAULT 0); "
+                + "CREATE TABLE Class_Materials(class_id INT,material_id INT,PRIMARY KEY(class_id,material_id)); "
+                + "CREATE TABLE Class_Enrollments(class_id INT,user_id INT,PRIMARY KEY(class_id,user_id)); "
+                + "CREATE TABLE Learning_Materials(material_id INT IDENTITY PRIMARY KEY,title NVARCHAR(200),description NVARCHAR(MAX),"
+                + "department_id INT,created_by INT,is_deleted BIT DEFAULT 0,status BIT DEFAULT 1); "
+                + "CREATE TABLE Roles(role_id INT PRIMARY KEY,role_name VARCHAR(50)); "
                 + "CREATE TABLE Departments(department_id INT PRIMARY KEY,department_name NVARCHAR(100),manager_id INT,status BIT,is_deleted BIT); "
                 + "CREATE TABLE Users(user_id INT PRIMARY KEY,username VARCHAR(50),full_name NVARCHAR(100),role_id INT REFERENCES Roles(role_id),"
                 + "department_id INT REFERENCES Departments(department_id),status BIT,is_deleted BIT); "
@@ -364,6 +369,52 @@ public class TestModuleIntegrationTest {
      * Tạo/drop duy nhất database tên ngẫu nhiên thuộc lần chạy này; không chạy
      * script reset HRM.
      */
+    private static void runLearningTests(Path seedDirectory) throws Exception {
+        sql("INSERT INTO Learning_Materials(title,description,department_id,created_by) VALUES "
+                + "(N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty',N'Văn hóa',NULL,1),"
+                + "(N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum',N'Scrum',1,3),"
+                + "(N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE',N'Java',1,3),"
+                + "(N'Bộ Tiêu Chuẩn Lập Trình Java & Quy Định Đặt Mã Nguồn (Clean Code)',N'Clean Code',1,3),"
+                + "(N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026',N'Tầm nhìn',NULL,1),"
+                + "(N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp',N'Bảo mật',NULL,1)");
+        String allSeed = Files.readString(seedDirectory.resolve("seed_data_sqlserver.sql"), StandardCharsets.UTF_8);
+        int start = allSeed.indexOf("-- BEGIN LEARNING TEST BANK SEED");
+        int end = allSeed.indexOf("-- END LEARNING TEST BANK SEED", start);
+        if (start < 0 || end < start) throw new IllegalStateException("Missing embedded learning question seed");
+        String seed = allSeed.substring(start, end);
+        sql(seed);
+        sql(seed);
+        check(count("SELECT COUNT(*) FROM Test_Content WHERE type='learning'") == 6, "six unique learning banks after repeat seed");
+        check(count("SELECT COUNT(*) FROM (SELECT c.id FROM Test_Content c JOIN Test_Questions q ON q.content_id=c.id "
+                + "WHERE c.type='learning' GROUP BY c.id HAVING COUNT(*)=15) banks") == 6, "15 questions in every material bank");
+        check(count("SELECT COUNT(*) FROM (SELECT q.id FROM Test_Questions q JOIN Test_Content c ON c.id=q.content_id "
+                + "JOIN Test_Question_Options o ON o.question_id=q.id WHERE c.type='learning' GROUP BY q.id "
+                + "HAVING COUNT(*)=4 AND SUM(CAST(o.is_correct AS INT))=1) questions") == 90, "90 valid single-choice questions");
+        TestService s = service(NOW);
+        int shared = count("SELECT id FROM Test_Content WHERE learning_material_id=1");
+        int technical = count("SELECT id FROM Test_Content WHERE learning_material_id=3");
+        check(s.getContent(3, shared).questions().size() == 15, "manager can read common material bank");
+        check(s.getContent(5, shared).questions().size() == 15, "another manager can read common material bank");
+        rejects(404, () -> s.getContent(5, technical));
+        rejects(404, () -> s.getContent(1, shared));
+        rejects(404, () -> s.getContent(4, shared));
+        rejects(400, () -> s.createTemplate(3, "Sai loại", "Mô tả", "department", NOW, NOW.plusSeconds(3600), shared));
+        int template = s.createTemplate(3, "Học liệu", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), shared);
+        s.publishTemplate(3, template);
+        rejects(403, () -> s.createTemplate(1, "Học liệu", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), shared));
+        s.assignTest(3, template, List.of(7), shared);
+        int assigned = assignment(template, 7);
+        Map<Integer, Set<Integer>> answers = new LinkedHashMap<>();
+        for (TestQuestion q : s.getContent(3, shared).questions()) {
+            Set<Integer> correct = new LinkedHashSet<>();
+            for (TestQuestionOption o : q.options()) if (Boolean.TRUE.equals(o.correct())) correct.add(o.id());
+            answers.put(q.id(), correct);
+        }
+        s.submitQuiz(7, assigned, answers);
+        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE id=" + assigned + " AND quiz_score=10") == 1,
+                "learning quiz can be assigned, submitted and graded");
+    }
+
     public static void main(String[] args) throws Exception {
         database = "HRM_TestModule_it_" + UUID.randomUUID().toString().replace("-", "");
         boolean created = false;
@@ -386,8 +437,10 @@ public class TestModuleIntegrationTest {
                 sql(migration);
                 check(count("SELECT COUNT(*) FROM Test_Question_Options WHERE question_id=1") == 4,
                         "legacy four-column questions migrate exactly once");
-                runTests();
-                runQuestionTests();
+                if (!Arrays.asList(args).contains("--learning-only")) {
+                    runTests();
+                    runQuestionTests();
+                }
                 Path seedPath = Files.exists(Path.of("database/seed_data/seed_data_sqlserver.sql"))
                         ? Path.of("database/seed_data/seed_data_sqlserver.sql")
                         : Path.of("hrm-career-path/database/seed_data/seed_data_sqlserver.sql");
@@ -403,6 +456,8 @@ public class TestModuleIntegrationTest {
                 check(count("SELECT COUNT(*) FROM Test_Questions q JOIN Test_Content c ON c.id=q.content_id "
                         + "WHERE c.title IN (N'Đề thi Văn hóa doanh nghiệp',N'Đề thi Chuyên môn Java Backend')") == 20,
                         "question seed creates both exam directions");
+                runLearningTests(seedPath.getParent());
+                runClassMentorTests();
                 System.out.println("PASS: " + assertions + " assertions on isolated SQL Server database.");
             } finally {
                 if (created && database.matches("HRM_TestModule_it_[a-f0-9]{32}")) {
@@ -411,5 +466,55 @@ public class TestModuleIntegrationTest {
                 }
             }
         }
+    }
+
+    private static void runClassMentorTests() throws Exception {
+        sql("INSERT INTO Training_Classes(class_id,class_name,department_id,mentor_id,status) VALUES "
+                + "(100,N'Lớp A',1,4,'OPEN'),(101,N'Lớp B',1,3,'IN_PROGRESS'),"
+                + "(102,N'Lớp C',2,5,'OPEN'),(103,N'Lớp HR',NULL,2,'OPEN'),(104,N'Lớp rỗng',1,4,'OPEN'); "
+                + "INSERT INTO Class_Materials VALUES (100,1),(101,3),(102,6),(103,1); "
+                + "INSERT INTO Class_Enrollments VALUES (100,6),(100,7),(101,7),(103,7)");
+        TestService s = service(NOW);
+        int common = count("SELECT id FROM Test_Content WHERE learning_material_id=1");
+        int javaBank = count("SELECT id FROM Test_Content WHERE learning_material_id=3");
+        check(s.currentActor(4).classMentor(), "EMPLOYEE receives mentor rights from class assignment");
+        check(s.listContent(4, 100, 1, 20).size() == 1, "class bank only contains selected material");
+        check(s.listContent(4, 104, 1, 20).isEmpty(), "class without materials has no banks");
+        check(s.listContent(4, 1, 20).stream().allMatch(c -> c.id() == common), "mentor global bank contains only own class materials");
+        check(s.listContent(3, 1, 100).stream().noneMatch(c -> c.id() == common), "manager mentor cannot browse unrelated learning bank");
+        rejects(404, () -> s.listContent(4, 101, 1, 20));
+        rejects(404, () -> s.getContent(4, javaBank));
+        rejects(404, () -> s.getContent(4, javaBank, 100));
+        rejects(404, () -> s.createTemplate(4, "Sai lớp", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), javaBank, 101));
+        rejects(404, () -> s.createTemplate(4, "Sai đề", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), javaBank, 100));
+        rejects(400, () -> s.createTemplate(4, "Sai loại", "Mô tả", "department", NOW, NOW.plusSeconds(3600), common, 100));
+        rejects(400, () -> s.createTemplate(4, "Thiếu lớp", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common));
+        int template = s.createTemplate(4, "Lớp A kiểm tra", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common, 100);
+        check(Objects.equals(s.getTemplate(4, template).classId(), 100), "class scope persisted");
+        rejects(404, () -> s.getTemplate(3, template));
+        s.publishTemplate(4, template);
+        rejects(404, () -> s.getTemplate(3, template));
+        check(s.getCandidates(4, template).stream().map(TestActor::id).collect(java.util.stream.Collectors.toSet()).equals(Set.of(6,7)),
+                "recipient selector contains only class members, including another department");
+        check(s.getContentChoices(4, template).size() == 1, "assign selector stays limited to class materials");
+        rejects(404, () -> s.assignTest(4, template, List.of(6), javaBank));
+        rejects(403, () -> s.assignTest(4, template, List.of(6,5), common));
+        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE test_template_id=" + template) == 0, "invalid recipient rolls back batch");
+        s.assignTest(4, template, List.of(6), common);
+        int assigned = assignment(template, 6);
+        check(s.getAssignment(6, assigned).contentId() == common, "class member receives learning test across departments");
+        rejects(404, () -> s.getAssignment(3, assigned));
+        sql("DELETE FROM Class_Materials WHERE class_id=100");
+        check(s.listContent(4, 100, 1, 20).isEmpty(), "removing class material immediately removes bank");
+        rejects(404, () -> s.assignTest(4, template, List.of(7), common));
+        sql("INSERT INTO Class_Materials VALUES (100,1); UPDATE Training_Classes SET mentor_id=7 WHERE class_id=100");
+        rejects(404, () -> s.getTemplate(4, template));
+        check(s.getTemplate(7, template).id() == template, "new mentor gains class test management");
+        sql("UPDATE Training_Classes SET is_deleted=1 WHERE class_id=100");
+        rejects(403, () -> s.listContent(7, 100, 1, 20));
+        int hrTemplate = s.createTemplate(2, "Mentor HR", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common, 103);
+        check(s.getTemplate(2, hrTemplate).classId() == 103, "HR class mentor can create learning test");
+        sql("UPDATE Training_Classes SET status='COMPLETED' WHERE class_id=103");
+        rejects(409, () -> s.createTemplate(2, "Đã kết thúc", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common, 103));
     }
 }

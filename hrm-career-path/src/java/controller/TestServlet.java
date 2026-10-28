@@ -69,6 +69,13 @@ public class TestServlet extends HttpServlet {
         try {
             TestActor actor = service.currentActor(userId);
             req.setAttribute("testActor", actor);
+            req.setAttribute("mentorClasses", service.getMentoredClasses(userId));
+            Integer classId = req.getParameter("classId") == null || req.getParameter("classId").isBlank()
+                    ? null : integer(req.getParameter("classId"));
+            if (classId != null) {
+                req.setAttribute("testClass", service.getMentoredClass(userId, classId));
+                req.setAttribute("testClassId", classId);
+            }
             req.setAttribute("testPolicy", policy);
             req.setAttribute("testNow", Instant.now());
             int page = req.getParameter("page") == null ? 1 : integer(req.getParameter("page"));
@@ -90,19 +97,23 @@ public class TestServlet extends HttpServlet {
                     req.setAttribute("templates", service.listTemplates(userId, scope, page, 20));
                     break;
                 case "new":
-                    if (!actor.cultureManager() && !actor.departmentManager()) throw new TestException(403, "Bạn không có quyền tạo bài test.");
-                    req.setAttribute("contentChoices", service.listContent(userId, 1, 100));
+                    if (!actor.testManager()) throw new TestException(403, "Bạn không có quyền tạo bài test.");
+                    req.setAttribute("contentChoices", service.listContent(userId, classId, 1, 100));
                     break;
                 case "bank":
-                    req.setAttribute("bankItems", service.listContent(userId,page,20));
+                    req.setAttribute("bankItems", service.listContent(userId,classId,page,20));
                     break;
                 case "bankDetail":
-                    req.setAttribute("bankDetail", service.getContent(userId,integer(req.getParameter("id"))));
+                    req.setAttribute("bankDetail", service.getContent(userId,integer(req.getParameter("id")),classId));
                     break;
                 case "detail": {
                     int id = integer(req.getParameter("id"));
                     TestTemplate t = service.getTemplate(userId, id);
                     req.setAttribute("template", t);
+                    if (t.classId() != null && policy.canManage(actor, t)) {
+                        req.setAttribute("testClass", service.getMentoredClass(userId, t.classId()));
+                        req.setAttribute("testClassId", t.classId());
+                    }
                     if (policy.canManage(actor, t)) req.setAttribute("assignments", service.getTemplateAssignments(userId, id, page, 20));
                     if (policy.canAssign(actor, t, Instant.now())) {
                         req.setAttribute("candidates", service.getCandidates(userId, id));
@@ -170,8 +181,10 @@ public class TestServlet extends HttpServlet {
                 if (selected == null || selected.isBlank()) {
                     throw new TestException(400, "Hãy chọn đề thi đã lưu trong database.");
                 }
+                String selectedClass = req.getParameter("classId");
+                Integer classId = selectedClass == null || selectedClass.isBlank() ? null : integer(selectedClass);
                 int id = service.createTemplate(userId, req.getParameter("title"), req.getParameter("description"),
-                        req.getParameter("type"), start, end, integer(selected));
+                        req.getParameter("type"), start, end, integer(selected), classId);
                 next = "detail&id=" + id;
             } else {
                 int id = integer(req.getParameter("id"));

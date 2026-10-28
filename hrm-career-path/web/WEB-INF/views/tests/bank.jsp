@@ -13,9 +13,28 @@
     TestService.ContentDetail detail=(TestService.ContentDetail)request.getAttribute("bankDetail");
     List<TestContent> items=(List<TestContent>)request.getAttribute("bankItems");
     TestActor bankActor=(TestActor)request.getAttribute("testActor");
-    List<String> bankScopes="ADMIN".equals(bankActor.role()) ? List.of("culture")
-            : ("HR".equals(bankActor.role()) ? List.of("culture", "department") : List.of("department"));
+    Integer bankClassId=(Integer)request.getAttribute("testClassId");
+    TestClass bankClass=(TestClass)request.getAttribute("testClass");
+    List<TestClass> bankClasses=(List<TestClass>)request.getAttribute("mentorClasses");
+    String classQuery=bankClassId==null ? "" : "&amp;classId="+bankClassId;
+    List<String> bankScopes=bankClassId!=null ? List.of("learning")
+            : (bankActor.cultureManager() ? (bankActor.classMentor() ? List.of("culture","learning") : List.of("culture"))
+            : (bankActor.departmentManager() ? List.of("department","learning") : List.of("learning")));
 %>
+<% if(bankClasses!=null && !bankClasses.isEmpty()) { %>
+<form method="get" action="<%= bankBase %>" class="test-form">
+    <input type="hidden" name="action" value="bank">
+    <label>Kho đề theo lớp đào tạo
+        <select name="classId" onchange="this.form.submit()">
+            <option value="">-- Tất cả đề trong phạm vi của bạn --</option>
+            <% for(TestClass item:bankClasses) { %><option value="<%= item.id() %>" <%= Objects.equals(bankClassId,item.id()) ? "selected" : "" %>><%= h(item.name()) %></option><% } %>
+        </select>
+    </label>
+    <noscript><button class="btn">Xem kho đề</button></noscript>
+</form>
+<% } %>
+<% if(bankClassId!=null) { %><p>Đề Học liệu của lớp <strong><%= h(bankClass.name()) %></strong>
+    <% if (Set.of("OPEN","IN_PROGRESS").contains(bankClass.status())) { %> · <a href="<%= bankBase %>?action=new<%= classQuery %>">Tạo đợt giao bài cho lớp</a><% } %></p><% } %>
 <% if(items!=null) { %>
 <section class="card">
     <div class="card-header">
@@ -23,11 +42,11 @@
         <span class="text-secondary" style="font-size: 0.875rem;">Tổng số: <%= items.size() %> đề</span>
     </div>
     <div class="card-body">
-        <% if(items.isEmpty()) { %><p class="empty-state">Chưa có đề thi nào trong ngân hàng. Hãy chạy file <code>seed_data_sqlserver.sql</code> để khởi tạo dữ liệu.</p><% } %>
+        <% if(items.isEmpty()) { %><p class="empty-state"><%= bankClassId == null ? "Chưa có đề thi nào trong phạm vi của bạn." : "Lớp chưa có bộ đề Học liệu phù hợp. Chỉ đề gắn với học liệu đã chọn cho lớp mới xuất hiện tại đây." %></p><% } %>
         <%
             for (String scope : bankScopes) {
                 boolean isCulture = "culture".equals(scope);
-                String sectionTitle = isCulture ? "Đề thi Văn hóa" : "Đề thi Chuyên môn";
+                String sectionTitle = "Đề thi " + typeLabel(scope);
                 String sectionIcon = isCulture ? "fa-solid fa-landmark" : "fa-solid fa-code";
                 int scopeCount = 0;
                 for (TestContent item : items) {
@@ -63,7 +82,7 @@
                         %>
                         <tr>
                             <td class="col-name">
-                                <a href="<%= bankBase %>?action=bankDetail&amp;id=<%= item.id() %>" class="test-title-link">
+                                <a href="<%= bankBase %>?action=bankDetail&amp;id=<%= item.id() %><%= classQuery %>" class="test-title-link">
                                     <%= h(item.title()) %>
                                 </a>
                             </td>
@@ -92,9 +111,9 @@
         <% int pageNo = (Integer) request.getAttribute("pageNumber"); %>
         <% if (pageNo > 1 || items.size() == 20) { %>
         <nav class="test-nav" style="margin-top: 24px; margin-bottom: 0;" aria-label="Phân trang kho đề">
-            <% if (pageNo > 1) { %><a href="<%= bankBase %>?action=bank&amp;page=<%= pageNo - 1 %>">← Trang trước</a><% } %>
+            <% if (pageNo > 1) { %><a href="<%= bankBase %>?action=bank&amp;page=<%= pageNo - 1 %><%= classQuery %>">← Trang trước</a><% } %>
             <span>Trang <%= pageNo %></span>
-            <% if (items.size() == 20) { %><a href="<%= bankBase %>?action=bank&amp;page=<%= pageNo + 1 %>">Trang tiếp →</a><% } %>
+            <% if (items.size() == 20) { %><a href="<%= bankBase %>?action=bank&amp;page=<%= pageNo + 1 %><%= classQuery %>">Trang tiếp →</a><% } %>
         </nav>
         <% } %>
     </div>
@@ -103,7 +122,7 @@
 
 <% if(detail!=null) { TestContent item=detail.content(); %>
 <section class="card"><div class="card-header"><h2><%= h(item.title()) %></h2>
-        <span><%= "culture".equals(item.type()) ? "Đề Văn hóa" : "Đề Chuyên môn" %> · Chỉ đọc</span>
+        <span><%= "Đề " + typeLabel(item.type()) %> · Chỉ đọc</span>
     </div><div class="card-body">
         <div class="test-prose"><%= h(item.prompt()) %></div>
         <% int number=0; for(TestQuestion q:detail.questions()) { %>
