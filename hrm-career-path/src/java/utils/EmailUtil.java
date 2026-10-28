@@ -149,4 +149,64 @@ public class EmailUtil {
 
         sendEmailAsync(toEmail, subject, htmlContent);
     }
+
+    /**
+     * Mẫu Email: Cấp lại mật khẩu mới khi người dùng yêu cầu Quên mật khẩu
+     */
+    public static void sendForgotPasswordEmail(String toEmail, String fullName, String username, String newPassword,
+            String loginUrl) {
+        if (loginUrl == null || loginUrl.trim().isEmpty()) {
+            loginUrl = "http://localhost:8084/hrm-career-path/login";
+        } else if (loginUrl.contains(":8080/")) {
+            loginUrl = loginUrl.replace(":8080/", ":8084/");
+        }
+
+        String timeStr = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy"));
+        String refCode = String.format("%06d", (int) (Math.random() * 1000000));
+        String subject = "[CPMS] Cấp lại mật khẩu tài khoản - " + fullName + " (" + username + ")";
+
+        String htmlContent = """
+                <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <h2 style="color: #4338ca; margin: 0; font-size: 22px;">Career Path Management System</h2>
+                        <p style="color: #64748b; font-size: 13.5px; margin-top: 4px;">Hệ Thống Quản Trị Lộ Trình Nghề Nghiệp (CPMS)</p>
+                    </div>
+
+                    <p style="font-size: 15px;">Xin chào <strong>%s</strong>,</p>
+                    <p style="font-size: 14px; line-height: 1.6; color: #334155;">
+                        Hệ thống đã nhận được yêu cầu cấp lại mật khẩu đăng nhập cho tài khoản của bạn trên hệ thống <strong>Career Path Management System (CPMS)</strong>. Dưới đây là thông tin đăng nhập mới đã được thiết lập:
+                    </p>
+
+                    <!-- Khung thông tin tài khoản với mật khẩu mới -->
+                    <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-left: 5px solid #dc2626; padding: 20px 24px; border-radius: 8px; margin: 20px 0;">
+                        <p style="margin: 8px 0; font-size: 14.5px;">
+                            <strong>Tên đăng nhập (Username):</strong>
+                            <span style="background: #e0e7ff; color: #3730a3; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-family: monospace; font-size: 15px;">%s</span>
+                        </p>
+                        <p style="margin: 8px 0; font-size: 14.5px;">
+                            <strong>Mật khẩu mới được cấp lại:</strong>
+                            <span style="background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-family: monospace; font-size: 15px;">%s</span>
+                        </p>
+                        <div style="text-align: center; margin-top: 20px; margin-bottom: 4px;">
+                            <a href="%s" style="background-color: #4f46e5; color: #ffffff; padding: 12px 28px; text-decoration: none; font-weight: 700; border-radius: 6px; display: inline-block; font-size: 14px; box-shadow: 0 4px 10px rgba(79, 70, 229, 0.35);">
+                                 Đăng Nhập Vào Hệ Thống CPMS
+                            </a>
+                        </div>
+                    </div>
+
+                    <div style="background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px 16px; margin: 18px 0; font-size: 13px; color: #991b1b; line-height: 1.5;">
+                         <strong>Khuyến nghị an toàn:</strong> Nếu bạn không thực hiện yêu cầu này, vui lòng liên hệ ngay với bộ phận Quản trị hệ thống (Admin). Để đảm bảo an toàn, vui lòng đăng nhập và đổi lại mật khẩu cá nhân tại mục Hồ Sơ Cá Nhân.
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 22px 0 12px 0;">
+                    <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0;">
+                        Email này được gửi tự động từ Career Path Management System (CPMS). Vui lòng không phản hồi thư này.<br>
+                        <span style="font-size: 11px; color: #cbd5e1;">Mã giao dịch: CPMS-PW-%s | Khởi tạo lúc: %s</span>
+                    </p>
+                </div>
+                """
+                .formatted(fullName, username, newPassword, loginUrl, refCode, timeStr);
+
+        sendEmailAsync(toEmail, subject, htmlContent);
+    }
 }

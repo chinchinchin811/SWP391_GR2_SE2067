@@ -662,6 +662,44 @@ public class UserDAO {
         return false;
     }
 
+    public User getUserByEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return null;
+        }
+        String sql = """
+            SELECT u.*, r.role_name, d.department_name, p.position_name, l.level_name
+            FROM Users u
+            JOIN Roles r ON u.role_id = r.role_id
+            LEFT JOIN Departments d ON u.department_id = d.department_id
+            LEFT JOIN Positions p ON u.position_id = p.position_id
+            LEFT JOIN Job_Levels l ON u.level_id = l.level_id
+            WHERE u.email = ? AND u.is_deleted = 0
+            """;
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email.trim());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapUserFromResultSet(rs);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean updatePassword(int userId, String newPassword) {
+        String sql = "UPDATE Users SET password = ? WHERE user_id = ? AND is_deleted = 0";
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, newPassword);
+            ps.setInt(2, userId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     private User mapUserFromResultSet(ResultSet rs) throws SQLException {
         User user = new User();
         user.setUserId(rs.getInt("user_id"));

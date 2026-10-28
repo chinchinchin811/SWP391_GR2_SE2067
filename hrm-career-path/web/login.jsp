@@ -22,6 +22,16 @@
             <h2>ĐĂNG NHẬP HỆ THỐNG</h2>
             <p class="subtitle">Career Path Management System (CPMS)</p>
 
+            <% 
+                String successMessage = (String) session.getAttribute("successMessage");
+                if (successMessage != null) {
+                    session.removeAttribute("successMessage");
+            %>
+            <div class="alert alert-success" style="background-color: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 12px 14px; border-radius: 6px; margin-bottom: 16px; font-size: 13.5px; text-align: left; line-height: 1.5;">
+                <i class="fa-solid fa-circle-check" style="margin-right: 6px; color: #059669;"></i><%= successMessage %>
+            </div>
+            <% } %>
+
             <% if (request.getAttribute("error") != null) { %>
             <div class="alert alert-danger">
                 <%= request.getAttribute("error") %>
@@ -36,7 +46,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="password">Mật khẩu:</label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label for="password" style="margin-bottom: 0;">Mật khẩu:</label>
+                        <a href="<%= request.getContextPath() %>/forgot-password" style="font-size: 13px; color: #4f46e5; text-decoration: none; font-weight: 600;">
+                            Quên mật khẩu?
+                        </a>
+                    </div>
                     <input type="password" id="password" name="password" class="form-control" required>
                 </div>
 
