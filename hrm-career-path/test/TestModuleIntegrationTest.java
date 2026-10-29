@@ -457,6 +457,14 @@ public class TestModuleIntegrationTest {
                 + "(100,N'Lớp A',1,4,'OPEN'),(101,N'Lớp B',1,3,'IN_PROGRESS'),(103,N'Lớp HR',NULL,2,'OPEN'),(104,N'Lớp rỗng',1,4,'OPEN'); "
                 + "INSERT INTO Class_Materials VALUES (100,1),(101,3),(103,1); "
                 + "INSERT INTO Class_Enrollments VALUES (100,6),(100,7),(101,7),(103,7)");
+        Set<Integer> managerLearningBanks = s.listContent(3, 1, 20).stream()
+                .filter(item -> "learning".equals(item.type())).map(TestContent::id)
+                .collect(java.util.stream.Collectors.toSet());
+        check(managerLearningBanks.size() == 6 && managerLearningBanks.containsAll(Set.of(common, javaBank)),
+                "department manager keeps all learning banks after becoming a class mentor");
+        check(s.listContent(3, 101, 1, 20).stream().map(TestContent::id)
+                .collect(java.util.stream.Collectors.toSet()).equals(Set.of(javaBank)),
+                "class selector still limits manager to learning banks selected for that class");
         check(s.currentActor(4).classMentor(), "employee receives mentor rights from class assignment");
         check(s.listContent(4, 100, 1, 20).size() == 1, "class bank only contains selected material");
         check(s.listContent(4, 104, 1, 20).isEmpty(), "class without materials has no banks");

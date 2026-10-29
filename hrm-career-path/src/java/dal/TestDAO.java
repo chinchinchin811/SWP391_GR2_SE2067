@@ -340,7 +340,7 @@ public final class TestDAO {
                 + " JOIN Training_Classes tc ON tc.class_id=cm.class_id JOIN Learning_Materials lm ON lm.material_id=cm.material_id"
                 + " WHERE cm.material_id=t.learning_material_id AND tc.mentor_id=? AND tc.is_deleted=0"
                 + " AND tc.status<>'CANCELLED' AND lm.is_deleted=0 AND lm.status=1)"
-                + (actor.departmentManager() && !actor.classMentor()
+                + (actor.departmentManager()
                     ? " OR t.department_id IS NULL OR t.department_id=" + actor.managedDepartmentId() : "") + ")))";
     }
 
