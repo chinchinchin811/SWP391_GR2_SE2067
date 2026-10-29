@@ -23,10 +23,6 @@ public class MaterialServlet extends HttpServlet {
         if (u == null) {
             return;
         }
-        if (u.getRoleId() == 2) {
-            forbidden(s, "HR chỉ quản lý tổ chức và nhân sự, không truy cập Học liệu & Đào tạo.");
-            return;
-        }
         if (u.getRoleId() == 1) {
             s.sendRedirect(q.getContextPath() + "/departments");
             return;
@@ -56,7 +52,12 @@ public class MaterialServlet extends HttpServlet {
                     }
                 }
             } else {
-                displayMaterials = allMaterials;
+                displayMaterials = new ArrayList<>();
+                for (LearningMaterial m : allMaterials) {
+                    if (!canManageUser || canManageMaterial(u, m)) {
+                        displayMaterials.add(m);
+                    }
+                }
             }
 
             q.setAttribute("materials", displayMaterials);
@@ -71,9 +72,14 @@ public class MaterialServlet extends HttpServlet {
                 s.sendRedirect(q.getContextPath() + "/materials");
                 return;
             }
-            boolean hasAccess = canManage(u) || dao.checkUserCanAccessMaterial(id, u.getUserId(), u.getRoleId());
+            if (canManage(u) && !canManageMaterial(u, m)) {
+                forbidden(s, "Học liệu không thuộc phạm vi phòng ban của bạn.");
+                return;
+            }
+            boolean hasAccess = canManageMaterial(u, m) || dao.checkUserCanAccessMaterial(id, u.getUserId(), u.getRoleId());
             q.setAttribute("material", m);
             q.setAttribute("hasAccess", hasAccess);
+            q.setAttribute("canManageMaterial", canManageMaterial(u, m));
             q.setAttribute("checkpoints", hasAccess ? dao.getCheckpoints(id) : Collections.emptyList());
             if (!hasAccess) {
                 q.setAttribute("relatedClasses", dao.getClassesByMaterial(id));
@@ -82,7 +88,11 @@ public class MaterialServlet extends HttpServlet {
             return;
         }
         if ("classList".equals(a)) {
-            q.setAttribute("classes", dao.getClasses(u.getUserId(), false));
+            List<TrainingClass> classes = new ArrayList<>();
+            for (TrainingClass item : dao.getClasses(u.getUserId(), !canManage(u))) {
+                if (!canManage(u) || canManageClass(u, item)) classes.add(item);
+            }
+            q.setAttribute("classes", classes);
             go(q, s, "/views/materials/class-list.jsp");
             return;
         }
@@ -92,16 +102,25 @@ public class MaterialServlet extends HttpServlet {
                 s.sendRedirect(q.getContextPath() + "/materials?action=classList");
                 return;
             }
+            if (!canManageClass(u, c) && !isMyClass(u, c.getClassId())) {
+                forbidden(s, "Bạn không thuộc lớp đào tạo này.");
+                return;
+            }
             q.setAttribute("trainingClass", c);
             q.setAttribute("enrollments", dao.getEnrollments(c.getClassId()));
             if (canManage(u)) {
-                q.setAttribute("availableMaterials", dao.getMaterials(null));
+                List<LearningMaterial> available = new ArrayList<>();
+                for (LearningMaterial m : dao.getMaterials(null)) {
+                    if (canManageMaterial(u, m)) available.add(m);
+                }
+                q.setAttribute("availableMaterials", available);
             }
             go(q, s, "/views/materials/class-detail.jsp");
             return;
         }
         if ("classAssign".equals(a)) {
-            if (!canManage(u)) {
+            TrainingClass target = dao.getClassById(num(q, "id"));
+            if (!canManageClass(u, target)) {
                 deny(s, q);
                 return;
             }
@@ -118,6 +137,10 @@ public class MaterialServlet extends HttpServlet {
             }
             formData(q);
             LearningMaterial material = "edit".equals(a) ? dao.getMaterial(num(q, "id")) : new LearningMaterial();
+            if ("edit".equals(a) && !canManageMaterial(u, material)) {
+                forbidden(s, "Bạn chỉ được quản lý học liệu thuộc phạm vi phòng ban của mình.");
+                return;
+            }
             q.setAttribute("material", material);
             q.setAttribute("checkpoints", material != null && material.getMaterialId() > 0 ? dao.getCheckpoints(material.getMaterialId()) : Collections.emptyList());
             go(q, s, "/views/materials/material-form.jsp");
@@ -129,7 +152,11 @@ public class MaterialServlet extends HttpServlet {
                 return;
             }
             formData(q);
-            q.setAttribute("materials", dao.getMaterials(null));
+            List<LearningMaterial> materials = new ArrayList<>();
+            for (LearningMaterial m : dao.getMaterials(null)) {
+                if (canManageMaterial(u, m)) materials.add(m);
+            }
+            q.setAttribute("materials", materials);
             go(q, s, "/views/materials/class-form.jsp");
             return;
         }
@@ -138,7 +165,12 @@ public class MaterialServlet extends HttpServlet {
                 deny(s, q);
                 return;
             }
-            dao.deleteMaterial(num(q, "id"));
+            LearningMaterial target = dao.getMaterial(num(q, "id"));
+            if (!canManageMaterial(u, target)) {
+                forbidden(s, "Bạn chỉ được quản lý học liệu thuộc phạm vi phòng ban của mình.");
+                return;
+            }
+            dao.deleteMaterial(target.getMaterialId());
             flash(q, "Đã xóa học liệu thành công.");
             s.sendRedirect(q.getContextPath() + "/materials");
             return;
@@ -148,7 +180,12 @@ public class MaterialServlet extends HttpServlet {
                 deny(s, q);
                 return;
             }
-            dao.deleteClass(num(q, "id"));
+            TrainingClass target = dao.getClassById(num(q, "id"));
+            if (!canManageClass(u, target)) {
+                forbidden(s, "Bạn chỉ được quản lý lớp thuộc phòng ban của mình.");
+                return;
+            }
+            dao.deleteClass(target.getClassId());
             flash(q, "Đã xóa lớp đào tạo thành công.");
             s.sendRedirect(q.getContextPath() + "/materials?action=classList");
             return;
@@ -159,10 +196,6 @@ public class MaterialServlet extends HttpServlet {
     protected void doPost(HttpServletRequest q, HttpServletResponse s) throws ServletException, IOException {
         User u = current(q, s);
         if (u == null) {
-            return;
-        }
-        if (u.getRoleId() == 2) {
-            forbidden(s, "HR chỉ quản lý tổ chức và nhân sự, không truy cập Học liệu & Đào tạo.");
             return;
         }
         if (u.getRoleId() == 1) {
@@ -176,6 +209,10 @@ public class MaterialServlet extends HttpServlet {
         }
         if ("saveMaterial".equals(a)) {
             LearningMaterial m = material(q, u);
+            if (m.getMaterialId() > 0 && !canManageMaterial(u, dao.getMaterial(m.getMaterialId()))) {
+                forbidden(s, "Bạn chỉ được quản lý học liệu thuộc phạm vi phòng ban của mình.");
+                return;
+            }
             if (m.getTitle() == null || m.getTitle().trim().isEmpty()) {
                 error(q, "Vui lòng nhập tiêu đề học liệu!");
                 s.sendRedirect(q.getContextPath() + "/materials?action=" + (m.getMaterialId() > 0 ? "edit&id=" + m.getMaterialId() : "create"));
@@ -192,13 +229,23 @@ public class MaterialServlet extends HttpServlet {
             return;
         }
         if ("deleteMaterial".equals(a)) {
-            dao.deleteMaterial(num(q, "id"));
+            LearningMaterial target = dao.getMaterial(num(q, "id"));
+            if (!canManageMaterial(u, target)) {
+                forbidden(s, "Bạn chỉ được quản lý học liệu thuộc phạm vi phòng ban của mình.");
+                return;
+            }
+            dao.deleteMaterial(target.getMaterialId());
             flash(q, "Đã xóa học liệu.");
             s.sendRedirect(q.getContextPath() + "/materials");
             return;
         }
         if ("deleteClass".equals(a)) {
-            dao.deleteClass(num(q, "id"));
+            TrainingClass target = dao.getClassById(num(q, "id"));
+            if (!canManageClass(u, target)) {
+                forbidden(s, "Bạn chỉ được quản lý lớp thuộc phòng ban của mình.");
+                return;
+            }
+            dao.deleteClass(target.getClassId());
             flash(q, "Đã xóa lớp đào tạo thành công.");
             s.sendRedirect(q.getContextPath() + "/materials?action=classList");
             return;
@@ -212,7 +259,7 @@ public class MaterialServlet extends HttpServlet {
             c.setClassCode(q.getParameter("classCode"));
             c.setClassName(q.getParameter("className"));
             c.setDescription(q.getParameter("description"));
-            c.setDepartmentId(opt(q, "departmentId"));
+            c.setDepartmentId(u.getDepartmentId());
             c.setTargetPositionId(opt(q, "positionId"));
             c.setTargetLevelId(opt(q, "levelId"));
             c.setMentorId(opt(q, "mentorId"));
@@ -255,19 +302,36 @@ public class MaterialServlet extends HttpServlet {
             c.setCreatedBy(u.getUserId());
             String[] selected = q.getParameterValues("materialIds");
             int[] ids = selected == null ? null : Arrays.stream(selected).mapToInt(Integer::parseInt).toArray();
+            if (ids != null) {
+                for (int materialId : ids) {
+                    if (!canManageMaterial(u, dao.getMaterial(materialId))) {
+                        forbidden(s, "Lớp chỉ được dùng học liệu thuộc phòng ban của mình.");
+                        return;
+                    }
+                }
+            }
             int id = dao.saveClass(c, ids);
             flash(q, id > 0 ? "Mở lớp đào tạo thành công." : "Không thể mở lớp.");
             s.sendRedirect(q.getContextPath() + "/materials?action=classList");
             return;
         }
         if ("enrollSubmit".equals(a)) {
-            int n = dao.enrollBatch(num(q, "classId"), q.getParameterValues("userIds"), u.getUserId());
+            int classId = num(q, "classId");
+            if (!canManageClass(u, dao.getClassById(classId))) {
+                forbidden(s, "Bạn chỉ được quản lý lớp thuộc phòng ban của mình.");
+                return;
+            }
+            int n = dao.enrollBatch(classId, q.getParameterValues("userIds"), u.getUserId());
             flash(q, "Đã ghi danh " + n + " nhân sự.");
             s.sendRedirect(q.getContextPath() + "/materials?action=classAssign&id=" + num(q, "classId"));
             return;
         }
         if ("deleteEnrollment".equals(a)) {
             int classId = num(q, "classId");
+            if (!canManageClass(u, dao.getClassById(classId))) {
+                forbidden(s, "Bạn chỉ được quản lý lớp thuộc phòng ban của mình.");
+                return;
+            }
             dao.deleteEnrollment(num(q, "enrollmentId"));
             flash(q, "Đã xóa học viên khỏi lớp.");
             s.sendRedirect(q.getContextPath() + "/materials?action=classDetail&id=" + classId);
@@ -280,6 +344,10 @@ public class MaterialServlet extends HttpServlet {
             }
             int classId = num(q, "classId");
             int materialId = num(q, "materialId");
+            if (!canManageClass(u, dao.getClassById(classId)) || !canManageMaterial(u, dao.getMaterial(materialId))) {
+                forbidden(s, "Lớp chỉ được dùng học liệu thuộc phòng ban của mình.");
+                return;
+            }
             if (materialId > 0) {
                 dao.addMaterialToClass(classId, materialId);
                 flash(q, "Đã thêm học liệu vào lớp đào tạo.");
@@ -294,6 +362,10 @@ public class MaterialServlet extends HttpServlet {
             }
             int classId = num(q, "classId");
             int materialId = num(q, "materialId");
+            if (!canManageClass(u, dao.getClassById(classId)) || !canManageMaterial(u, dao.getMaterial(materialId))) {
+                forbidden(s, "Bạn chỉ được quản lý lớp và học liệu thuộc phòng ban của mình.");
+                return;
+            }
             if (materialId > 0) {
                 dao.removeMaterialFromClass(classId, materialId);
                 flash(q, "Đã gỡ học liệu khỏi lớp đào tạo.");
@@ -304,6 +376,10 @@ public class MaterialServlet extends HttpServlet {
         if ("addCheckpoint".equals(a)) {
             VideoCheckpoint x = new VideoCheckpoint();
             x.setMaterialId(num(q, "materialId"));
+            if (!canManageMaterial(u, dao.getMaterial(x.getMaterialId()))) {
+                forbidden(s, "Bạn chỉ được quản lý học liệu thuộc phòng ban của mình.");
+                return;
+            }
             x.setStopTimeSeconds(num(q, "stopTimeSeconds"));
             x.setQuestionPrompt(q.getParameter("questionPrompt"));
             x.setOptionA(q.getParameter("optionA"));
@@ -320,6 +396,10 @@ public class MaterialServlet extends HttpServlet {
             VideoCheckpoint x = new VideoCheckpoint();
             x.setCheckpointId(num(q, "checkpointId"));
             x.setMaterialId(num(q, "materialId"));
+            if (!canManageMaterial(u, dao.getMaterial(x.getMaterialId()))) {
+                forbidden(s, "Bạn chỉ được quản lý học liệu thuộc phòng ban của mình.");
+                return;
+            }
             x.setStopTimeSeconds(num(q, "stopTimeSeconds"));
             x.setQuestionPrompt(q.getParameter("questionPrompt"));
             x.setOptionA(q.getParameter("optionA"));
@@ -336,6 +416,10 @@ public class MaterialServlet extends HttpServlet {
         if ("deleteCheckpoint".equals(a)) {
             int cpId = num(q, "checkpointId");
             int matId = num(q, "materialId");
+            if (!canManageMaterial(u, dao.getMaterial(matId))) {
+                forbidden(s, "Bạn chỉ được quản lý học liệu thuộc phòng ban của mình.");
+                return;
+            }
             boolean ok = dao.deleteCheckpoint(cpId);
             flash(q, ok ? "Đã xóa câu hỏi mốc dừng." : "Không thể xóa mốc dừng.");
             s.sendRedirect(q.getContextPath() + "/materials?action=edit&id=" + matId);
@@ -397,7 +481,7 @@ public class MaterialServlet extends HttpServlet {
         m.setTitle(q.getParameter("title"));
         m.setDescription(q.getParameter("description"));
         m.setMaterialType(q.getParameter("materialType"));
-        Integer deptId = opt(q, "departmentId");
+        Integer deptId = canManage(u) ? u.getDepartmentId() : opt(q, "departmentId");
         if (deptId != null && deptId > 0) {
             m.setScopeType("DEPARTMENT");
             m.setDepartmentId(deptId);
@@ -452,7 +536,27 @@ public class MaterialServlet extends HttpServlet {
     private boolean canManage(User u) {
         if (u == null) return false;
         int r = u.getRoleId();
-        return r == 3;
+        return r == 2 || r == 3;
+    }
+
+    private boolean canManageMaterial(User u, LearningMaterial material) {
+        if (!canManage(u) || material == null) return false;
+        Integer userDepartment = u.getDepartmentId();
+        if (userDepartment != null && userDepartment.equals(material.getDepartmentId())) return true;
+        return u.getRoleId() == 2 && "CULTURE".equalsIgnoreCase(material.getScopeType())
+                && material.getDepartmentId() == null;
+    }
+
+    private boolean canManageClass(User u, TrainingClass trainingClass) {
+        return canManage(u) && trainingClass != null && u.getDepartmentId() != null
+                && u.getDepartmentId().equals(trainingClass.getDepartmentId());
+    }
+
+    private boolean isMyClass(User u, int classId) {
+        for (TrainingClass item : dao.getClasses(u.getUserId(), true)) {
+            if (item.getClassId() == classId) return true;
+        }
+        return false;
     }
 
     private void deny(HttpServletResponse s, HttpServletRequest q) throws IOException {

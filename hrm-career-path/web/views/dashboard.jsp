@@ -182,6 +182,12 @@
             <a href="<%= request.getContextPath() %>/mentors?action=pair" class="btn btn-secondary">
                 <i class="fa-solid fa-handshake"></i> Ghép Nối Mentor
             </a>
+            <a href="<%= request.getContextPath() %>/materials" class="btn btn-secondary">
+                <i class="fa-solid fa-graduation-cap"></i> Học liệu &amp; Đào tạo
+            </a>
+            <a href="<%= request.getContextPath() %>/tests?action=bank" class="btn btn-secondary">
+                <i class="fa-solid fa-file-lines"></i> Bộ đề Văn hóa
+            </a>
         </div>
     </div>
 

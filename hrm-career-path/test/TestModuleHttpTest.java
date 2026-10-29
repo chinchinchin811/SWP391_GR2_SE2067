@@ -107,42 +107,42 @@ public class TestModuleHttpTest {
         check(get(anonymous, "/hrm/tests").statusCode() == 302, "unauthenticated redirect");
         HttpClient manager = login("leader"), member = login("member"), outsider = login("outsider"),
                 adminClient = login("admin"), hrClient = login("hr");
-        HttpResponse<String> adminForm = get(adminClient, "/hrm/tests?action=new");
+        HttpResponse<String> adminForm = get(hrClient, "/hrm/tests?action=new");
         check(adminForm.statusCode() == 200 && adminForm.body().contains("value=\"culture\"")
-                && !adminForm.body().contains("value=\"department\""), "ADMIN create form only shows culture type");
+                && !adminForm.body().contains("value=\"department\""), "HR create form only shows culture type");
         String adminToken = csrf(adminForm.body());
-        check(post(adminClient, "/hrm/tests", "csrf", adminToken, "action", "create", "title", "Không hợp lệ",
+        check(post(hrClient, "/hrm/tests", "csrf", adminToken, "action", "create", "title", "Không hợp lệ",
                 "description", "Chuyên môn", "type", "department", "contentId", String.valueOf(essayContentId),
                 "startDate", LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(1).toString(), "startTime", "08:00",
                 "endDate", LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(1).toString(), "endTime", "09:00").statusCode() == 403,
-                "ADMIN department template rejected by server");
-        String adminBank = get(adminClient, "/hrm/tests?action=bank").body();
+                "HR department template rejected by server");
+        String adminBank = get(hrClient, "/hrm/tests?action=bank").body();
         check(adminBank.contains("Đề Văn hóa HTTP") && !adminBank.contains("Bộ đề HTTP")
-                && !adminBank.contains("Đề thi Chuyên môn"), "ADMIN bank only shows culture content");
-        HttpResponse<String> newSetPage = get(adminClient, "/hrm/tests?action=newSet");
+                && !adminBank.contains("Đề thi Chuyên môn"), "HR bank only shows culture content");
+        HttpResponse<String> newSetPage = get(hrClient, "/hrm/tests?action=newSet");
         check(newSetPage.statusCode() == 200 && newSetPage.body().contains("Tạo bộ đề kiểm tra riêng")
-                && newSetPage.body().contains("action=newSet"), "ADMIN sees the custom set form and navigation");
+                && newSetPage.body().contains("action=newSet"), "HR sees the custom set form and navigation");
         check(get(member, "/hrm/tests?action=newSet").statusCode() == 403, "EMPLOYEE cannot open custom set form");
-        check(post(adminClient, "/hrm/tests", "action", "createSet").statusCode() == 403,
+        check(post(hrClient, "/hrm/tests", "action", "createSet").statusCode() == 403,
                 "custom set creation requires CSRF");
-        String customSetId = newId(post(adminClient, "/hrm/tests",
+        String customSetId = newId(post(hrClient, "/hrm/tests",
                 "csrf", csrf(newSetPage.body()), "action", "createSet",
                 "title", "Bộ đề văn hóa tự tạo", "description", "Tạo qua HTTP",
                 "type", "culture", "questionCount", "1",
                 "questionPrompt_0", "Thông tin nội bộ có được đăng công khai không?",
                 "questionType_0", "single", "optionCount_0", "2",
                 "option_0_0", "Không", "option_0_1", "Có", "correct_0", "0"));
-        String customSetDetail = get(adminClient, "/hrm/tests?action=bankDetail&id=" + customSetId).body();
+        String customSetDetail = get(hrClient, "/hrm/tests?action=bankDetail&id=" + customSetId).body();
         check(customSetDetail.contains("Bộ đề văn hóa tự tạo")
                 && customSetDetail.contains("Thông tin nội bộ có được đăng công khai không?")
                 && customSetDetail.contains("Sẵn sàng") && customSetDetail.contains("Chỉnh sửa bộ đề"),
                 "created custom set is ready and can be edited");
-        HttpResponse<String> editSetPage = get(adminClient, "/hrm/tests?action=editSet&id=" + customSetId);
+        HttpResponse<String> editSetPage = get(hrClient, "/hrm/tests?action=editSet&id=" + customSetId);
         check(editSetPage.statusCode() == 200 && editSetPage.body().contains("Chỉnh sửa bộ đề")
                 && editSetPage.body().contains("Bộ đề văn hóa tự tạo")
                 && editSetPage.body().contains("Thông tin nội bộ có được đăng công khai không?"),
                 "edit form loads saved custom set");
-        check(newId(post(adminClient, "/hrm/tests",
+        check(newId(post(hrClient, "/hrm/tests",
                 "csrf", csrf(editSetPage.body()), "action", "updateSet", "id", customSetId,
                 "title", "Bộ đề văn hóa đã chỉnh sửa", "description", "Nội dung đã cập nhật",
                 "type", "culture", "questionCount", "1",
@@ -150,44 +150,41 @@ public class TestModuleHttpTest {
                 "questionType_0", "single", "optionCount_0", "2",
                 "option_0_0", "Có", "option_0_1", "Không", "correct_0", "0")).equals(customSetId),
                 "custom set update redirects to the same set");
-        String updatedSetDetail = get(adminClient, "/hrm/tests?action=bankDetail&id=" + customSetId).body();
+        String updatedSetDetail = get(hrClient, "/hrm/tests?action=bankDetail&id=" + customSetId).body();
         check(updatedSetDetail.contains("Bộ đề văn hóa đã chỉnh sửa")
                 && updatedSetDetail.contains("Dữ liệu nội bộ cần được bảo mật?")
                 && !updatedSetDetail.contains("Thông tin nội bộ có được đăng công khai không?"),
                 "edited custom set is persisted");
         int hrTemplate = insertId(conn, "INSERT INTO Test_Templates(title,description,type,department_id,created_by,status,start_time,end_time,default_content_id) "
-                + "OUTPUT INSERTED.id VALUES (N'Bài cho HR',N'Kiểm tra quyền chấm','culture',NULL,4,'published',DATEADD(MINUTE,-1,SYSUTCDATETIME()),DATEADD(HOUR,1,SYSUTCDATETIME()),?)",
+                + "OUTPUT INSERTED.id VALUES (N'Bài cho HR',N'Kiểm tra quyền chấm','culture',NULL,5,'published',DATEADD(MINUTE,-1,SYSUTCDATETIME()),DATEADD(HOUR,1,SYSUTCDATETIME()),?)",
                 cultureContentId);
         int hrAssignment = insertId(conn, "INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id,status,submitted_at,submission_content) "
-                + "OUTPUT INSERTED.id VALUES (?,5,4,?,'submitted',SYSUTCDATETIME(),N'Bài làm HR')", hrTemplate, cultureContentId);
+                + "OUTPUT INSERTED.id VALUES (?,5,5,?,'submitted',SYSUTCDATETIME(),N'Bài làm HR')", hrTemplate, cultureContentId);
         HttpResponse<String> hrOwnPage = get(hrClient, "/hrm/tests?action=assignment&id=" + hrAssignment);
-        check(hrOwnPage.statusCode() == 403, "HR cannot open any test assignment");
-        check(get(hrClient, "/hrm/tests").statusCode() == 403, "HR cannot open test list");
-        check(get(hrClient, "/hrm/tests?action=new").statusCode() == 403, "HR cannot open create form");
-        check(get(hrClient, "/hrm/tests?action=bank").statusCode() == 403, "HR cannot browse bank");
-        check(get(hrClient, "/hrm/materials").statusCode() == 403, "HR cannot open learning materials");
-        check(get(hrClient, "/hrm/materials?action=classList").statusCode() == 403, "HR cannot open training classes");
-        check(get(hrClient, "/hrm/flashcards").statusCode() == 403, "HR cannot open flashcards");
-        check(get(hrClient, "/hrm/flashcard-list.jsp").statusCode() == 403, "HR cannot bypass flashcard servlet through JSP");
-        check(get(hrClient, "/hrm/views/materials/material-list.jsp").statusCode() == 403,
-                "HR cannot bypass material servlet through JSP");
+        check(hrOwnPage.statusCode() == 200, "HR can open a culture test assignment");
+        check(get(hrClient, "/hrm/tests").statusCode() == 200, "HR can open test list");
+        check(get(hrClient, "/hrm/tests?action=new").statusCode() == 200, "HR can open create form");
+        check(get(hrClient, "/hrm/tests?action=bank").statusCode() == 200, "HR can browse culture bank");
+        check(get(hrClient, "/hrm/materials").statusCode() == 200, "HR can open learning materials");
+        check(get(hrClient, "/hrm/materials?action=classList").statusCode() == 200, "HR can open training classes");
+        check(get(hrClient, "/hrm/flashcards").statusCode() == 200, "HR can open flashcards");
         String hrDashboard = get(hrClient, "/hrm/dashboard").body();
         check(hrDashboard.contains("Quản trị Tổ chức") && hrDashboard.contains("Quản trị Nhân sự")
-                && !hrDashboard.contains("Học liệu &amp; Đào tạo") && !hrDashboard.contains("Bài test &amp; Đánh giá"),
-                "HR sidebar only keeps organization and personnel sections");
+                && hrDashboard.contains("Học liệu &amp; Đào tạo") && hrDashboard.contains("Bài test &amp; Đánh giá"),
+                "HR sidebar includes organization, personnel, learning and test sections");
         check(post(hrClient, "/hrm/tests", "csrf", "bad-token", "action", "evaluate", "id", String.valueOf(hrAssignment),
                 "score", "9", "comment", "Tự chấm").statusCode() == 403, "HR self evaluation rejected by server");
         int closedCultureTemplate = insertId(conn, "INSERT INTO Test_Templates(title,description,type,department_id,created_by,status,start_time,end_time,default_content_id) "
-                + "OUTPUT INSERTED.id VALUES (N'Đợt văn hóa đã đóng',N'Thông tin đợt kiểm tra','culture',NULL,4,'closed',DATEADD(HOUR,-2,SYSUTCDATETIME()),DATEADD(HOUR,-1,SYSUTCDATETIME()),?)",
+                + "OUTPUT INSERTED.id VALUES (N'Đợt văn hóa đã đóng',N'Thông tin đợt kiểm tra','culture',NULL,5,'closed',DATEADD(HOUR,-2,SYSUTCDATETIME()),DATEADD(HOUR,-1,SYSUTCDATETIME()),?)",
                 cultureContentId);
         insertId(conn, "INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id,duration_minutes,status) "
                 + "OUTPUT INSERTED.id VALUES (?,2,4,?,20,'pending')", closedCultureTemplate, cultureContentId);
-        String closedAdminDetail = get(adminClient, "/hrm/tests?action=detail&id=" + closedCultureTemplate).body();
+        String closedAdminDetail = get(hrClient, "/hrm/tests?action=detail&id=" + closedCultureTemplate).body();
         check(closedAdminDetail.contains("Đợt văn hóa đã đóng")
                 && closedAdminDetail.contains("Người được giao &amp; Kết quả")
                 && closedAdminDetail.contains("Member") && closedAdminDetail.contains("Chưa tham gia")
                 && closedAdminDetail.contains("Chưa làm"),
-                "ADMIN sees participant status on a closed template instead of a blank page");
+                "HR sees participant status on a closed culture template instead of a blank page");
         String pendingWorkerDetail = get(member, "/hrm/tests?action=detail&id=" + closedCultureTemplate).body();
         check(pendingWorkerDetail.contains("Đợt văn hóa đã đóng")
                 && pendingWorkerDetail.contains("Thông tin đợt kiểm tra")
@@ -393,7 +390,7 @@ public class TestModuleHttpTest {
                         + "('member','test-password',N'Member','member@example.invalid',4,1),"
                         + "('outsider','test-password',N'Outsider','outside@example.invalid',4,2),"
                         + "('admin','test-password',N'Administrator','admin@example.invalid',1,NULL),"
-                        + "('hr','test-password',N'Human Resources','hr@example.invalid',2,NULL); "
+                        + "('hr','test-password',N'Human Resources','hr@example.invalid',2,2); "
                         + "UPDATE Departments SET manager_id=1 WHERE department_id=1;");
                 execute(admin, moduleSchema);
                 quizContentId = insertId(admin, "INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by,status) "
@@ -401,7 +398,7 @@ public class TestModuleHttpTest {
                 essayContentId = insertId(admin, "INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by,status) "
                         + "OUTPUT INSERTED.id VALUES (N'Câu tình huống',N'Xử lý phản hồi khách hàng như thế nào?','question','department',1,1,'ready')");
                 cultureContentId = insertId(admin, "INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by,status) "
-                        + "OUTPUT INSERTED.id VALUES (N'Đề Văn hóa HTTP',N'Văn hóa doanh nghiệp','question','culture',NULL,4,'ready')");
+                        + "OUTPUT INSERTED.id VALUES (N'Đề Văn hóa HTTP',N'Văn hóa doanh nghiệp','question','culture',NULL,5,'ready')");
                 trueFalseQuestionId = insertId(admin, "INSERT INTO Test_Questions(content_id,prompt,question_type) "
                         + "OUTPUT INSERTED.id VALUES (?,N'Java là ngôn ngữ hướng đối tượng.','true_false')", quizContentId);
                 trueOptionId = insertId(admin, "INSERT INTO Test_Question_Options(question_id,option_text,is_correct,display_order) "

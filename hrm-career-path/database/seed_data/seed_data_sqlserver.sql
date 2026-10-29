@@ -516,7 +516,7 @@ GO
 SET XACT_ABORT ON;
 BEGIN TRANSACTION;
 
-DECLARE @culture_creator_id INT = (SELECT TOP (1) user_id FROM dbo.Users WHERE username = 'admin');
+DECLARE @culture_creator_id INT = (SELECT TOP (1) user_id FROM dbo.Users WHERE username = 'hr_manager');
 DECLARE @technical_creator_id INT = (SELECT TOP (1) user_id FROM dbo.Users WHERE username = 'manager_it');
 DECLARE @technical_department_id INT = (
     SELECT TOP (1) department_id FROM dbo.Users
@@ -537,6 +537,12 @@ BEGIN
             N'Đánh giá kiến thức về bảo mật, giao tiếp, hợp tác và quy định làm việc.',
             'quiz','culture',NULL,@culture_creator_id,'ready',0);
     SET @culture_content_id = SCOPE_IDENTITY();
+END;
+ELSE
+BEGIN
+    UPDATE dbo.Test_Content
+    SET created_by = @culture_creator_id
+    WHERE id = @culture_content_id AND created_by <> @culture_creator_id;
 END;
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Test_Questions WHERE content_id = @culture_content_id)
