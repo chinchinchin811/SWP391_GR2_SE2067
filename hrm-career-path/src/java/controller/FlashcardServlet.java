@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import dal.FlashcardDAO;
+import dal.UserDAO;
 import model.Flashcard.Flashcard;
 import model.Flashcard.FlashcardDeck;
 import model.User;
@@ -69,6 +70,17 @@ public class FlashcardServlet extends HttpServlet {
         }
 
         User currentUser = (User) session.getAttribute("currentUser");
+        currentUser = new UserDAO().getUserById(currentUser.getUserId());
+        if (currentUser == null) {
+            session.invalidate();
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
+        }
+        if (currentUser.getRoleId() == 2) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                    "HR chỉ quản lý tổ chức và nhân sự, không truy cập Học liệu & Đào tạo.");
+            return;
+        }
         FlashcardDAO dao = new FlashcardDAO();
         List<FlashcardDeck> decks;
         try {
@@ -125,7 +137,7 @@ public class FlashcardServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        processRequest(request, response);
+        doGet(request, response);
     }
 
     /**

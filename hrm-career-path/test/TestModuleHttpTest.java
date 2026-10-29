@@ -123,10 +123,20 @@ public class TestModuleHttpTest {
         int hrAssignment = insertId(conn, "INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id,status,submitted_at,submission_content) "
                 + "OUTPUT INSERTED.id VALUES (?,5,4,?,'submitted',SYSUTCDATETIME(),N'Bài làm HR')", hrTemplate, cultureContentId);
         HttpResponse<String> hrOwnPage = get(hrClient, "/hrm/tests?action=assignment&id=" + hrAssignment);
-        check(hrOwnPage.statusCode() == 200 && !hrOwnPage.body().contains("Đánh giá bài làm"),
-                "HR self assignment does not render evaluation form");
+        check(hrOwnPage.statusCode() == 403, "HR cannot open any test assignment");
+        check(get(hrClient, "/hrm/tests").statusCode() == 403, "HR cannot open test list");
         check(get(hrClient, "/hrm/tests?action=new").statusCode() == 403, "HR cannot open create form");
         check(get(hrClient, "/hrm/tests?action=bank").statusCode() == 403, "HR cannot browse bank");
+        check(get(hrClient, "/hrm/materials").statusCode() == 403, "HR cannot open learning materials");
+        check(get(hrClient, "/hrm/materials?action=classList").statusCode() == 403, "HR cannot open training classes");
+        check(get(hrClient, "/hrm/flashcards").statusCode() == 403, "HR cannot open flashcards");
+        check(get(hrClient, "/hrm/flashcard-list.jsp").statusCode() == 403, "HR cannot bypass flashcard servlet through JSP");
+        check(get(hrClient, "/hrm/views/materials/material-list.jsp").statusCode() == 403,
+                "HR cannot bypass material servlet through JSP");
+        String hrDashboard = get(hrClient, "/hrm/dashboard").body();
+        check(hrDashboard.contains("Quản trị Tổ chức") && hrDashboard.contains("Quản trị Nhân sự")
+                && !hrDashboard.contains("Học liệu &amp; Đào tạo") && !hrDashboard.contains("Bài test &amp; Đánh giá"),
+                "HR sidebar only keeps organization and personnel sections");
         check(post(hrClient, "/hrm/tests", "csrf", "bad-token", "action", "evaluate", "id", String.valueOf(hrAssignment),
                 "score", "9", "comment", "Tự chấm").statusCode() == 403, "HR self evaluation rejected by server");
         HttpResponse<String> form = get(manager, "/hrm/tests?action=new");
@@ -153,7 +163,7 @@ public class TestModuleHttpTest {
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
         String title = "Đề tiếng Việt <script>alert(1)</script>";
         String template = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", title, "description", "Yêu cầu <img src=x onerror=alert(1)>",
-                "type", "department", "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
+                "type", "department", "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(5).format(dateFmt), "startTime", now.plusMinutes(5).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + template);
         check(get(member, "/hrm/tests?action=detail&id=" + template).statusCode() == 404, "draft inaccessible to member");
@@ -226,7 +236,7 @@ public class TestModuleHttpTest {
                 "manual question endpoint removed");
         check(get(member, "/hrm/tests?action=bankDetail&id=" + quizContentId).statusCode() == 404, "member cannot read answer key page");
         String qt = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", "Đợt giao trắc nghiệm", "description", "Giao bộ đề", "type", "department",
-                "contentId", String.valueOf(quizContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
+                "contentId", String.valueOf(quizContentId), "startDate", now.plusMinutes(5).format(dateFmt), "startTime", now.plusMinutes(5).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + qt);
         check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", qt).statusCode() == 303, "publish quiz event");
@@ -258,7 +268,7 @@ public class TestModuleHttpTest {
         check(scored.contains("10.00") && scored.contains("checked"), "server score ignores client and retains selected choice");
         check(!scored.contains("Đáp án đúng"), "answer key stays private after submission");
         String et = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", "Đợt câu hỏi", "description", "Giao câu hỏi", "type", "department",
-                "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(1).format(dateFmt), "startTime", now.plusMinutes(1).format(timeFmt),
+                "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(5).format(dateFmt), "startTime", now.plusMinutes(5).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + et);
         check(post(manager, "/hrm/tests", "csrf", token, "action", "publish", "id", et).statusCode() == 303, "publish essay event");

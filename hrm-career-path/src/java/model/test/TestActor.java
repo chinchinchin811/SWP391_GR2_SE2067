@@ -18,7 +18,7 @@ public record TestActor(int id, String name, String role, Integer departmentId, 
     public boolean classMentor() { return !mentoredClassIds.isEmpty(); }
     public boolean testManager() { return cultureManager() || departmentManager() || classMentor(); }
 
-    /** ADMIN quản lý bài văn hóa; HR làm bài như nhân viên thường. */
+    /** ADMIN quản lý bài văn hóa; HR bị loại khỏi toàn bộ module bài test. */
     public boolean cultureManager() {
         return "ADMIN".equals(role);
     }

@@ -83,7 +83,11 @@ public final class TestDAO {
             if (!rs.next()) {
                 throw new TestException(403, "Tài khoản không còn hoạt động.");
             }
-            return new TestActor(id, rs.getString("full_name"), rs.getString("role_name"),
+            String role = rs.getString("role_name");
+            if ("HR".equals(role)) {
+                throw new TestException(403, "HR chỉ quản lý tổ chức và nhân sự, không truy cập Bài test & Đánh giá.");
+            }
+            return new TestActor(id, rs.getString("full_name"), role,
                     (Integer) rs.getObject("department_id"), (Integer) rs.getObject("managed_id"), classes);
         }
     }

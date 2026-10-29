@@ -279,12 +279,10 @@ public class TestModuleIntegrationTest {
         s.submitAssignment(6, ca, "culture response", null, null);
         s.evaluateAssignment(1, ca, new BigDecimal("10"), "ADMIN may grade culture");
         check(s.getAssignment(6, ca).evaluation() != null, "culture full flow");
-        s.assignTest(1, culture, List.of(2));
-        int hrOwn = assignment(culture, 2);
-        s.submitAssignment(2, hrOwn, "HR self response", null, null);
-        rejects(403, () -> s.evaluateAssignment(2, hrOwn, new BigDecimal("9"), "self grade forbidden"));
-        s.evaluateAssignment(1, hrOwn, new BigDecimal("9"), "ADMIN grades HR");
-        check(s.getAssignment(2, hrOwn).evaluation().evaluatorId() == 1, "only higher role evaluates HR");
+        rejects(403, () -> s.currentActor(2));
+        rejects(403, () -> s.listTemplates(2, "all", 1, 20));
+        rejects(403, () -> s.getMyAssignments(2, 1, 20));
+        rejects(403, () -> s.assignTest(1, culture, List.of(2)));
         sql("UPDATE Users SET status=0 WHERE user_id=6");
         rejects(403, () -> s.getMyAssignments(6, 1, 20));
         rejects(403, () -> s.getMyAssignments(1, 1, 20));
@@ -512,9 +510,8 @@ public class TestModuleIntegrationTest {
         check(s.getTemplate(7, template).id() == template, "new mentor gains class test management");
         sql("UPDATE Training_Classes SET is_deleted=1 WHERE class_id=100");
         rejects(403, () -> s.listContent(7, 100, 1, 20));
-        int hrTemplate = s.createTemplate(2, "Mentor HR", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common, 103);
-        check(s.getTemplate(2, hrTemplate).classId() == 103, "HR class mentor can create learning test");
+        rejects(403, () -> s.createTemplate(2, "Mentor HR", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common, 103));
         sql("UPDATE Training_Classes SET status='COMPLETED' WHERE class_id=103");
-        rejects(409, () -> s.createTemplate(2, "Đã kết thúc", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common, 103));
+        rejects(403, () -> s.createTemplate(2, "Đã kết thúc", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common, 103));
     }
 }

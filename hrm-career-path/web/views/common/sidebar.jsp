@@ -116,6 +116,7 @@
             </li>
             <% } %>
 
+            <% if (roleId != 2) { %>
             <li class="sidebar-section <%= trainingActive ? "has-active" : "" %>" data-sidebar-section="training">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-training">
                     <span><i class="fa-solid fa-graduation-cap nav-cat-icon"></i> Học liệu &amp; Đào tạo</span>
@@ -133,7 +134,9 @@
                     </li>
                 </ul>
             </li>
+            <% } %>
 
+            <% if (roleId != 2) { %>
             <li class="sidebar-section <%= testActive ? "has-active" : "" %>" data-sidebar-section="tests">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-tests">
                     <span><i class="fa-solid fa-file-lines nav-cat-icon"></i> Bài test &amp; Đánh giá</span>
@@ -155,6 +158,7 @@
                     <% } %>
                 </ul>
             </li>
+            <% } %>
         </ul>
     </nav>
 

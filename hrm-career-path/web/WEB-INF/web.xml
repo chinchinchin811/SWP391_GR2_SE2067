@@ -65,6 +65,16 @@
     <servlet><servlet-name>MaterialServlet</servlet-name><servlet-class>controller.MaterialServlet</servlet-class></servlet>
     <servlet-mapping><servlet-name>MaterialServlet</servlet-name><url-pattern>/materials</url-pattern></servlet-mapping>
 
+    <filter>
+        <filter-name>HrModuleAccessFilter</filter-name>
+        <filter-class>filter.HrModuleAccessFilter</filter-class>
+    </filter>
+    <filter-mapping><filter-name>HrModuleAccessFilter</filter-name><url-pattern>/materials</url-pattern></filter-mapping>
+    <filter-mapping><filter-name>HrModuleAccessFilter</filter-name><url-pattern>/views/materials/*</url-pattern></filter-mapping>
+    <filter-mapping><filter-name>HrModuleAccessFilter</filter-name><url-pattern>/flashcards</url-pattern></filter-mapping>
+    <filter-mapping><filter-name>HrModuleAccessFilter</filter-name><url-pattern>/flashcard-list.jsp</url-pattern></filter-mapping>
+    <filter-mapping><filter-name>HrModuleAccessFilter</filter-name><url-pattern>/tests</url-pattern></filter-mapping>
+
     <!-- Session Configuration -->
     <servlet-mapping>
         <servlet-name>FlashcardServlet</servlet-name>

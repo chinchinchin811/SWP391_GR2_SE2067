@@ -9,9 +9,9 @@ Seed mặc định cung cấp 10 câu Văn hóa và 10 câu Chuyên môn Java Ba
 
 ### Mentor giao bài theo lớp
 
-- Mentor được xác định bằng `Training_Classes.mentor_id` còn hiệu lực trong database,
-  không phụ thuộc vai trò tài khoản. Tài khoản EMPLOYEE/HR được gán mentor cũng
-  có quyền xem kho và tạo đợt giao Học liệu cho lớp đó.
+- Mentor được xác định bằng `Training_Classes.mentor_id` còn hiệu lực trong database.
+  Tài khoản EMPLOYEE được gán mentor có quyền xem kho và tạo đợt giao Học liệu
+  cho lớp đó; HR vẫn bị loại khỏi module dù có dữ liệu phân công cũ.
 - Từ trang chi tiết lớp, mentor mở **Đề Học liệu của lớp** hoặc **Tạo đợt giao
   bài cho lớp**. Form và kho đề cũng có bộ chọn lớp mentor phụ trách.
 - Khi có `classId`, chỉ trả đề `learning` có `learning_material_id` nằm trong
@@ -56,17 +56,18 @@ Seed mặc định cung cấp 10 câu Văn hóa và 10 câu Chuyên môn Java Ba
 ## Quy tắc nghiệp vụ hiện tại
 
 - Loại bài gồm `culture` (Văn hóa chung), `department` (Chuyên môn) và `learning` (Học liệu).
-- ADMIN chỉ quản lý và giao đề Văn hóa. HR làm bài như EMPLOYEE.
-  MANAGER quản lý Chuyên môn và Học liệu trong phạm vi phòng được giao.
+- ADMIN chỉ quản lý và giao đề Văn hóa. HR không truy cập Học liệu & Đào tạo,
+  Flashcards hoặc Bài test & Đánh giá; giao diện HR chỉ giữ Quản trị Tổ chức và
+  Quản trị Nhân sự. MANAGER quản lý Chuyên môn và Học liệu trong phạm vi phòng được giao.
 - Bài đã công bố hiển thị trong toàn công ty. Đề nháp chỉ người có quyền quản lý
   nhìn thấy.
 - MANAGER chỉ được giao cho tài khoản EMPLOYEE đang hoạt động trong đúng phòng
   mình quản lý; không thể giao cho cấp trên hoặc người ngoài phòng. ADMIN không
   có trang “Bài của tôi” và API cũng từ chối truy vấn này.
 - Assignment chỉ được thu hồi khi còn `pending` bởi chính người đã giao hoặc
-  người có vai trò cấp trên (`ADMIN > HR > MANAGER > EMPLOYEE`).
-- Người chấm phải có vai trò cao hơn người làm. HR không thể tự đánh giá hoặc
-  đánh giá HR khác; bài của HR chỉ ADMIN mới được chấm.
+  người có vai trò cấp trên trong module (`ADMIN > MANAGER > EMPLOYEE`).
+- Người chấm phải có vai trò cao hơn người làm; HR không tham gia luồng giao,
+  làm hoặc chấm bài.
 - Việc nhân viên chuyển phòng không làm mất bài đã được giao hoặc bài đã nộp.
 - Người tạo đợt giao chọn đúng một đề đã sẵn sàng trong database theo hướng
   `culture` (Văn hóa), `department` (Chuyên môn) hoặc `learning` (Học liệu).
@@ -83,7 +84,7 @@ Seed mặc định cung cấp 10 câu Văn hóa và 10 câu Chuyên môn Java Ba
 
 ## Luồng sử dụng
 
-1. ADMIN, HR hoặc MANAGER mở **Tạo đợt giao bài**.
+1. ADMIN hoặc MANAGER mở **Tạo đợt giao bài**; mentor lớp có thể tạo đợt Học liệu cho lớp mình.
 2. Chọn loại Văn hóa/Chuyên môn/Học liệu theo quyền, chọn đề trong database và lịch theo GMT+7.
 3. Công bố đợt giao, chọn người nhận toàn công ty rồi giao bài.
 4. Người nhận mở **Bài của tôi**, làm bài trong khoảng `[start_time, end_time)`.
@@ -159,9 +160,8 @@ Các cột quan trọng:
 - `Test_Question_Options`: danh sách lựa chọn linh hoạt và cờ `is_correct`.
 - `Test_Answer_Options`: mỗi lựa chọn người thi đã chọn là một dòng.
 
-`type='department'` có thể có `department_id=NULL` khi ADMIN/HR tạo đánh giá
-chuyên môn toàn công ty. MANAGER vẫn tạo nội dung chuyên môn gắn với phòng mình
-để kiểm soát quyền quản lý ngân hàng.
+`type='department'` của MANAGER gắn với phòng mình để kiểm soát quyền quản lý
+ngân hàng. HR không tạo hoặc quản lý đề.
 
 ## Kiểm thử
 

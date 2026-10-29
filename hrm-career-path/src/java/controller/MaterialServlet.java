@@ -23,6 +23,10 @@ public class MaterialServlet extends HttpServlet {
         if (u == null) {
             return;
         }
+        if (u.getRoleId() == 2) {
+            forbidden(s, "HR chỉ quản lý tổ chức và nhân sự, không truy cập Học liệu & Đào tạo.");
+            return;
+        }
         String a = param(q, "action", "list");
         if ("download".equals(a) || "preview".equals(a)) {
             stream(q, s);
@@ -118,6 +122,10 @@ public class MaterialServlet extends HttpServlet {
     protected void doPost(HttpServletRequest q, HttpServletResponse s) throws ServletException, IOException {
         User u = current(q, s);
         if (u == null) {
+            return;
+        }
+        if (u.getRoleId() == 2) {
+            forbidden(s, "HR chỉ quản lý tổ chức và nhân sự, không truy cập Học liệu & Đào tạo.");
             return;
         }
         String a = param(q, "action", "");
@@ -313,15 +321,26 @@ public class MaterialServlet extends HttpServlet {
             s.sendRedirect(q.getContextPath() + "/login");
             return null;
         }
-        return (User) h.getAttribute("currentUser");
+        User sessionUser = (User) h.getAttribute("currentUser");
+        User currentUser = users.getUserById(sessionUser.getUserId());
+        if (currentUser == null) {
+            h.invalidate();
+            s.sendRedirect(q.getContextPath() + "/login");
+            return null;
+        }
+        return currentUser;
     }
 
     private boolean canManage(User u) {
-        return u.getRoleId() >= 1 && u.getRoleId() <= 3;
+        return u.getRoleId() == 1 || u.getRoleId() == 3;
     }
 
     private void deny(HttpServletResponse s, HttpServletRequest q) throws IOException {
         s.sendRedirect(q.getContextPath() + "/materials");
+    }
+
+    private void forbidden(HttpServletResponse s, String message) throws IOException {
+        s.sendError(HttpServletResponse.SC_FORBIDDEN, message);
     }
 
     private int num(HttpServletRequest q, String n) {

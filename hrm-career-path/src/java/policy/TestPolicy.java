@@ -12,7 +12,7 @@ import model.TestTemplate;
  */
 public final class TestPolicy {
 
-    /** ADMIN quản lý Văn hóa; MANAGER quản lý Chuyên môn đúng phòng. HR làm bài như EMPLOYEE. */
+    /** ADMIN quản lý Văn hóa; MANAGER quản lý Chuyên môn đúng phòng; HR không vào module. */
     public boolean canManage(TestActor actor, TestTemplate t) {
         if (t.classId() != null) {
             return "learning".equals(t.type()) && actor.mentoredClassIds().contains(t.classId());
