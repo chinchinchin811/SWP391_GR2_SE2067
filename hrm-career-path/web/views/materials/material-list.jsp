@@ -5,7 +5,8 @@
     List<LearningMaterial> materials = (List<LearningMaterial>) request.getAttribute("materials");
     List<TrainingClass> classes = (List<TrainingClass>) request.getAttribute("classes");
     User currentUser = (User) session.getAttribute("currentUser");
-    boolean canManage = currentUser != null && currentUser.getRoleId() <= 3;
+    boolean canManage = currentUser != null && (currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3);
+    boolean isClassMember = classes != null && !classes.isEmpty();
     String successMessage = (String) session.getAttribute("successMessage");
     session.removeAttribute("successMessage");
     SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
@@ -18,54 +19,63 @@
         <div class="topbar-actions">
             <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials?action=classList">Quản lý lớp đào tạo</a>
             <% if (canManage) { %>
-                <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=create">+ Thêm học liệu</a>
+            <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=create">+ Thêm học liệu</a>
             <% } %>
         </div>
     </div>
     <div class="content-body">
         <% if (successMessage != null) { %>
-            <div class="alert alert-success"><%= successMessage %></div>
+        <div class="alert alert-success"><%= successMessage %></div>
         <% } %>
 
         <div class="card">
             <div class="card-header">
-                <h2>Kho Học Liệu</h2>
+                <h2><%= (!canManage && isClassMember) ? "Học Liệu Trong Lớp Của Tôi" : "Kho Học Liệu" %></h2>
                 <span class="badge-count">Tổng: <%= materials != null ? materials.size() : 0 %> học liệu</span>
             </div>
             <div class="card-body" style="padding:0">
                 <table class="data-table">
                     <colgroup>
-                        <col style="width:40%">
-                        <col style="width:10%">
-                        <col style="width:13%">
-                        <col style="width:13%">
-                        <col style="width:24%">
+                        <col style="width:48%">
+                        <col style="width:14%">
+                        <col style="width:16%">
+                        <col style="width:22%">
                     </colgroup>
                     <thead>
                         <tr>
                             <th style="text-align:left;padding-left:14px">Học liệu</th>
                             <th style="text-align:center">Loại</th>
-                            <th style="text-align:center">Phạm vi</th>
                             <th style="text-align:center">Thời lượng</th>
                             <th style="text-align:center">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% if (materials != null && !materials.isEmpty()) {
-                            for (LearningMaterial m : materials) { %>
+                            for (LearningMaterial m : materials) { 
+                                boolean hasMaterialAccess = canManage || m.isUserHasAccess();
+                        %>
                         <tr>
                             <td style="padding-left:14px">
-                                <div style="font-size:13px;font-weight:600;line-height:1.4"><%= m.getTitle() %></div>
+                                <div style="font-size:13px;font-weight:600;line-height:1.4">
+                                    <a href="<%= request.getContextPath() %>/materials?action=view&id=<%= m.getMaterialId() %>" style="color:#111;text-decoration:none">
+                                        <%= m.getTitle() %>
+                                    </a>
+                                </div>
                                 <% if (m.getDescription() != null && !m.getDescription().isEmpty()) { %>
-                                <div style="font-size:11.5px;color:#666;margin-top:3px;line-height:1.4"><%= m.getDescription() %></div>
+                                <div style="font-size:11.5px;color:#666;margin-top:2px;line-height:1.4"><%= m.getDescription() %></div>
                                 <% } %>
                             </td>
                             <td style="text-align:center"><span class="badge"><%= m.getMaterialType() %></span></td>
-                            <td style="text-align:center;font-size:12.5px"><%= m.getScopeType() %></td>
-                            <td style="text-align:center;font-size:12.5px"><%= m.getDurationMinutes() %> phút</td>
+                            <td style="text-align:center;font-size:12.5px"><%= ("VIDEO".equals(m.getMaterialType()) && m.getDurationMinutes() > 0) ? (m.getDurationMinutes() + " phút") : "—" %></td>
                             <td style="text-align:center">
                                 <div class="action-btn-group">
-                                    <a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=view&id=<%= m.getMaterialId() %>">Xem</a>
+                                    <% if (hasMaterialAccess) { %>
+                                    <a class="btn btn-sm btn-primary" href="<%= request.getContextPath() %>/materials?action=view&id=<%= m.getMaterialId() %>">Xem học liệu</a>
+                                    <% } else { %>
+                                    <a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=view&id=<%= m.getMaterialId() %>" style="color:#d35400;border-color:#e67e22" title="Nhấn để xem điều kiện tham gia lớp">
+                                        <i class="fa-solid fa-lock"></i> Xem điều kiện
+                                    </a>
+                                    <% } %>
                                     <% if (canManage) { %>
                                     <a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=edit&id=<%= m.getMaterialId() %>">Sửa</a>
                                     <form method="post" action="<%= request.getContextPath() %>/materials" style="display:inline-flex;margin:0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa học liệu này?')">
@@ -79,7 +89,15 @@
                         </tr>
                         <% } } else { %>
                         <tr>
-                            <td colspan="5" style="text-align:center;padding:28px;color:#666;font-size:13px">Chưa có học liệu nào.</td>
+                            <td colspan="4" style="text-align:center;padding:28px;color:#666;font-size:13px">
+                                <% if (!canManage && isClassMember) { %>
+                                    Hiện tại trong các lớp đào tạo của bạn chưa có học liệu nào.
+                                <% } else if (!canManage) { %>
+                                    Bạn chưa tham gia lớp đào tạo nào. Vui lòng liên hệ HR hoặc Quản lý để tham gia lớp đào tạo.
+                                <% } else { %>
+                                    Chưa có học liệu nào trong hệ thống.
+                                <% } %>
+                            </td>
                         </tr>
                         <% } %>
                     </tbody>

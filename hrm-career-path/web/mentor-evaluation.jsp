@@ -2,14 +2,17 @@
 <%@ page import="java.util.List" %>
 <%@ page import="model.User" %>
 <%@ page import="model.Mentor.MentorEvaluation" %>
+<%@ page import="dal.MentorDAO" %>
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-    if (roleId == 4) {
+    MentorDAO evalMentorDAO = new MentorDAO();
+    boolean isMentorUser = (currentUser != null) && evalMentorDAO.isMentor(currentUser.getUserId());
+    if (roleId == 4 && !isMentorUser) {
         response.sendRedirect(request.getContextPath() + "/dashboard");
         return;
     }
-    request.setAttribute("pageTitle", "Quản Lý Đánh Giá Mentee | HRM");
+    request.setAttribute("pageTitle", "Quản Lý Đánh Giá Mentee | CPMS");
     List<MentorEvaluation> evaluations = (List<MentorEvaluation>) request.getAttribute("evaluations");
 %>
 <jsp:include page="/views/common/header.jsp" />
@@ -57,8 +60,17 @@
                                 <td style="padding: 10px; border: 1px solid #000; text-align: center;">
                                     <b><%= eval.getPerformanceScore() %>/10</b>
                                 </td>
-                                <td style="padding: 10px; border: 1px solid #000;">
-                                    <%= eval.getFeedback() %>
+                                <td style="padding: 10px; border: 1px solid #000; font-size: 13px; line-height: 1.5;">
+                                    <div>
+                                        <b style="color: #0d47a1;"><i class="fa-solid fa-eye"></i> Công khai (Mentee xem):</b><br>
+                                        <span style="color: #333;"><%= (eval.getPublicFeedback() != null && !eval.getPublicFeedback().isEmpty()) ? eval.getPublicFeedback() : eval.getFeedback() %></span>
+                                    </div>
+                                    <% if (eval.getPrivateFeedback() != null && !eval.getPrivateFeedback().trim().isEmpty()) { %>
+                                    <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #e57373;">
+                                        <b style="color: #c62828;"><i class="fa-solid fa-user-shield"></i> Nội bộ HR/Manager (Ẩn với Mentee):</b><br>
+                                        <span style="color: #555; font-style: italic;"><%= eval.getPrivateFeedback() %></span>
+                                    </div>
+                                    <% } %>
                                 </td>
                                 <td style="padding: 10px; border: 1px solid #000; text-align: center;">
                                     <span style="padding: 3px 8px; border: 1px solid #000; background: <%= isApproved ? "#e8f5e9" : "#fff3e0" %>; font-size: 11px; font-weight: bold;">
@@ -68,11 +80,11 @@
                             </tr>
                         <%  }
                         } else { %>
-                            <tr>
-                                <td colspan="6" style="padding: 20px; text-align: center; border: 1px solid #000;">
-                                    Chưa có ghi nhận đánh giá nào từ Mentor.
-                                </td>
-                            </tr>
+                        <tr>
+                            <td colspan="6" style="padding: 20px; text-align: center; border: 1px solid #000;">
+                                Chưa có ghi nhận đánh giá nào từ Mentor.
+                            </td>
+                        </tr>
                         <% } %>
                     </tbody>
                 </table>

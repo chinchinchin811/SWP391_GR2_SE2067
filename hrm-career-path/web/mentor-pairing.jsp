@@ -8,7 +8,7 @@
     List<MentorAssignment> assignments = (List<MentorAssignment>) request.getAttribute("assignments");
     String successMsg = (String) session.getAttribute("successMessage");
     session.removeAttribute("successMessage");
-    request.setAttribute("pageTitle", "Ghép Nối Mentor & Mentee | HRM");
+    request.setAttribute("pageTitle", "Ghép Nối Mentor & Mentee | CPMS");
 %>
 <jsp:include page="/views/common/header.jsp" />
 <jsp:include page="/views/common/sidebar.jsp" />
@@ -20,9 +20,9 @@
 
     <div class="content-body">
         <% if (successMsg != null) { %>
-            <div style="padding: 10px; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; margin-bottom: 15px; font-weight: bold;">
-                [THÔNG BÁO] <%= successMsg %>
-            </div>
+        <div style="padding: 10px; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; margin-bottom: 15px; font-weight: bold;">
+            [THÔNG BÁO] <%= successMsg %>
+        </div>
         <% } %>
 
         <div style="display: flex; gap: 20px; align-items: flex-start;">
@@ -43,32 +43,32 @@
                     <tbody>
                         <% if (assignments != null && !assignments.isEmpty()) {
                             for (MentorAssignment a : assignments) { %>
-                            <tr>
-                                <td style="padding: 8px; border: 1px solid #000;">
-                                    <b><%= a.getMenteeName() %></b><br>
-                                    <span style="font-size: 11px; color: #555;">
-                                        <%= a.getMenteeLevel() != null ? a.getMenteeLevel() : "" %>
-                                    </span>
-                                </td>
-                                <td style="padding: 8px; border: 1px solid #000;">
-                                    <%= a.getMentorName() %>
-                                </td>
-                                <td style="padding: 8px; border: 1px solid #000;">
-                                    <%= a.getPositionName() != null ? a.getPositionName() : "" %>
-                                </td>
-                                <td style="padding: 8px; border: 1px solid #000; text-align: center;">
-                                    <a href="<%= request.getContextPath() %>/mentors?action=menteeDetail&id=<%= a.getMenteeId() %>"
-                                       class="btn btn-sm btn-secondary" style="font-size: 11px;">Hồ sơ</a>
-                                    <a href="<%= request.getContextPath() %>/mentors?action=evaluateForm&assignmentId=<%= a.getAssignmentId() %>"
-                                       class="btn btn-sm btn-primary" style="font-size: 11px;">Đánh giá</a>
-                                </td>
-                            </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #000;">
+                                <b><%= a.getMenteeName() %></b><br>
+                                <span style="font-size: 11px; color: #555;">
+                                    <%= a.getMenteeLevel() != null ? a.getMenteeLevel() : "" %>
+                                </span>
+                            </td>
+                            <td style="padding: 8px; border: 1px solid #000;">
+                                <%= a.getMentorName() %>
+                            </td>
+                            <td style="padding: 8px; border: 1px solid #000;">
+                                <%= a.getPositionName() != null ? a.getPositionName() : "" %>
+                            </td>
+                            <td style="padding: 8px; border: 1px solid #000; text-align: center;">
+                                <a href="<%= request.getContextPath() %>/mentors?action=menteeDetail&id=<%= a.getMenteeId() %>"
+                                   class="btn btn-sm btn-secondary" style="font-size: 11px;">Hồ sơ</a>
+                                <a href="<%= request.getContextPath() %>/mentors?action=evaluateForm&assignmentId=<%= a.getAssignmentId() %>"
+                                   class="btn btn-sm btn-primary" style="font-size: 11px;">Đánh giá</a>
+                            </td>
+                        </tr>
                         <% } } else { %>
-                            <tr>
-                                <td colspan="4" style="padding: 15px; text-align: center; border: 1px solid #000;">
-                                    Chưa có dữ liệu ghép nối.
-                                </td>
-                            </tr>
+                        <tr>
+                            <td colspan="4" style="padding: 15px; text-align: center; border: 1px solid #000;">
+                                Chưa có dữ liệu ghép nối.
+                            </td>
+                        </tr>
                         <% } %>
                     </tbody>
                 </table>
@@ -82,7 +82,7 @@
 
                 <form action="<%= request.getContextPath() %>/mentors" method="POST">
                     <input type="hidden" name="action" value="assign">
-<input type="hidden" id="positionIdInput" name="positionId" value="">
+                    <input type="hidden" id="positionIdInput" name="positionId" value="">
                     <div style="margin-bottom: 15px;">
                         <label style="font-weight: bold; display: block; margin-bottom: 5px;">1. Chọn Nhân viên mới (*):</label>
                         <select id="menteeSelect" name="menteeId" onchange="filterMentorsByPosition()" required style="width: 100%; padding: 8px;">
@@ -91,11 +91,11 @@
                                 for (User mentee : newEmployees) {
                                     String posName = mentee.getPositionName() != null ? mentee.getPositionName().trim() : "";
                             %>
-                                <option value="<%= mentee.getUserId() %>"
-                                        data-position-id="<%= mentee.getPositionId() %>"
-                                        data-position-name="<%= posName %>">
-                                    <%= mentee.getFullName() %> - <%= mentee.getLevelName() %> (<%= !posName.isEmpty() ? posName : "Chưa xếp vị trí" %>)
-                                </option>
+                            <option value="<%= mentee.getUserId() %>"
+                                    data-position-id="<%= mentee.getPositionId() %>"
+                                    data-position-name="<%= posName %>">
+                                <%= mentee.getFullName() %> - <%= mentee.getLevelName() %> (<%= !posName.isEmpty() ? posName : "Chưa xếp vị trí" %>)
+                            </option>
                             <% } } %>
                         </select>
                     </div>
@@ -120,13 +120,13 @@
 
 <script>
     var allMentors = [
-        <% if (mentors != null) {
+    <% if (mentors != null) {
             for (int i = 0; i < mentors.size(); i++) {
                 User m = mentors.get(i);
                 String mPosName = m.getPositionName() != null ? m.getPositionName().trim() : "";
-        %>
-            { id: <%= m.getUserId() %>, name: "<%= m.getFullName().replace("\"", "\\\"") %>", positionId: <%= m.getPositionId() %>, positionName: "<%= mPosName.replace("\"", "\\\"") %>" }<%= (i < mentors.size() - 1) ? ", " : "" %>
-        <%  }
+    %>
+    { id: <%= m.getUserId() %>, name: "<%= m.getFullName().replace("\"", "\\\"") %>", positionId: <%= m.getPositionId() %>, positionName: "<%= mPosName.replace("\"", "\\\"") %>" }<%= (i < mentors.size() - 1) ? ", " : "" %>
+    <%  }
         } %>
     ];
 

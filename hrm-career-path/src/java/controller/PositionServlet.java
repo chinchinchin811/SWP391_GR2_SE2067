@@ -2,9 +2,11 @@ package controller;
 
 import dal.DepartmentDAO;
 import dal.PositionDAO;
+import dal.PositionRequestDAO;
 import model.Department;
 import model.JobLevel;
 import model.Position;
+import model.PositionRequest;
 import model.User;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -18,6 +20,7 @@ public class PositionServlet extends HttpServlet {
 
     private final PositionDAO positionDAO = new PositionDAO();
     private final DepartmentDAO departmentDAO = new DepartmentDAO();
+    private final PositionRequestDAO positionRequestDAO = new PositionRequestDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -29,25 +32,71 @@ public class PositionServlet extends HttpServlet {
         }
 
         User currentUser = (User) session.getAttribute("currentUser");
-        
-        // Nhân viên không vào trang quản lý vị trí
-        if (currentUser.getRoleId() == 4) {
-            response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + currentUser.getUserId());
-            return;
-        }
 
         String action = request.getParameter("action");
         if (action == null) {
             action = "list";
         }
 
-        // Chỉ Admin được mở form tạo/sửa vị trí công ty
-        if (currentUser.getRoleId() != 1 && ("create".equals(action) || "edit".equals(action))) {
+        // Nhân viên thường không vào trang quản lý vị trí
+        if (currentUser.getRoleId() == 4) {
+            response.sendRedirect(request.getContextPath() + "/employees?action=detail&id=" + currentUser.getUserId());
+            return;
+        }
+
+        // HR (role 2) và Manager (role 3) không được trực tiếp tạo/sửa vị trí (chỉ Admin mới có quyền)
+        if ((currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3) && ("create".equals(action) || "edit".equals(action))) {
             response.sendRedirect(request.getContextPath() + "/positions");
             return;
         }
 
         switch (action) {
+            case "requests":
+                if (currentUser.getRoleId() != 1 && currentUser.getRoleId() != 2) {
+                    response.sendRedirect(request.getContextPath() + "/positions");
+                    return;
+                }
+                String reqStatus = request.getParameter("status");
+                String deptFilterStr = request.getParameter("departmentId");
+                String searchKeyword = request.getParameter("search");
+
+                Integer deptFilter = null;
+                if (deptFilterStr != null && !deptFilterStr.trim().isEmpty() && !deptFilterStr.equals("0")) {
+                    try {
+                        deptFilter = Integer.parseInt(deptFilterStr);
+                    } catch (NumberFormatException ignored) {}
+                }
+
+                List<PositionRequest> requests = positionRequestDAO.getAllRequests(reqStatus, deptFilter, searchKeyword);
+                List<Department> departments = departmentDAO.getAllDepartments();
+
+                request.setAttribute("requests", requests);
+                request.setAttribute("departments", departments);
+                request.setAttribute("selectedStatus", reqStatus);
+                request.setAttribute("selectedDeptId", deptFilter);
+                request.setAttribute("searchKeyword", searchKeyword);
+                request.getRequestDispatcher("/views/positions/position-requests.jsp").forward(request, response);
+                break;
+
+            case "myRequests":
+                if (currentUser.getRoleId() != 3) {
+                    response.sendRedirect(request.getContextPath() + "/positions");
+                    return;
+                }
+                request.setAttribute("requests", positionRequestDAO.getRequestsByManager(currentUser.getUserId()));
+                request.getRequestDispatcher("/views/positions/position-requests.jsp").forward(request, response);
+                break;
+
+            case "requestCreate":
+                if (currentUser.getRoleId() != 3) {
+                    response.sendRedirect(request.getContextPath() + "/positions");
+                    return;
+                }
+                Department myDept = departmentDAO.getDepartmentByManagerId(currentUser.getUserId());
+                request.setAttribute("managerDepartment", myDept);
+                request.getRequestDispatcher("/views/positions/position-request-form.jsp").forward(request, response);
+                break;
+
             case "create":
                 showCreateForm(request, response);
                 break;
@@ -55,7 +104,7 @@ public class PositionServlet extends HttpServlet {
                 showEditForm(request, response);
                 break;
             default:
-                listPositions(request, response);
+                listPositions(request, response, currentUser);
                 break;
         }
     }
@@ -74,15 +123,35 @@ public class PositionServlet extends HttpServlet {
 
         User currentUser = (User) session.getAttribute("currentUser");
 
-        // Chỉ Admin mới được thêm/sửa/xóa vị trí
-        if (currentUser.getRoleId() != 1) {
-            response.sendRedirect(request.getContextPath() + "/positions");
-            return;
-        }
-
         String action = request.getParameter("action");
         if (action == null) {
             action = "list";
+        }
+
+        // Manager gửi đề xuất vị trí mới
+        if ("createRequest".equals(action)) {
+            if (currentUser.getRoleId() != 3 && currentUser.getRoleId() != 2) {
+                response.sendRedirect(request.getContextPath() + "/positions");
+                return;
+            }
+            createPositionRequest(request, response, currentUser);
+            return;
+        }
+
+        // Admin hoặc HR duyệt đề xuất vị trí
+        if ("reviewRequest".equals(action)) {
+            if (currentUser.getRoleId() != 1 && currentUser.getRoleId() != 2) {
+                response.sendRedirect(request.getContextPath() + "/positions");
+                return;
+            }
+            reviewPositionRequest(request, response, currentUser);
+            return;
+        }
+
+        // Chỉ Admin (role 1) mới được thêm/sửa/xóa vị trí trực tiếp
+        if (currentUser.getRoleId() != 1) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+            return;
         }
 
         switch (action) {
@@ -101,9 +170,65 @@ public class PositionServlet extends HttpServlet {
         }
     }
 
-    private void listPositions(HttpServletRequest request, HttpServletResponse response)
+    private void createPositionRequest(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String posName = request.getParameter("positionName");
+        String deptIdStr = request.getParameter("departmentId");
+        String desc = request.getParameter("description");
+        String reason = request.getParameter("reason");
+
+        if (posName != null && !posName.trim().isEmpty() && reason != null && !reason.trim().isEmpty()) {
+            int deptId = 0;
+            if (deptIdStr != null && !deptIdStr.isEmpty()) {
+                try {
+                    deptId = Integer.parseInt(deptIdStr);
+                } catch (NumberFormatException ignored) {}
+            }
+            PositionRequest req = new PositionRequest();
+            req.setManagerId(currentUser.getUserId());
+            req.setDepartmentId(deptId);
+            req.setPositionName(posName.trim());
+            req.setDescription(desc != null ? desc.trim() : null);
+            req.setReason(reason.trim());
+
+            boolean ok = positionRequestDAO.createRequest(req);
+            if (ok) {
+                request.getSession().setAttribute("successMessage", "Đề xuất vị trí mới đã được gửi tới Quản trị viên (Admin) xem xét!");
+            } else {
+                request.getSession().setAttribute("errorMessage", "Không thể gửi đề xuất, vui lòng kiểm tra lại thông tin.");
+            }
+        }
+        response.sendRedirect(request.getContextPath() + "/positions?action=myRequests");
+    }
+
+    private void reviewPositionRequest(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String reqIdStr = request.getParameter("requestId");
+        String status = request.getParameter("status");
+        String note = request.getParameter("decisionNote");
+
+        if (reqIdStr != null && status != null) {
+            try {
+                int reqId = Integer.parseInt(reqIdStr);
+                boolean ok = positionRequestDAO.reviewRequest(reqId, currentUser.getUserId(), status, note);
+                if (ok) {
+                    if ("APPROVED".equalsIgnoreCase(status)) {
+                        request.getSession().setAttribute("successMessage", "Đã PHÊ DUYỆT đề xuất và Hệ thống tự động tạo Vị trí mới thành công!");
+                    } else {
+                        request.getSession().setAttribute("successMessage", "Đã TỪ CHỐI đề xuất và gửi giải trình lý do tới Trưởng phòng.");
+                    }
+                } else {
+                    request.getSession().setAttribute("errorMessage", "Thao tác phê duyệt thất bại hoặc yêu cầu đã được xử lý.");
+                }
+            } catch (NumberFormatException ignored) {}
+        }
+        response.sendRedirect(request.getContextPath() + "/positions?action=requests");
+    }
+
+    private void listPositions(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws ServletException, IOException {
         String deptFilterStr = request.getParameter("departmentId");
+        String search = request.getParameter("search");
         Integer deptFilter = null;
         if (deptFilterStr != null && !deptFilterStr.isEmpty() && !deptFilterStr.equals("0")) {
             try {
@@ -112,14 +237,30 @@ public class PositionServlet extends HttpServlet {
             }
         }
 
-        List<Position> positions = positionDAO.getPositionsByDepartment(deptFilter);
-        List<Department> departments = departmentDAO.getAllDepartments();
+        List<Department> departments;
+        // Nếu là Manager (role 3), chỉ xem vị trí trong phòng ban mình phụ trách
+        if (currentUser != null && currentUser.getRoleId() == 3) {
+            Department myDept = departmentDAO.getDepartmentByManagerId(currentUser.getUserId());
+            if (myDept != null) {
+                deptFilter = myDept.getDepartmentId();
+                departments = new java.util.ArrayList<>();
+                departments.add(myDept);
+            } else {
+                deptFilter = -1;
+                departments = new java.util.ArrayList<>();
+            }
+        } else {
+            departments = departmentDAO.getAllDepartments();
+        }
+
+        List<Position> positions = positionDAO.getPositionsByDepartment(deptFilter, search);
         List<JobLevel> jobLevels = positionDAO.getAllJobLevels();
 
         request.setAttribute("positions", positions);
         request.setAttribute("departments", departments);
         request.setAttribute("jobLevels", jobLevels);
         request.setAttribute("selectedDeptId", deptFilter);
+        request.setAttribute("searchKeyword", search);
         request.getRequestDispatcher("/views/positions/position-list.jsp").forward(request, response);
     }
 

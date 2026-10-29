@@ -7,7 +7,7 @@
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-    request.setAttribute("pageTitle", "Danh Sách Nhân Viên | HRM");
+    request.setAttribute("pageTitle", "Danh Sách Nhân Viên | CPMS");
     List<User> employees = (List<User>) request.getAttribute("employees");
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<Position> positions = (List<Position>) request.getAttribute("positions");
@@ -33,19 +33,19 @@
         </h1>
         <div>
             <% if (roleId == 2) { %>
-                <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
-                    + Khai Báo Nhân Viên Mới
-                </a>
+            <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
+                + Khai Báo Nhân Viên Mới
+            </a>
             <% } %>
         </div>
     </div>
 
     <div class="content-body">
         <% if (successMessage != null) { %>
-            <div class="alert alert-success"><%= successMessage %></div>
+        <div class="alert alert-success"><%= successMessage %></div>
         <% } %>
         <% if (errorMessage != null) { %>
-            <div class="alert alert-danger"><%= errorMessage %></div>
+        <div class="alert alert-danger"><%= errorMessage %></div>
         <% } %>
 
         <form action="<%= request.getContextPath() %>/employees" method="GET" class="filter-box">
@@ -55,18 +55,18 @@
             </div>
 
             <% if (roleId == 1 || roleId == 2) { %>
-                <div class="form-group">
-                    <label>Phòng Ban:</label>
-                    <select name="departmentId" class="form-control" onchange="this.form.submit()">
-                        <option value="0">-- Tất cả Phòng Ban --</option>
-                        <% if (departments != null) {
-                            for (Department d : departments) {
-                                boolean isSel = (selectedDeptId != null && selectedDeptId.equals(d.getDepartmentId()));
-                        %>
-                            <option value="<%= d.getDepartmentId() %>" <%= isSel ? "selected" : "" %>><%= d.getDepartmentName() %></option>
-                        <% } } %>
-                    </select>
-                </div>
+            <div class="form-group">
+                <label>Phòng Ban:</label>
+                <select name="departmentId" class="form-control" onchange="this.form.submit()">
+                    <option value="0">-- Tất cả Phòng Ban --</option>
+                    <% if (departments != null) {
+                        for (Department d : departments) {
+                            boolean isSel = (selectedDeptId != null && selectedDeptId.equals(d.getDepartmentId()));
+                    %>
+                    <option value="<%= d.getDepartmentId() %>" <%= isSel ? "selected" : "" %>><%= d.getDepartmentName() %></option>
+                    <% } } %>
+                </select>
+            </div>
             <% } %>
 
             <div class="form-group">
@@ -77,24 +77,24 @@
                         for (Position p : positions) {
                             boolean isSel = (selectedPosId != null && selectedPosId.equals(p.getPositionId()));
                     %>
-                        <option value="<%= p.getPositionId() %>" <%= isSel ? "selected" : "" %>><%= p.getPositionName() %></option>
+                    <option value="<%= p.getPositionId() %>" <%= isSel ? "selected" : "" %>><%= p.getPositionName() %></option>
                     <% } } %>
                 </select>
             </div>
 
             <% if (roleId == 1 || roleId == 2) { %>
-                <div class="form-group">
-                    <label>Vai Trò:</label>
-                    <select name="roleId" class="form-control" onchange="this.form.submit()">
-                        <option value="0">-- Tất cả Vai Trò --</option>
-                        <% if (roles != null) {
-                            for (Role r : roles) {
-                                boolean isSel = (selectedRoleId != null && selectedRoleId.equals(r.getRoleId()));
-                        %>
-                            <option value="<%= r.getRoleId() %>" <%= isSel ? "selected" : "" %>><%= r.getRoleName() %></option>
-                        <% } } %>
-                    </select>
-                </div>
+            <div class="form-group">
+                <label>Vai Trò:</label>
+                <select name="roleId" class="form-control" onchange="this.form.submit()">
+                    <option value="0">-- Tất cả Vai Trò --</option>
+                    <% if (roles != null) {
+                        for (Role r : roles) {
+                            boolean isSel = (selectedRoleId != null && selectedRoleId.equals(r.getRoleId()));
+                    %>
+                    <option value="<%= r.getRoleId() %>" <%= isSel ? "selected" : "" %>><%= r.getRoleName() %></option>
+                    <% } } %>
+                </select>
+            </div>
             <% } %>
 
             <div style="display: flex; gap: 5px;">
@@ -127,61 +127,61 @@
                     <tbody>
                         <% if (employees != null && !employees.isEmpty()) {
                             for (User emp : employees) { %>
-                            <tr>
-                                <td><%= emp.getUserId() %></td>
-                                <td>
-                                    <div class="user-cell">
-                                        <div class="avatar-sm">
-                                            <%= emp.getFullName() != null && !emp.getFullName().trim().isEmpty() ? emp.getFullName().trim().substring(0, 1).toUpperCase() : "U" %>
-                                        </div>
-                                        <div>
-                                            <div class="user-fullname"><%= emp.getFullName() %></div>
-                                            <div class="user-sub">@<%= emp.getUsername() %></div>
-                                        </div>
+                        <tr>
+                            <td><%= emp.getUserId() %></td>
+                            <td>
+                                <div class="user-cell">
+                                    <div class="avatar-sm">
+                                        <%= emp.getFullName() != null && !emp.getFullName().trim().isEmpty() ? emp.getFullName().trim().substring(0, 1).toUpperCase() : "U" %>
                                     </div>
-                                </td>
-                                <td>
-                                    <div><%= emp.getEmail() %></div>
-                                    <div class="user-sub"><%= emp.getPhone() != null ? emp.getPhone() : "" %></div>
-                                </td>
-                                <td><b><%= emp.getDepartmentName() != null ? emp.getDepartmentName() : "-" %></b></td>
-                                <td>
-                                    <%= emp.getPositionName() != null ? emp.getPositionName() : "-" %>
-                                    <% if (emp.getLevelName() != null) { %>
-                                        <span class="level-tag"><%= emp.getLevelName() %></span>
-                                    <% } %>
-                                </td>
-                                <td><span class="badge badge-<%= emp.getRoleName() != null ? emp.getRoleName().toLowerCase() : "default" %>"><%= emp.getRoleName() %></span></td>
-                                <td>
-                                    <% if (emp.isStatus()) { %>
-                                        <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Đang làm việc</span>
-                                    <% } else { %>
-                                        <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Đã nghỉ việc</span>
-                                    <% } %>
-                                </td>
-                                <td style="text-align: center;">
-                                    <% if (roleId == 2) { %>
-                                        <a href="<%= request.getContextPath() %>/employees?action=assign&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-assign" title="Điều chuyển / Thăng chức">
-                                            <i class="fa-solid fa-arrows-rotate"></i> <span>Đổi vị trí</span>
-                                        </a>
-                                        <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-view" title="Xem chi tiết">
-                                            <i class="fa-regular fa-eye"></i> <span>Xem</span>
-                                        </a>
-                                        <a href="<%= request.getContextPath() %>/employees?action=edit&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-edit" title="Chỉnh sửa">
-                                            <i class="fa-regular fa-pen-to-square"></i> <span>Sửa</span>
-                                        </a>
-                                    <% } else { %>
-                                        <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-view">
-                                            <i class="fa-regular fa-eye"></i> <span>Xem</span>
-                                        </a>
-                                    <% } %>
-                                </td>
-                            </tr>
+                                    <div>
+                                        <div class="user-fullname"><%= emp.getFullName() %></div>
+                                        <div class="user-sub">@<%= emp.getUsername() %></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div><%= emp.getEmail() %></div>
+                                <div class="user-sub"><%= emp.getPhone() != null ? emp.getPhone() : "" %></div>
+                            </td>
+                            <td><b><%= emp.getDepartmentName() != null ? emp.getDepartmentName() : "-" %></b></td>
+                            <td>
+                                <%= emp.getPositionName() != null ? emp.getPositionName() : "-" %>
+                                <% if (emp.getLevelName() != null) { %>
+                                <span class="level-tag"><%= emp.getLevelName() %></span>
+                                <% } %>
+                            </td>
+                            <td><span class="badge badge-<%= emp.getRoleName() != null ? emp.getRoleName().toLowerCase() : "default" %>"><%= emp.getRoleName() %></span></td>
+                            <td>
+                                <% if (emp.isStatus()) { %>
+                                <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Đang làm việc</span>
+                                <% } else { %>
+                                <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Đã nghỉ việc</span>
+                                <% } %>
+                            </td>
+                            <td style="text-align: center;">
+                                <% if (roleId == 2) { %>
+                                <a href="<%= request.getContextPath() %>/employees?action=assign&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-assign" title="Điều chuyển / Thăng chức">
+                                    <i class="fa-solid fa-arrows-rotate"></i> <span>Đổi vị trí</span>
+                                </a>
+                                <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-view" title="Xem chi tiết">
+                                    <i class="fa-regular fa-eye"></i> <span>Xem</span>
+                                </a>
+                                <a href="<%= request.getContextPath() %>/employees?action=edit&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-edit" title="Chỉnh sửa">
+                                    <i class="fa-regular fa-pen-to-square"></i> <span>Sửa</span>
+                                </a>
+                                <% } else { %>
+                                <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-view">
+                                    <i class="fa-regular fa-eye"></i> <span>Xem</span>
+                                </a>
+                                <% } %>
+                            </td>
+                        </tr>
                         <%  }
                         } else { %>
-                            <tr>
-                                <td colspan="8" style="text-align: center; padding: 15px;">Không tìm thấy nhân viên nào.</td>
-                            </tr>
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 15px;">Không tìm thấy nhân viên nào.</td>
+                        </tr>
                         <% } %>
                     </tbody>
                 </table>

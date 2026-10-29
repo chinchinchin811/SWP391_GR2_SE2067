@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/Servlet.java to edit this template
- */
 package controller;
 
 import java.io.IOException;
@@ -60,7 +56,7 @@ public class MentorServlet extends HttpServlet {
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
-    @Override    
+    @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession();
@@ -71,24 +67,30 @@ public class MentorServlet extends HttpServlet {
             return;
         }
         if (currentUser.getRoleId() == 1) {
-            response.sendRedirect(request.getContextPath() + "/flashcards");
+            response.sendRedirect(request.getContextPath() + "/departments");
             return;
         }
 
+        MentorDAO mentorDAO = new MentorDAO();
+
         String action = request.getParameter("action");
         if (action == null) {
-            // Tự động chọn action mặc định theo Role
-            if (currentUser.getRoleId() == 4) {
-                action = "myMentor";
-            } else if (currentUser.getRoleId() == 5) {
+            // Tự động chọn action mặc định theo quyền và trạng thái phân công
+            if (mentorDAO.isMentor(currentUser.getUserId())) {
                 action = "myMentees";
+            } else if (currentUser.getRoleId() == 2) {
+                action = "pair";
+            } else if (currentUser.getRoleId() == 4) {
+                if (mentorDAO.hasMentor(currentUser.getUserId())) {
+                    action = "myMentor";
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
             } else {
-                response.sendRedirect(request.getContextPath() + "/dashboard");
-                return;
+                action = "evaluations";
             }
         }
-
-        MentorDAO mentorDAO = new MentorDAO();
 
         switch (action) {
             case "pair":
@@ -103,7 +105,7 @@ public class MentorServlet extends HttpServlet {
                 break;
 
             case "evaluations":
-                if (currentUser.getRoleId() != 5) {
+                if (currentUser.getRoleId() == 4 && !mentorDAO.isMentor(currentUser.getUserId())) {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }
@@ -131,15 +133,16 @@ public class MentorServlet extends HttpServlet {
             case "myMentor":
                 // Dành riêng cho Employee (Mentee) xem Mentor phụ trách mình
                 MentorAssignment myMentor = mentorDAO.getMentorByMentee(currentUser.getUserId());
+                if (myMentor == null) {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
                 request.setAttribute("myMentor", myMentor);
+                request.setAttribute("myEvaluations", mentorDAO.getEvaluationsByMentee(currentUser.getUserId()));
                 request.getRequestDispatcher("my-mentor.jsp").forward(request, response);
                 break;
 
             case "evaluateForm":
-                if (currentUser.getRoleId() != 5) {
-                    response.sendRedirect(request.getContextPath() + "/dashboard");
-                    return;
-                }
                 request.setAttribute("assignmentId", request.getParameter("assignmentId"));
                 request.getRequestDispatcher("mentor-evaluate-form.jsp").forward(request, response);
                 break;
@@ -165,33 +168,53 @@ public class MentorServlet extends HttpServlet {
             return;
         }
         if (currentUser.getRoleId() == 1) {
-            response.sendRedirect(request.getContextPath() + "/flashcards");
+            response.sendRedirect(request.getContextPath() + "/departments");
             return;
         }
 
         String action = request.getParameter("action");
 
         if ("assign".equals(action)) {
-            response.sendRedirect(request.getContextPath() + "/dashboard");
-            return;
-        }
+            // SỬA LỖI: Cần lấy String trước, kiểm tra null/empty để tránh lỗi 500
+            String menteeIdStr = request.getParameter("menteeId");
+            String mentorIdStr = request.getParameter("mentorId");
 
-        if ("saveEvaluation".equals(action)) {
-            if (currentUser.getRoleId() != 5) {
-                response.sendRedirect(request.getContextPath() + "/dashboard");
-                return;
+            if (menteeIdStr != null && mentorIdStr != null && !menteeIdStr.isEmpty() && !mentorIdStr.isEmpty()) {
+                int menteeId = Integer.parseInt(menteeIdStr);
+                int mentorId = Integer.parseInt(mentorIdStr);
+
+                int positionId = 0;
+                String posParam = request.getParameter("positionId");
+                if (posParam != null && !posParam.trim().isEmpty()) {
+                    positionId = Integer.parseInt(posParam);
+                }
+
+                boolean success = new MentorDAO().assignMentorWithPosition(menteeId, mentorId, positionId, currentUser.getUserId());
+                if (success) {
+                    session.setAttribute("successMessage", "Ghép Mentor thành công!");
+                }
             }
+            response.sendRedirect(request.getContextPath() + "/mentors?action=pair");
+        } else if ("saveEvaluation".equals(action)) {
             String assignmentIdStr = request.getParameter("assignmentId");
-            String feedback = request.getParameter("feedback");
+            String scoreStr = request.getParameter("performanceScore");
+            String publicFeedback = request.getParameter("publicFeedback");
+            String privateFeedback = request.getParameter("privateFeedback");
             
             if (assignmentIdStr != null && !assignmentIdStr.isEmpty()) {
                 int assignmentId = Integer.parseInt(assignmentIdStr);
+                int score = 8;
+                if (scoreStr != null && !scoreStr.trim().isEmpty()) {
+                    try {
+                        score = Integer.parseInt(scoreStr.trim());
+                    } catch (NumberFormatException ignored) {}
+                }
                 
-                // Gọi DAO để lưu vào Database (mặc định cho điểm 8, trạng thái PENDING)
-                boolean success = new MentorDAO().saveEvaluation(assignmentId, currentUser.getUserId(), 8, feedback);
+                // Lưu đánh giá với đầy đủ Public Feedback (Non-anonymous) và Private Feedback (Anonymous)
+                boolean success = new MentorDAO().saveEvaluation(assignmentId, currentUser.getUserId(), score, publicFeedback, privateFeedback);
                 
                 if (success) {
-                    session.setAttribute("successMessage", "Lưu đánh giá thành công!");
+                    session.setAttribute("successMessage", "Lưu đánh giá Mentee thành công!");
                 }
             }
             // LƯU Ý QUAN TRỌNG: Phải có lệnh sendRedirect để tránh màn hình trắng

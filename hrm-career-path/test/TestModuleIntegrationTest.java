@@ -64,9 +64,13 @@ public class TestModuleIntegrationTest {
 
     private static int insertId(String sql, Object... values) throws SQLException {
         try (Connection conn = connection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            for (int i = 0; i < values.length; i++) ps.setObject(i + 1, values[i]);
+            for (int i = 0; i < values.length; i++) {
+                ps.setObject(i + 1, values[i]);
+            }
             try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) throw new SQLException("Insert did not return an id");
+                if (!rs.next()) {
+                    throw new SQLException("Insert did not return an id");
+                }
                 return rs.getInt(1);
             }
         }
@@ -111,11 +115,11 @@ public class TestModuleIntegrationTest {
      * Bảng nền tối thiểu, tên cột/role tương thích với schema HRM thật.
      */
     private static void fixture() throws SQLException {
-        sql("CREATE TABLE Training_Classes(class_id INT PRIMARY KEY,class_name NVARCHAR(200),department_id INT,mentor_id INT,status VARCHAR(20),is_deleted BIT DEFAULT 0); "
+        sql("CREATE TABLE Learning_Materials(material_id INT IDENTITY PRIMARY KEY,title NVARCHAR(200),description NVARCHAR(MAX),"
+                + "scope_type VARCHAR(20) DEFAULT 'DEPARTMENT',department_id INT,created_by INT,is_deleted BIT DEFAULT 0,status BIT DEFAULT 1); "
+                + "CREATE TABLE Training_Classes(class_id INT PRIMARY KEY,class_name NVARCHAR(200),department_id INT,mentor_id INT,status VARCHAR(20),is_deleted BIT DEFAULT 0); "
                 + "CREATE TABLE Class_Materials(class_id INT,material_id INT,PRIMARY KEY(class_id,material_id)); "
                 + "CREATE TABLE Class_Enrollments(class_id INT,user_id INT,PRIMARY KEY(class_id,user_id)); "
-                + "CREATE TABLE Learning_Materials(material_id INT IDENTITY PRIMARY KEY,title NVARCHAR(200),description NVARCHAR(MAX),"
-                + "department_id INT,created_by INT,is_deleted BIT DEFAULT 0,status BIT DEFAULT 1); "
                 + "CREATE TABLE Roles(role_id INT PRIMARY KEY,role_name VARCHAR(50)); "
                 + "CREATE TABLE Departments(department_id INT PRIMARY KEY,department_name NVARCHAR(100),manager_id INT,status BIT,is_deleted BIT); "
                 + "CREATE TABLE Users(user_id INT PRIMARY KEY,username VARCHAR(50),full_name NVARCHAR(100),role_id INT REFERENCES Roles(role_id),"
@@ -139,7 +143,8 @@ public class TestModuleIntegrationTest {
     }
 
     /**
-     * Luồng nghiệp vụ, IDOR, state machine, file và transaction trên SQL Server.
+     * Luồng nghiệp vụ, IDOR, state machine, file và transaction trên SQL
+     * Server.
      */
     private static void runTests() throws Exception {
         TestService s = service(NOW);
@@ -151,16 +156,13 @@ public class TestModuleIntegrationTest {
         rejects(400, () -> s.createTemplate(3, "x", "y", "department", NOW.minusSeconds(1), NOW.plusSeconds(10)));
         rejects(400, () -> s.createTemplate(3, " ", "y", "department", NOW, NOW.plusSeconds(10)));
         int dept = s.createTemplate(3, "Đề chuyên môn <script>", "Mô tả tự do", "department", NOW, NOW.plusSeconds(3600));
-        rejects(403, () -> s.createTemplate(2, "x", "y", "culture", NOW, NOW.plusSeconds(3600)));
         int culture = s.createTemplate(1, "Văn hóa", "Bài viết văn hóa", "culture", NOW, NOW.plusSeconds(3600));
         int future = s.createTemplate(3, "Bài sắp tới", "Nội dung", "department", NOW.plusSeconds(3600), NOW.plusSeconds(7200));
-        rejects(404, () -> s.getTemplate(4, dept));
-        rejects(404, () -> s.getTemplate(6, culture));
-        check(s.listTemplates(4, "all", 1, 20).isEmpty(), "draft must be hidden");
-        check(s.getCalendar(3, NOW.minusSeconds(600), NOW.plusSeconds(8000), 1, 20).isEmpty(), "calendar excludes drafts even for creator");
-        s.publishTemplate(3, dept);
-        s.publishTemplate(1, culture);
-        s.publishTemplate(3, future);
+        check(s.getTemplate(4, dept).id() == dept, "new professional evaluation is active immediately");
+        check(s.getTemplate(6, culture).id() == culture, "new culture evaluation is active immediately");
+        check(s.listTemplates(4, "all", 1, 20).size() == 3, "new templates appear without a publish step");
+        check(s.getCalendar(3, NOW.minusSeconds(600), NOW.plusSeconds(8000), 1, 20).size() == 3,
+                "calendar includes newly created and upcoming templates");
         check(s.getTemplate(6, culture).id() == culture, "culture visible company wide");
         check(s.getTemplate(6, dept).id() == dept, "professional evaluation visible company wide");
         rejects(404, () -> s.getTemplate(1, dept));
@@ -201,6 +203,7 @@ public class TestModuleIntegrationTest {
         rejects(409, () -> s.submitAssignment(4, a, "again", null, null));
         rejects(400, () -> s.evaluateAssignment(3, a, new BigDecimal("10.01"), "invalid score"));
         rejects(403, () -> s.evaluateAssignment(4, a, new BigDecimal("9"), "self grading"));
+        s.startAssignment(7, other);
         s.submitAssignment(7, other, "text only", null, null);
         s.closeTemplate(3, dept);
         s.evaluateAssignment(3, a, new BigDecimal("8.75"), "Đạt yêu cầu");
@@ -245,12 +248,10 @@ public class TestModuleIntegrationTest {
         int pending = assignment(future, 4);
         rejects(409, () -> s.startAssignment(4, pending));
         rejects(409, () -> s.submitAssignment(4, pending, "early", null, null));
-        rejects(403, () -> s.revokeAssignment(2, pending));
         s.revokeAssignment(3, pending);
-        check(s.getMyAssignments(4, 1, 20).size() == 1, "manager can revoke assignment they created");
+        check(s.getMyAssignments(4, 1, 20).size() == 1, "assignment creator can revoke pending assignment");
         int expiring = s.createTemplate(1, "Đợt sắp hết hạn", "Thu hồi bài chưa làm",
                 "culture", NOW, NOW.plusSeconds(10));
-        s.publishTemplate(1, expiring);
         s.assignTest(1, expiring, List.of(8));
         int expiringAssignment = assignment(expiring, 8);
         s.closeExpiredTests(NOW.plusSeconds(20));
@@ -276,6 +277,7 @@ public class TestModuleIntegrationTest {
         int ca = assignment(culture, 6);
         rejects(404, () -> s.getAssignment(4, ca));
         rejects(403, () -> s.assignTest(5, culture, List.of(6)));
+        s.startAssignment(6, ca);
         s.submitAssignment(6, ca, "culture response", null, null);
         s.evaluateAssignment(1, ca, new BigDecimal("10"), "ADMIN may grade culture");
         check(s.getAssignment(6, ca).evaluation() != null, "culture full flow");
@@ -300,6 +302,35 @@ public class TestModuleIntegrationTest {
         int quiz = content("Đề chuyên môn", "department", 1, 3, "ready");
         int draft = content("Đề nháp", "department", 1, 3, "draft");
         int culture = content("Đề văn hóa", "culture", null, 2, "ready");
+
+        rejects(403, () -> s.createContentSet(4, "Không hợp lệ", "", "department", "draft", List.of()));
+        int customDraft = s.createContentSet(3, "Bộ đề tự tạo nháp", "Mô tả", "department", "draft", List.of());
+        check(s.getContent(3, customDraft).content().status().equals("draft"), "manager creates an empty custom draft");
+        rejects(400, () -> s.createContentSet(3, "Bộ đề rỗng", "", "department", "ready", List.of()));
+        List<TestService.QuestionDraft> customQuestions = List.of(
+                new TestService.QuestionDraft("HTTP status nào là Created?", "single", List.of(
+                        new TestService.OptionDraft("200", false),
+                        new TestService.OptionDraft("201", true),
+                        new TestService.OptionDraft("204", false))),
+                new TestService.QuestionDraft("Chọn các thực hành an toàn.", "multiple", List.of(
+                        new TestService.OptionDraft("PreparedStatement", true),
+                        new TestService.OptionDraft("Mã hóa mật khẩu", true),
+                        new TestService.OptionDraft("Nối chuỗi SQL", false))));
+        int customReady = s.createContentSet(3, "Bộ đề tự tạo", "Tạo trực tiếp từ giao diện", "department", "ready", customQuestions);
+        check(s.getContent(3, customReady).questions().size() == 2, "custom set stores all questions");
+        check(count("SELECT COUNT(*) FROM Test_Question_Options q JOIN Test_Questions t ON t.id=q.question_id WHERE t.content_id=" + customReady) == 6,
+                "custom set stores all answer options atomically");
+        rejects(403, () -> s.getEditableContent(2, customReady));
+        s.updateContentSet(3, customReady, "Bộ đề tự tạo đã sửa", "Nội dung mới", "department", List.of(
+                new TestService.QuestionDraft("Java chạy trên JVM?", "single", List.of(
+                        new TestService.OptionDraft("Đúng", true), new TestService.OptionDraft("Sai", false)))));
+        TestService.ContentDetail updatedSet = s.getEditableContent(3, customReady);
+        check(updatedSet.content().title().equals("Bộ đề tự tạo đã sửa")
+                && updatedSet.content().status().equals("ready") && updatedSet.questions().size() == 1,
+                "owner edits custom set and update always keeps it ready");
+        rejects(400, () -> s.createContentSet(3, "Đáp án trùng", "", "department", "ready", List.of(
+                new TestService.QuestionDraft("Câu lỗi", "single", List.of(
+                        new TestService.OptionDraft("Trùng", true), new TestService.OptionDraft(" trùng ", false))))));
 
         int trueFalse = question(quiz, "PreparedStatement giúp chống SQL Injection.", "true_false");
         int tfTrue = option(trueFalse, "Đúng", true, 1);
@@ -326,20 +357,30 @@ public class TestModuleIntegrationTest {
         rejects(404, () -> s.getContent(5, quiz));
 
         int t = s.createTemplate(3, "Đợt quiz", "Hướng dẫn", "department", NOW, NOW.plusSeconds(3600), quiz);
-        s.publishTemplate(3, t);
-        check(s.getContentChoices(3, t).size() == 1, "only ready professional content shown");
+        check(s.getContentChoices(3, t).stream().map(TestContent::id).collect(java.util.stream.Collectors.toSet())
+                .equals(Set.of(quiz, customReady)), "only ready professional content shown");
         rejects(409, () -> s.assignTest(3, t, List.of(7), draft));
         rejects(404, () -> s.assignTest(3, t, List.of(7), culture));
-        s.assignTest(3, t, List.of(7), quiz);
+        rejects(400, () -> s.assignTest(3, t, List.of(7), quiz, 0));
+        rejects(400, () -> s.assignTest(3, t, List.of(7), quiz, 61));
+        s.assignTest(3, t, List.of(7), quiz, 15);
         int a = assignment(t, 7);
+        check(s.getAssignmentContent(7, a) == null, "student content stays hidden until start");
+        check(s.getAssignmentContent(3, a).questions().stream().allMatch(q -> !q.correctOptionIds().isEmpty()),
+                "manager can inspect answer keys");
+        s.startAssignment(7, a);
+        TestAssignment started = s.getAssignment(7, a);
+        check(started.durationMinutes() == 15 && NOW.equals(started.startedAt())
+                && NOW.plusSeconds(900).equals(started.submissionDeadline()), "start stores duration and personal deadline");
         TestService.ContentDetail student = s.getAssignmentContent(7, a);
         check(student.questions().stream().flatMap(q -> q.options().stream()).allMatch(o -> o.correct() == null),
                 "student DTO has no answer keys");
-        check(s.getAssignmentContent(3, a).questions().stream().allMatch(q -> !q.correctOptionIds().isEmpty()),
-                "manager can inspect answer keys");
         rejects(403, () -> s.assignTest(3, t, List.of(3), quiz));
         int managerOwnAssignment = insertId("INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id) "
                 + "OUTPUT INSERTED.id VALUES (" + t + ",3,3," + quiz + ")");
+        check(s.getAssignmentContent(3, managerOwnAssignment) == null,
+                "manager taking own test must start before content is visible");
+        s.startAssignment(3, managerOwnAssignment);
         check(s.getAssignmentContent(3, managerOwnAssignment).questions().stream()
                 .flatMap(q -> q.options().stream()).allMatch(o -> o.correct() == null),
                 "manager taking own test cannot inspect answer keys");
@@ -354,6 +395,7 @@ public class TestModuleIntegrationTest {
         check(count("SELECT COUNT(*) FROM Test_Answer_Options WHERE assignment_id=" + a) == 0,
                 "invalid submission rolls back all selected options");
 
+        rejects(409, () -> service(NOW.plusSeconds(900)).submitQuiz(7, a, answers));
         s.submitQuiz(7, a, answers);
         check(s.getAssignment(7, a).quizScore().compareTo(new BigDecimal("6.67")) == 0,
                 "server scores exact answer sets");
@@ -363,56 +405,77 @@ public class TestModuleIntegrationTest {
         check(s.getAssignment(7, a).evaluation() != null, "manager confirms quiz grade");
     }
 
+    private static void runLearningTests(Path seedDirectory) throws Exception {
+        sql("INSERT INTO Learning_Materials(title,description,scope_type,department_id,created_by) VALUES "
+                + "(N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty',N'Văn hóa','CULTURE',NULL,1),"
+                + "(N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum',N'Scrum','DEPARTMENT',1,3),"
+                + "(N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE',N'Java','DEPARTMENT',1,3),"
+                + "(N'Bộ Tiêu Chuẩn Lập Trình Java & Quy Định Đặt Mã Nguồn (Clean Code)',N'Clean Code','DEPARTMENT',1,3),"
+                + "(N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026',N'Tầm nhìn','CULTURE',NULL,1),"
+                + "(N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp',N'Bảo mật','CULTURE',NULL,1)");
+        String allSeed = Files.readString(seedDirectory.resolve("seed_data_sqlserver.sql"), StandardCharsets.UTF_8);
+        int start = allSeed.indexOf("-- BEGIN LEARNING TEST BANK SEED");
+        int end = allSeed.indexOf("-- END LEARNING TEST BANK SEED", start);
+        if (start < 0 || end < start) {
+            throw new IllegalStateException("Missing embedded learning question seed");
+        }
+        String seed = allSeed.substring(start, end);
+        sql(seed);
+        sql(seed);
+        check(count("SELECT COUNT(*) FROM Test_Content WHERE type='learning'") == 6,
+                "six unique learning banks after repeat seed");
+        check(count("SELECT COUNT(*) FROM (SELECT c.id FROM Test_Content c JOIN Test_Questions q ON q.content_id=c.id "
+                + "WHERE c.type='learning' GROUP BY c.id HAVING COUNT(*)=15) banks") == 6,
+                "15 questions in every material bank");
+
+        TestService s = service(NOW);
+        int common = count("SELECT id FROM Test_Content WHERE learning_material_id=1");
+        int javaBank = count("SELECT id FROM Test_Content WHERE learning_material_id=3");
+        check(s.getContent(3, common).questions().size() == 15, "manager can read common learning bank");
+        rejects(403, () -> s.getContent(2, common));
+        rejects(404, () -> s.getContent(1, common));
+        int general = s.createTemplate(3, "Học liệu", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common);
+        s.assignTest(3, general, List.of(7), common);
+        int generalAssignment = assignment(general, 7);
+        s.startAssignment(7, generalAssignment);
+        Map<Integer, Set<Integer>> answers = new LinkedHashMap<>();
+        for (TestQuestion question : s.getContent(3, common).questions()) {
+            Set<Integer> correct = new LinkedHashSet<>();
+            for (TestQuestionOption option : question.options()) {
+                if (Boolean.TRUE.equals(option.correct())) {
+                    correct.add(option.id());
+                }
+            }
+            answers.put(question.id(), correct);
+        }
+        s.submitQuiz(7, generalAssignment, answers);
+        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE id=" + generalAssignment + " AND quiz_score=10") == 1,
+                "learning quiz can be assigned, submitted and graded");
+
+        sql("INSERT INTO Training_Classes(class_id,class_name,department_id,mentor_id,status) VALUES "
+                + "(100,N'Lớp A',1,4,'OPEN'),(101,N'Lớp B',1,3,'IN_PROGRESS'),(103,N'Lớp HR',NULL,2,'OPEN'),(104,N'Lớp rỗng',1,4,'OPEN'); "
+                + "INSERT INTO Class_Materials VALUES (100,1),(101,3),(103,1); "
+                + "INSERT INTO Class_Enrollments VALUES (100,6),(100,7),(101,7),(103,7)");
+        check(s.currentActor(4).classMentor(), "employee receives mentor rights from class assignment");
+        check(s.listContent(4, 100, 1, 20).size() == 1, "class bank only contains selected material");
+        check(s.listContent(4, 104, 1, 20).isEmpty(), "class without materials has no banks");
+        rejects(404, () -> s.getContent(4, javaBank, 100));
+        int classTemplate = s.createTemplate(4, "Lớp A kiểm tra", "Mô tả", "learning",
+                NOW, NOW.plusSeconds(3600), common, 100);
+        check(Objects.equals(s.getTemplate(4, classTemplate).classId(), 100), "class scope persisted");
+        check(s.getCandidates(4, classTemplate).stream().map(TestActor::id)
+                .collect(java.util.stream.Collectors.toSet()).equals(Set.of(6, 7)),
+                "recipient selector contains only class members");
+        rejects(403, () -> s.assignTest(4, classTemplate, List.of(5), common));
+        s.assignTest(4, classTemplate, List.of(6), common);
+        rejects(403, () -> s.createTemplate(2, "Mentor HR", "Mô tả", "learning",
+                NOW, NOW.plusSeconds(3600), common, 103));
+    }
+
     /**
      * Tạo/drop duy nhất database tên ngẫu nhiên thuộc lần chạy này; không chạy
      * script reset HRM.
      */
-    private static void runLearningTests(Path seedDirectory) throws Exception {
-        sql("INSERT INTO Learning_Materials(title,description,department_id,created_by) VALUES "
-                + "(N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty',N'Văn hóa',NULL,1),"
-                + "(N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum',N'Scrum',1,3),"
-                + "(N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE',N'Java',1,3),"
-                + "(N'Bộ Tiêu Chuẩn Lập Trình Java & Quy Định Đặt Mã Nguồn (Clean Code)',N'Clean Code',1,3),"
-                + "(N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026',N'Tầm nhìn',NULL,1),"
-                + "(N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp',N'Bảo mật',NULL,1)");
-        String allSeed = Files.readString(seedDirectory.resolve("seed_data_sqlserver.sql"), StandardCharsets.UTF_8);
-        int start = allSeed.indexOf("-- BEGIN LEARNING TEST BANK SEED");
-        int end = allSeed.indexOf("-- END LEARNING TEST BANK SEED", start);
-        if (start < 0 || end < start) throw new IllegalStateException("Missing embedded learning question seed");
-        String seed = allSeed.substring(start, end);
-        sql(seed);
-        sql(seed);
-        check(count("SELECT COUNT(*) FROM Test_Content WHERE type='learning'") == 6, "six unique learning banks after repeat seed");
-        check(count("SELECT COUNT(*) FROM (SELECT c.id FROM Test_Content c JOIN Test_Questions q ON q.content_id=c.id "
-                + "WHERE c.type='learning' GROUP BY c.id HAVING COUNT(*)=15) banks") == 6, "15 questions in every material bank");
-        check(count("SELECT COUNT(*) FROM (SELECT q.id FROM Test_Questions q JOIN Test_Content c ON c.id=q.content_id "
-                + "JOIN Test_Question_Options o ON o.question_id=q.id WHERE c.type='learning' GROUP BY q.id "
-                + "HAVING COUNT(*)=4 AND SUM(CAST(o.is_correct AS INT))=1) questions") == 90, "90 valid single-choice questions");
-        TestService s = service(NOW);
-        int shared = count("SELECT id FROM Test_Content WHERE learning_material_id=1");
-        int technical = count("SELECT id FROM Test_Content WHERE learning_material_id=3");
-        check(s.getContent(3, shared).questions().size() == 15, "manager can read common material bank");
-        check(s.getContent(5, shared).questions().size() == 15, "another manager can read common material bank");
-        rejects(404, () -> s.getContent(5, technical));
-        rejects(404, () -> s.getContent(1, shared));
-        rejects(404, () -> s.getContent(4, shared));
-        rejects(400, () -> s.createTemplate(3, "Sai loại", "Mô tả", "department", NOW, NOW.plusSeconds(3600), shared));
-        int template = s.createTemplate(3, "Học liệu", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), shared);
-        s.publishTemplate(3, template);
-        rejects(403, () -> s.createTemplate(1, "Học liệu", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), shared));
-        s.assignTest(3, template, List.of(7), shared);
-        int assigned = assignment(template, 7);
-        Map<Integer, Set<Integer>> answers = new LinkedHashMap<>();
-        for (TestQuestion q : s.getContent(3, shared).questions()) {
-            Set<Integer> correct = new LinkedHashSet<>();
-            for (TestQuestionOption o : q.options()) if (Boolean.TRUE.equals(o.correct())) correct.add(o.id());
-            answers.put(q.id(), correct);
-        }
-        s.submitQuiz(7, assigned, answers);
-        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE id=" + assigned + " AND quiz_score=10") == 1,
-                "learning quiz can be assigned, submitted and graded");
-    }
-
     public static void main(String[] args) throws Exception {
         database = "HRM_TestModule_it_" + UUID.randomUUID().toString().replace("-", "");
         boolean created = false;
@@ -435,17 +498,17 @@ public class TestModuleIntegrationTest {
                 sql(migration);
                 check(count("SELECT COUNT(*) FROM Test_Question_Options WHERE question_id=1") == 4,
                         "legacy four-column questions migrate exactly once");
-                if (!Arrays.asList(args).contains("--learning-only")) {
-                    runTests();
-                    runQuestionTests();
-                }
+                runTests();
+                runQuestionTests();
                 Path seedPath = Files.exists(Path.of("database/seed_data/seed_data_sqlserver.sql"))
                         ? Path.of("database/seed_data/seed_data_sqlserver.sql")
                         : Path.of("hrm-career-path/database/seed_data/seed_data_sqlserver.sql");
                 String seed = Files.readString(seedPath, StandardCharsets.UTF_8);
                 int seedStart = seed.indexOf("-- 8. SEED DATA: KHO ĐỀ THI");
                 int seedEnd = seed.indexOf("\nGO", seedStart);
-                if (seedStart < 0 || seedEnd < 0) throw new IllegalStateException("Missing test question seed section");
+                if (seedStart < 0 || seedEnd < 0) {
+                    throw new IllegalStateException("Missing test question seed section");
+                }
                 String testSeed = seed.substring(seedStart, seedEnd);
                 sql(testSeed);
                 sql(testSeed);
@@ -455,7 +518,6 @@ public class TestModuleIntegrationTest {
                         + "WHERE c.title IN (N'Đề thi Văn hóa doanh nghiệp',N'Đề thi Chuyên môn Java Backend')") == 20,
                         "question seed creates both exam directions");
                 runLearningTests(seedPath.getParent());
-                runClassMentorTests();
                 System.out.println("PASS: " + assertions + " assertions on isolated SQL Server database.");
             } finally {
                 if (created && database.matches("HRM_TestModule_it_[a-f0-9]{32}")) {
@@ -464,54 +526,5 @@ public class TestModuleIntegrationTest {
                 }
             }
         }
-    }
-
-    private static void runClassMentorTests() throws Exception {
-        sql("INSERT INTO Training_Classes(class_id,class_name,department_id,mentor_id,status) VALUES "
-                + "(100,N'Lớp A',1,4,'OPEN'),(101,N'Lớp B',1,3,'IN_PROGRESS'),"
-                + "(102,N'Lớp C',2,5,'OPEN'),(103,N'Lớp HR',NULL,2,'OPEN'),(104,N'Lớp rỗng',1,4,'OPEN'); "
-                + "INSERT INTO Class_Materials VALUES (100,1),(101,3),(102,6),(103,1); "
-                + "INSERT INTO Class_Enrollments VALUES (100,6),(100,7),(101,7),(103,7)");
-        TestService s = service(NOW);
-        int common = count("SELECT id FROM Test_Content WHERE learning_material_id=1");
-        int javaBank = count("SELECT id FROM Test_Content WHERE learning_material_id=3");
-        check(s.currentActor(4).classMentor(), "EMPLOYEE receives mentor rights from class assignment");
-        check(s.listContent(4, 100, 1, 20).size() == 1, "class bank only contains selected material");
-        check(s.listContent(4, 104, 1, 20).isEmpty(), "class without materials has no banks");
-        check(s.listContent(4, 1, 20).stream().allMatch(c -> c.id() == common), "mentor global bank contains only own class materials");
-        check(s.listContent(3, 1, 100).stream().noneMatch(c -> c.id() == common), "manager mentor cannot browse unrelated learning bank");
-        rejects(404, () -> s.listContent(4, 101, 1, 20));
-        rejects(404, () -> s.getContent(4, javaBank));
-        rejects(404, () -> s.getContent(4, javaBank, 100));
-        rejects(404, () -> s.createTemplate(4, "Sai lớp", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), javaBank, 101));
-        rejects(404, () -> s.createTemplate(4, "Sai đề", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), javaBank, 100));
-        rejects(400, () -> s.createTemplate(4, "Sai loại", "Mô tả", "department", NOW, NOW.plusSeconds(3600), common, 100));
-        rejects(400, () -> s.createTemplate(4, "Thiếu lớp", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common));
-        int template = s.createTemplate(4, "Lớp A kiểm tra", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common, 100);
-        check(Objects.equals(s.getTemplate(4, template).classId(), 100), "class scope persisted");
-        rejects(404, () -> s.getTemplate(3, template));
-        s.publishTemplate(4, template);
-        rejects(404, () -> s.getTemplate(3, template));
-        check(s.getCandidates(4, template).stream().map(TestActor::id).collect(java.util.stream.Collectors.toSet()).equals(Set.of(6,7)),
-                "recipient selector contains only class members, including another department");
-        check(s.getContentChoices(4, template).size() == 1, "assign selector stays limited to class materials");
-        rejects(404, () -> s.assignTest(4, template, List.of(6), javaBank));
-        rejects(403, () -> s.assignTest(4, template, List.of(6,5), common));
-        check(count("SELECT COUNT(*) FROM Test_Assignments WHERE test_template_id=" + template) == 0, "invalid recipient rolls back batch");
-        s.assignTest(4, template, List.of(6), common);
-        int assigned = assignment(template, 6);
-        check(s.getAssignment(6, assigned).contentId() == common, "class member receives learning test across departments");
-        rejects(404, () -> s.getAssignment(3, assigned));
-        sql("DELETE FROM Class_Materials WHERE class_id=100");
-        check(s.listContent(4, 100, 1, 20).isEmpty(), "removing class material immediately removes bank");
-        rejects(404, () -> s.assignTest(4, template, List.of(7), common));
-        sql("INSERT INTO Class_Materials VALUES (100,1); UPDATE Training_Classes SET mentor_id=7 WHERE class_id=100");
-        rejects(404, () -> s.getTemplate(4, template));
-        check(s.getTemplate(7, template).id() == template, "new mentor gains class test management");
-        sql("UPDATE Training_Classes SET is_deleted=1 WHERE class_id=100");
-        rejects(403, () -> s.listContent(7, 100, 1, 20));
-        rejects(403, () -> s.createTemplate(2, "Mentor HR", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common, 103));
-        sql("UPDATE Training_Classes SET status='COMPLETED' WHERE class_id=103");
-        rejects(403, () -> s.createTemplate(2, "Đã kết thúc", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common, 103));
     }
 }

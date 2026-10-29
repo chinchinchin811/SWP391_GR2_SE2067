@@ -1,7 +1,4 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
+
 package model.Flashcard;
 
 import java.sql.Timestamp;
@@ -10,13 +7,15 @@ import java.sql.Timestamp;
  *
  * @author HP
  */
-
 public class FlashcardDeck {
 
     private int deckId;
     private String title;
     private String description;
     private Timestamp createdAt;
+    private String type;
+    private Integer positionId;
+    private String positionName;
 
     public FlashcardDeck() {
     }
@@ -51,5 +50,29 @@ public class FlashcardDeck {
 
     public void setCreatedAt(Timestamp createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public Integer getPositionId() {
+        return positionId;
+    }
+
+    public void setPositionId(Integer positionId) {
+        this.positionId = positionId;
+    }
+
+    public String getPositionName() {
+        return positionName;
+    }
+
+    public void setPositionName(String positionName) {
+        this.positionName = positionName;
     }
 }

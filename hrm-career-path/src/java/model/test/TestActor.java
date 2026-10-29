@@ -15,8 +15,13 @@ public record TestActor(int id, String name, String role, Integer departmentId, 
         this(id, name, role, departmentId, managedDepartmentId, java.util.Set.of());
     }
 
-    public boolean classMentor() { return !mentoredClassIds.isEmpty(); }
-    public boolean testManager() { return cultureManager() || departmentManager() || classMentor(); }
+    public boolean classMentor() {
+        return !mentoredClassIds.isEmpty();
+    }
+
+    public boolean testManager() {
+        return cultureManager() || departmentManager() || classMentor();
+    }
 
     /** ADMIN quản lý bài văn hóa; HR bị loại khỏi toàn bộ module bài test. */
     public boolean cultureManager() {
@@ -31,7 +36,7 @@ public record TestActor(int id, String name, String role, Integer departmentId, 
         return "MANAGER".equals(role) && managedDepartmentId != null;
     }
 
-    /** MANAGER chỉ quản lý bài chuyên môn của phòng được giao. */
+    /** MANAGER chỉ quản lý chuyên môn của phòng được giao. */
     public boolean professionalManager() {
         return departmentManager();
     }

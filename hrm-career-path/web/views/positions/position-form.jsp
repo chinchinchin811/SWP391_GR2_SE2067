@@ -5,7 +5,7 @@
 <%
     Position pos = (Position) request.getAttribute("position");
     boolean isEdit = (pos != null && pos.getPositionId() > 0);
-    request.setAttribute("pageTitle", (isEdit ? "Chỉnh sửa Vị trí" : "Tạo Vị trí Mới") + " | HRM");
+    request.setAttribute("pageTitle", (isEdit ? "Chỉnh sửa Vị trí" : "Tạo Vị trí Mới") + " | CPMS");
     List<Department> departments = (List<Department>) request.getAttribute("departments");
 %>
 <jsp:include page="/views/common/header.jsp" />
@@ -23,7 +23,7 @@
 
     <div class="content-body">
         <% if (request.getAttribute("error") != null) { %>
-            <div class="alert alert-danger"><%= request.getAttribute("error") %></div>
+        <div class="alert alert-danger"><%= request.getAttribute("error") %></div>
         <% } %>
 
         <div class="card" style="max-width: 600px; margin: 0 auto;">
@@ -34,7 +34,7 @@
                 <form action="<%= request.getContextPath() %>/positions" method="POST">
                     <input type="hidden" name="action" value="<%= isEdit ? "edit" : "create" %>">
                     <% if (isEdit) { %>
-                        <input type="hidden" name="positionId" value="<%= pos.getPositionId() %>">
+                    <input type="hidden" name="positionId" value="<%= pos.getPositionId() %>">
                     <% } %>
 
                     <div class="form-group">
@@ -52,7 +52,7 @@
                                     for (Department d : departments) {
                                         boolean isSel = (pos != null && pos.getDepartmentId() != null && pos.getDepartmentId().equals(d.getDepartmentId()));
                             %>
-                                <option value="<%= d.getDepartmentId() %>" <%= isSel ? "selected" : "" %>><%= d.getDepartmentName() %></option>
+                            <option value="<%= d.getDepartmentId() %>" <%= isSel ? "selected" : "" %>><%= d.getDepartmentName() %></option>
                             <%
                                     }
                                 }

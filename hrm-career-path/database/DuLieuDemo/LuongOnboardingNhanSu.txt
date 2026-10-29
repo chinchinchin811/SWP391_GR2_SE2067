@@ -1,0 +1,38 @@
+6) Mẫu Create Class
+Mẫu 1: Lớp Onboarding Kỹ Thuật Java Fresher
+Mã lớp (*): CLS-JAVA-2026-Q4
+Tên lớp (*): Khóa Huấn Luyện Chuyên Sâu Java Spring Boot & Clean Architecture
+Mô tả: Khóa đào tạo bắt buộc dành cho nhân sự Fresher mới tiếp nhận, trang bị kiến thức chuẩn về kiến trúc microservices, quy trình Gitflow và quy chuẩn Clean Code tại doanh nghiệp.
+Vị trí mục tiêu: Java Developer
+Cấp bậc mục tiêu: Fresher
+Mentor: Chọn Lê Hữu Mentor (hoặc một Mentor có sẵn)
+Ngày bắt đầu (*): 2026-11-01
+Ngày kết thúc (*): 2026-12-01
+Học liệu trong lớp: Tích chọn Video Bài Giảng: Kiến Trúc Java Backend, Slide Đào Tạo Quy Trình Agile/Scrum, Bộ Tiêu Chuẩn Lập Trình Java Clean Code
+
+Mẫu 2: Lớp Đào Tạo Hội Nhập Văn Hóa Doanh Nghiệp
+Mã lớp (*): CLS-CULTURE-2026
+Tên lớp (*): Khóa Hội Nhập Văn Hóa & Quy Chế An Toàn Doanh Nghiệp
+Mô tả: Khóa học hội nhập dành cho toàn bộ nhân sự mới gia nhập quý 4, nắm bắt giá trị cốt lõi, quy tắc ứng xử và chính sách bảo mật dữ liệu.
+Vị trí mục tiêu: — Tất cả vị trí —
+Cấp bậc mục tiêu: — Tất cả cấp bậc —
+Mentor: Chọn Phạm Thu Hà (HR Manager)
+Ngày bắt đầu (*): 2026-10-25
+Ngày kết thúc (*): 2026-11-10
+Học liệu trong lớp: Tích chọn Văn hóa doanh nghiệp & Quy chế làm việc, Chính sách bảo mật thông tin nội bộ
+
+7) Mẫu Feedback của Mentor 
+Mẫu 1: Đánh giá Tốt (Đạt yêu cầu - Đề xuất ký chính thức)
+Điểm Đánh Giá Hiệu Suất (Thang điểm 1 - 10) (*): 9
+Phần 1: Nhận xét công khai (Non-anonymous - Mentee đọc được) (*):
+Em hoàn thành tốt các bài tập và task CRUD được giao trong tháng đầu. Khả năng tự học và đọc hiểu tài liệu Spring Boot nhanh, chủ động trao đổi với Mentor khi gặp vướng mắc về logic xử lý cơ sở dữ liệu. Cần lưu ý tối ưu thêm câu lệnh truy vấn SQL để hạn chế lỗi N+1.
+Phần 2: Đánh giá nội bộ (Private - Chỉ gửi HR & Manager xem):
+Nhân sự có thái độ làm việc nghiêm túc, tuân thủ đúng giờ giấc và văn hóa team. Kỹ năng lập trình thực tế tốt hơn so với bằng cấp thể hiện. Đề xuất HR chuẩn bị thủ tục ký hợp đồng lao động chính thức sớm sau khi kết thúc 2 tháng thử việc.
+
+Mẫu 2: Đánh giá Cần Cải Thiện (Trung bình - Cần kèm cặp thêm)
+Điểm Đánh Giá Hiệu Suất (Thang điểm 1 - 10) (*): 6
+Phần 1: Nhận xét công khai (Non-anonymous - Mentee đọc được) (*):
+Nắm được quy trình chung của dự án nhưng tốc độ xử lý các lỗi bug giao diện còn chậm. Cần chủ động đọc kỹ tài liệu API Spec trước khi ghép nối giao diện để tránh phải sửa đổi nhiều lần.
+
+Phần 2: Đánh giá nội bộ (Private - Chỉ gửi HR & Manager xem):
+Kỹ năng chuyên môn cơ bản đạt 6/10, tuy nhiên tính chủ động trong giao tiếp còn hạn chế, hay giấu việc khi gặp khó khăn. Đề xuất: Tiếp tục gia hạn giai đoạn kèm cặp thêm 2 tuần và giao cho làm các task nhỏ độc lập để kiểm tra tính tự giác trước khi quyết định ký hợp đồng.

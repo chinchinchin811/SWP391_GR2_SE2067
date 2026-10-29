@@ -7,6 +7,16 @@
     List<Flashcard> cards = (List<Flashcard>) request.getAttribute("cards");
     FlashcardDeck currentDeck = (FlashcardDeck) request.getAttribute("currentDeck");
     int cardCount = (cards != null) ? cards.size() : 0;
+    boolean canManageCulture = Boolean.TRUE.equals(request.getAttribute("canManageCulture"));
+    boolean canManageProfessional = Boolean.TRUE.equals(request.getAttribute("canManageProfessional"));
+    String notice = request.getParameter("notice");
+%>
+<%!
+    private String html(String value) {
+        if (value == null) return "";
+        return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                .replace("\"", "&quot;").replace("'", "&#39;");
+    }
 %>
 <jsp:include page="/views/common/header.jsp" />
 <jsp:include page="/views/common/sidebar.jsp" />
@@ -82,6 +92,104 @@
         font-size: 14px;
         opacity: 0.85;
     }
+
+    .deck-group {
+        margin-bottom: 18px;
+    }
+
+    .deck-group-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 0 0 10px;
+        color: var(--text-secondary);
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    summary.deck-group-title {
+        cursor: pointer;
+        list-style: none;
+        flex: 1;
+    }
+
+    summary.deck-group-title::-webkit-details-marker { display: none; }
+
+    summary.deck-group-title::after {
+        content: "⌄";
+        float: right;
+        font-size: 16px;
+        line-height: 12px;
+        transition: transform .2s ease;
+    }
+
+    .professional-group[open] > .deck-group-title::after { transform: rotate(180deg); }
+
+    .deck-group-items {
+        display: grid;
+        gap: 8px;
+    }
+
+    .deck-row {
+        display: flex;
+        align-items: stretch;
+        gap: 5px;
+    }
+
+    .deck-row .deck-item {
+        flex: 1;
+        min-width: 0;
+        margin-bottom: 0;
+    }
+
+    .deck-row .deck-item > span:first-child { min-width: 0; }
+
+    .deck-position {
+        display: block;
+        margin-top: 3px;
+        font-size: 10px;
+        font-weight: 500;
+        opacity: .82;
+    }
+
+    .deck-row-actions {
+        display: flex;
+        gap: 4px;
+    }
+
+    .deck-action, .deck-add-action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        color: var(--text-secondary);
+        background: #fff;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .deck-action { width: 36px; }
+    .deck-action:hover, .deck-add-action:hover { color: var(--primary); border-color: var(--primary); }
+    .deck-action.delete:hover { color: #dc2626; border-color: #fca5a5; }
+    .deck-add-action { padding: 7px 9px; color: var(--primary); font-size: 11px; font-weight: 700; }
+    .deck-delete-form { margin: 0; display: flex; }
+
+    .flashcard-notice {
+        padding: 11px 14px;
+        margin: 0 0 16px;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        background: #f0fdf4;
+        color: #166534;
+        font-size: 13px;
+    }
+
+    .flashcard-notice.error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
 
     /* Main Flashcard Stage Area */
     .card-area {
@@ -464,7 +572,7 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1><i class="fa-solid fa-clone" style="color: var(--primary);"></i> <span>Học Tập: Flashcards</span></h1>
+        <h1><i class="fa-solid" style="color: var(--primary);"></i> <span>Flashcards</span></h1>
     </div>
 
     <div class="content-body flashcard-container">
@@ -474,27 +582,93 @@
                 <i class="fa-solid fa-layer-group"></i>
                 <span>Bộ Thẻ Kiến Thức</span>
             </div>
-            <% if (decks != null) {
-                for (FlashcardDeck d : decks) { 
-                    boolean isAct = (currentDeck != null && currentDeck.getDeckId() == d.getDeckId());
-            %>
-            <a href="?deckId=<%= d.getDeckId() %>" class="deck-item <%= isAct ? "active" : "" %>">
-                <span><%= d.getTitle() %></span>
-                <i class="fa-solid fa-chevron-right deck-item-icon"></i>
-            </a>
-            <% } } %>
+            <% if ("deleted".equals(notice)) { %><div class="flashcard-notice">Đã xóa bộ thẻ cùng các thẻ bên trong.</div><% } %>
+
+            <section class="deck-group">
+                <div class="deck-group-title">
+                    <span>Văn hóa công ty</span>
+                    <% if (canManageCulture) { %>
+                    <a class="deck-add-action" href="<%= request.getContextPath() %>/flashcards?action=createDeck&type=culture" title="Thêm bộ thẻ văn hóa">
+                        <i class="fa-solid fa-plus"></i><span>Thêm</span>
+                    </a>
+                    <% } %>
+                </div>
+                <div class="deck-group-items">
+                    <% if (decks != null) {
+                        for (FlashcardDeck d : decks) {
+                            if (!"culture".equals(d.getType())) continue;
+                            boolean isAct = currentDeck != null && currentDeck.getDeckId() == d.getDeckId();
+                    %>
+                    <div class="deck-row">
+                        <a href="<%= request.getContextPath() %>/flashcards?deckId=<%= d.getDeckId() %>" class="deck-item <%= isAct ? "active" : "" %>">
+                            <span><%= html(d.getTitle()) %></span>
+                            <i class="fa-solid fa-chevron-right deck-item-icon"></i>
+                        </a>
+                        <% if (canManageCulture) { %>
+                        <div class="deck-row-actions">
+                            <a class="deck-action" href="<%= request.getContextPath() %>/flashcards?action=editDeck&deckId=<%= d.getDeckId() %>" title="Sửa bộ thẻ"><i class="fa-solid fa-pen"></i></a>
+                            <form class="deck-delete-form" method="post" action="<%= request.getContextPath() %>/flashcards" onsubmit="return confirm('Xóa bộ thẻ này và toàn bộ thẻ bên trong?');">
+                                <input type="hidden" name="action" value="deleteDeck"><input type="hidden" name="deckId" value="<%= d.getDeckId() %>">
+                                <button class="deck-action delete" type="submit" title="Xóa bộ thẻ"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        </div>
+                        <% } %>
+                    </div>
+                    <% } } %>
+                </div>
+            </section>
+
+            <details class="deck-group professional-group" <%= currentDeck != null && "professional".equals(currentDeck.getType()) ? "open" : "" %>>
+                <summary class="deck-group-title">
+                    <span>Chuyên môn</span>
+                    <% if (canManageProfessional) { %>
+                    <a class="deck-add-action" style="margin-left: auto;" onclick="event.stopPropagation();" href="<%= request.getContextPath() %>/flashcards?action=createDeck&type=professional" title="Thêm bộ thẻ chuyên môn">
+                        <i class="fa-solid fa-plus"></i><span>Thêm</span>
+                    </a>
+                    <% } %>
+                </summary>
+                <div class="deck-group-items">
+                    <% if (decks != null) {
+                        for (FlashcardDeck d : decks) {
+                            if (!"professional".equals(d.getType())) continue;
+                            boolean isAct = currentDeck != null && currentDeck.getDeckId() == d.getDeckId();
+                    %>
+                    <div class="deck-row">
+                        <a href="<%= request.getContextPath() %>/flashcards?deckId=<%= d.getDeckId() %>" class="deck-item <%= isAct ? "active" : "" %>">
+                            <span><%= html(d.getTitle()) %><small class="deck-position"><%= d.getPositionName() != null ? html(d.getPositionName()) : "Chuyên môn chung" %></small></span>
+                            <i class="fa-solid fa-chevron-right deck-item-icon"></i>
+                        </a>
+                        <% if (canManageProfessional) { %>
+                        <div class="deck-row-actions">
+                            <a class="deck-action" href="<%= request.getContextPath() %>/flashcards?action=editDeck&deckId=<%= d.getDeckId() %>" title="Sửa bộ thẻ"><i class="fa-solid fa-pen"></i></a>
+                            <form class="deck-delete-form" method="post" action="<%= request.getContextPath() %>/flashcards" onsubmit="return confirm('Xóa bộ thẻ này và toàn bộ thẻ bên trong?');">
+                                <input type="hidden" name="action" value="deleteDeck"><input type="hidden" name="deckId" value="<%= d.getDeckId() %>">
+                                <button class="deck-action delete" type="submit" title="Xóa bộ thẻ"><i class="fa-solid fa-trash"></i></button>
+                            </form>
+                        </div>
+                        <% } %>
+                    </div>
+                    <% } } %>
+                </div>
+            </details>
         </aside>
 
         <!-- Khung lật Flashcard trung tâm -->
         <section class="card-area">
             <% if (currentDeck != null) { %>
             <div class="deck-heading">
-                <h2><%= currentDeck.getTitle() %></h2>
-                <p><%= currentDeck.getDescription() != null ? currentDeck.getDescription() : "Bộ câu hỏi trắc nghiệm & ôn tập kiến thức" %></p>
+                <h2><%= html(currentDeck.getTitle()) %></h2>
+                <p><%= currentDeck.getDescription() != null ? html(currentDeck.getDescription()) : "Bộ câu hỏi trắc nghiệm & ôn tập kiến thức" %></p>
+                <% if (("culture".equals(currentDeck.getType()) && canManageCulture)
+                        || ("professional".equals(currentDeck.getType()) && canManageProfessional)) { %>
+                <a class="deck-add-action" style="margin: 0 auto 14px; width: fit-content;" href="<%= request.getContextPath() %>/flashcards?action=manageCards&deckId=<%= currentDeck.getDeckId() %>">
+                    <i class="fa-solid fa-list-check"></i><span>Quản lý câu hỏi và đáp án</span>
+                </a>
+                <% } %>
             </div>
 
             <% if (cards != null && !cards.isEmpty()) { %>
-            
+
             <!-- Thanh Tiến Trình (Progress bar) -->
             <div class="progress-wrapper">
                 <div class="progress-track">
@@ -518,7 +692,7 @@
                                 <i class="fa-regular fa-circle-question"></i> Câu Hỏi
                             </div>
                             <div class="face-content">
-                                <div class="face-text"><%= c.getQuestion() %></div>
+                                <div class="face-text"><%= html(c.getQuestion()) %></div>
                             </div>
                             <div class="face-hint">
                                 <i class="fa-solid fa-repeat"></i> Click thẻ hoặc bấm Space để lật đáp án
@@ -531,7 +705,7 @@
                                 <i class="fa-solid fa-circle-check"></i> Đáp Án
                             </div>
                             <div class="face-content">
-                                <div class="face-text"><%= c.getAnswer() %></div>
+                                <div class="face-text"><%= html(c.getAnswer()) %></div>
                             </div>
                             <div class="face-hint">
                                 <i class="fa-solid fa-repeat"></i> Click thẻ để lật lại câu hỏi
@@ -580,14 +754,17 @@
                     function updateControls() {
                         btnPrev.disabled = (currentIndex === 0);
                         btnNext.disabled = (currentIndex === totalCards - 1);
-                        
+
                         const pct = ((currentIndex + 1) / totalCards) * 100;
-                        if (progressFill) progressFill.style.width = pct + '%';
-                        if (progressCount) progressCount.innerText = (currentIndex + 1) + ' / ' + totalCards;
+                        if (progressFill)
+                            progressFill.style.width = pct + '%';
+                        if (progressCount)
+                            progressCount.innerText = (currentIndex + 1) + ' / ' + totalCards;
                     }
 
                     window.showCard = function (newIndex, direction) {
-                        if (isAnimating || newIndex === currentIndex || newIndex < 0 || newIndex >= totalCards) return;
+                        if (isAnimating || newIndex === currentIndex || newIndex < 0 || newIndex >= totalCards)
+                            return;
                         isAnimating = true;
 
                         const currentCard = cardElements[currentIndex];
@@ -643,8 +820,10 @@
 
                     // Điều khiển bằng bàn phím
                     document.addEventListener('keydown', function (e) {
-                        if (!document.getElementById('flashcardStage')) return;
-                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                        if (!document.getElementById('flashcardStage'))
+                            return;
+                        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')
+                            return;
 
                         if (e.key === 'ArrowRight') {
                             e.preventDefault();

@@ -5,7 +5,7 @@
     List<ClassEnrollment> enrollments = (List<ClassEnrollment>) request.getAttribute("enrollments");
     List<LearningMaterial> availableMaterials = (List<LearningMaterial>) request.getAttribute("availableMaterials");
     User currentUser = (User) session.getAttribute("currentUser");
-    boolean canManage = currentUser != null && currentUser.getRoleId() <= 3;
+    boolean canManage = currentUser != null && currentUser.getRoleId() == 3;
     boolean isClassMentor = currentUser != null && trainingClass != null
             && java.util.Objects.equals(trainingClass.getMentorId(), currentUser.getUserId());
     String successMessage = (String) session.getAttribute("successMessage");
@@ -20,15 +20,20 @@
 <main class="main-content">
     <div class="topbar">
         <h1>Chi Tiết Lớp Đào Tạo</h1>
-        <% if (isClassMentor) { %>
-        <a class="btn" href="<%= request.getContextPath() %>/tests?action=bank&amp;classId=<%= trainingClass.getClassId() %>">Đề Học liệu của lớp</a>
-        <% if ("OPEN".equals(trainingClass.getStatus()) || "IN_PROGRESS".equals(trainingClass.getStatus())) { %>
-        <a class="btn btn-primary" href="<%= request.getContextPath() %>/tests?action=new&amp;classId=<%= trainingClass.getClassId() %>">+ Tạo đợt giao bài cho lớp</a>
-        <% } } %>
         <div class="topbar-actions">
+            <% if (isClassMentor) { %>
+            <a class="btn" href="<%= request.getContextPath() %>/tests?action=bank&amp;classId=<%= trainingClass.getClassId() %>">Đề Học liệu của lớp</a>
+            <% if ("OPEN".equals(trainingClass.getStatus()) || "IN_PROGRESS".equals(trainingClass.getStatus())) { %>
+            <a class="btn btn-primary" href="<%= request.getContextPath() %>/tests?action=new&amp;classId=<%= trainingClass.getClassId() %>">+ Tạo đợt giao bài cho lớp</a>
+            <% } } %>
             <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials?action=classList">Quay lại danh sách</a>
             <% if (canManage && trainingClass != null) { %>
             <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=classAssign&id=<%= trainingClass.getClassId() %>">+ Thêm học viên</a>
+            <form method="post" action="<%= request.getContextPath() %>/materials" style="display:inline;margin:0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa lớp đào tạo này không?');">
+                <input type="hidden" name="action" value="deleteClass">
+                <input type="hidden" name="id" value="<%= trainingClass.getClassId() %>">
+                <button type="submit" class="btn btn-danger">Xóa lớp</button>
+            </form>
             <% } %>
         </div>
     </div>
@@ -126,7 +131,7 @@
                             <td style="text-align:left">
                                 <a href="<%= request.getContextPath() %>/materials?action=view&id=<%= m.getMaterialId() %>&classId=<%= trainingClass.getClassId() %>"
                                    style="font-weight:600;color:#000;text-decoration:none">
-                                   <%= m.getTitle() %>
+                                    <%= m.getTitle() %>
                                 </a>
                                 <% if (m.getDescription() != null && !m.getDescription().trim().isEmpty()) { %>
                                 <div style="font-size:12px;color:#666;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:480px">
@@ -138,7 +143,7 @@
                                 <span class="badge" style="font-size:11px"><%= m.getMaterialType() %></span>
                             </td>
                             <td style="text-align:center;font-size:12.5px;color:#444">
-                                <%= m.getDurationMinutes() > 0 ? (m.getDurationMinutes() + " phút") : "—" %>
+                                <%= ("VIDEO".equals(m.getMaterialType()) && m.getDurationMinutes() > 0) ? (m.getDurationMinutes() + " phút") : "—" %>
                             </td>
                             <td style="text-align:center">
                                 <a class="btn btn-sm btn-primary" href="<%= request.getContextPath() %>/materials?action=view&id=<%= m.getMaterialId() %>&classId=<%= trainingClass.getClassId() %>" style="margin-right:4px">
@@ -178,9 +183,9 @@
                         <tr>
                             <th style="width:30%;text-align:center">Học viên</th>
                             <th style="text-align:center">Thông tin ghi danh</th>
-                            <% if (canManage) { %>
+                                <% if (canManage) { %>
                             <th style="width:16%;text-align:center">Thao tác</th>
-                            <% } %>
+                                <% } %>
                         </tr>
                     </thead>
                     <tbody>

@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 
 public class EmployeeHistory implements Serializable {
+
     private int historyId;
     private int userId;
     private String userName;

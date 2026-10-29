@@ -1,5 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="java.util.*,model.*,service.TestService" %>
+<%@ page import="java.util.*,model.*,policy.TestPolicy,service.TestService" %>
 <%@ page import="static utils.TestView.*" %>
 <%!
     private String questionType(String type) {
@@ -13,6 +13,7 @@
     TestService.ContentDetail detail=(TestService.ContentDetail)request.getAttribute("bankDetail");
     List<TestContent> items=(List<TestContent>)request.getAttribute("bankItems");
     TestActor bankActor=(TestActor)request.getAttribute("testActor");
+    TestPolicy bankPolicy=(TestPolicy)request.getAttribute("testPolicy");
     Integer bankClassId=(Integer)request.getAttribute("testClassId");
     TestClass bankClass=(TestClass)request.getAttribute("testClass");
     List<TestClass> bankClasses=(List<TestClass>)request.getAttribute("mentorClasses");
@@ -47,7 +48,7 @@
             for (String scope : bankScopes) {
                 boolean isCulture = "culture".equals(scope);
                 String sectionTitle = "Đề thi " + typeLabel(scope);
-                String sectionIcon = isCulture ? "fa-solid fa-landmark" : "fa-solid fa-code";
+                String sectionIcon = isCulture ? "fa-solid fa-landmark" : ("learning".equals(scope) ? "fa-solid fa-book-open" : "fa-solid fa-code");
                 int scopeCount = 0;
                 for (TestContent item : items) {
                     if (scope.equals(item.type())) scopeCount++;
@@ -88,9 +89,9 @@
                             </td>
                             <td class="col-status">
                                 <% if ("ready".equals(item.status())) { %>
-                                    <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Sẵn sàng</span>
+                                <span class="badge badge-status-active"><i class="fa-solid fa-circle status-dot"></i> Sẵn sàng</span>
                                 <% } else { %>
-                                    <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Bản nháp</span>
+                                <span class="badge badge-status-inactive"><i class="fa-solid fa-circle status-dot"></i> Bản nháp</span>
                                 <% } %>
                             </td>
                         </tr>
@@ -122,19 +123,29 @@
 
 <% if(detail!=null) { TestContent item=detail.content(); %>
 <section class="card"><div class="card-header"><h2><%= h(item.title()) %></h2>
-        <span><%= "Đề " + typeLabel(item.type()) %> · Chỉ đọc</span>
+        <div class="test-card-header-actions">
+            <span>Đề <%= typeLabel(item.type()) %> · <%= "ready".equals(item.status()) ? "Sẵn sàng" : "Bản nháp" %></span>
+            <% if(bankPolicy.canEditContent(bankActor,item)) { %>
+            <a class="btn btn-secondary" href="<%= bankBase %>?action=editSet&amp;id=<%= item.id() %>">Chỉnh sửa bộ đề</a>
+            <% } %>
+        </div>
     </div><div class="card-body">
         <div class="test-prose"><%= h(item.prompt()) %></div>
         <% int number=0; for(TestQuestion q:detail.questions()) { %>
         <section class="test-question">
             <h3>Câu <%= ++number %>: <%= h(q.prompt()) %></h3>
             <p><small><%= questionType(q.type()) %></small></p>
-            <% int optionNumber=0; for(TestQuestionOption option:q.options()) { %>
-            <p><%= (char)('A'+optionNumber++) %>. <%= h(option.text()) %><%= Boolean.TRUE.equals(option.correct()) ? " ✓ Đáp án đúng" : "" %></p>
+            <% int optionNumber=0; for(TestQuestionOption option:q.options()) {
+               boolean isCorrect = Boolean.TRUE.equals(option.correct());
+            %>
+            <p class="test-option-line">
+                <% if(isCorrect) { %><span class="correct-answer-highlight"><% } %>
+                    <%= (char)('A'+optionNumber++) %>. <%= h(option.text()) %>
+                    <% if(isCorrect) { %> <i class="fa-solid fa-check"></i> Đáp án đúng</span><% } %>
+            </p>
             <% } %>
         </section>
         <% } %>
-        <p>Đề và đáp án được nạp từ database; muốn thay đổi cần cập nhật migration/seed để mọi môi trường dùng cùng dữ liệu.</p>
-        <a href="<%= bankBase %>?action=bank">← Về kho đề thi</a>
+        <a href="<%= bankBase %>?action=bank<%= classQuery %>">← Về kho đề thi</a>
     </div></section>
     <% } %>

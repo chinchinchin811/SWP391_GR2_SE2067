@@ -33,8 +33,7 @@ FROM (
 ('ADMIN', N'Quản trị viên hệ thống'),
 ('HR', N'Nhân sự quản lý phòng ban, vị trí và nhân viên'),
 ('MANAGER', N'Trưởng phòng quản lý nhân viên trong phòng ban của mình'),
-('EMPLOYEE', N'Nhân viên công ty'),
-('MENTOR', N'Người hướng dẫn và đánh giá nhân viên mới')
+('EMPLOYEE', N'Nhân viên công ty')
     ) AS s (role_name, description)
 ) AS src
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Roles existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.role_name=src.role_name OR (existing.role_name IS NULL AND src.role_name IS NULL)));
@@ -138,7 +137,7 @@ FROM (
         s.email AS email,
         s.phone AS phone,
         s.gender AS gender,
-        (SELECT TOP (1) role_id FROM dbo.Roles WHERE role_name=CASE s.role_id WHEN 1 THEN N'ADMIN' WHEN 2 THEN N'HR' WHEN 3 THEN N'MANAGER' WHEN 4 THEN N'EMPLOYEE' WHEN 5 THEN N'MENTOR' END ORDER BY role_id) AS role_id,
+        (SELECT TOP (1) role_id FROM dbo.Roles WHERE role_name=CASE s.role_id WHEN 1 THEN N'ADMIN' WHEN 2 THEN N'HR' WHEN 3 THEN N'MANAGER' WHEN 4 THEN N'EMPLOYEE' END ORDER BY role_id) AS role_id,
         (SELECT TOP (1) department_id FROM dbo.Departments WHERE department_name=CASE s.department_id WHEN 1 THEN N'Phòng Kỹ Thuật (IT)' WHEN 2 THEN N'Phòng Nhân Sự (HR)' WHEN 3 THEN N'Phòng Kinh Doanh (Sales)' WHEN 4 THEN N'Phòng Marketing & Truyền Thông' WHEN 5 THEN N'Phòng Kế Toán - Tài Chính' END ORDER BY department_id) AS department_id,
         (SELECT TOP (1) position_id FROM dbo.Positions WHERE position_name=CASE s.position_id WHEN 1 THEN N'Java Developer' WHEN 2 THEN N'Frontend Developer' WHEN 3 THEN N'QA / Software Tester' WHEN 4 THEN N'HR Officer' WHEN 5 THEN N'Sales Executive' END ORDER BY position_id) AS position_id,
         (SELECT TOP (1) level_id FROM dbo.Job_Levels WHERE level_name=CASE s.level_id WHEN 1 THEN N'Intern' WHEN 2 THEN N'Fresher' WHEN 3 THEN N'Junior' WHEN 4 THEN N'Middle' WHEN 5 THEN N'Senior' WHEN 6 THEN N'Lead' END ORDER BY level_id) AS level_id,
@@ -151,7 +150,7 @@ FROM (
 ('manager_it', '123', N'Trần Văn Minh', 'minh.tv@hrm.com', '0901000003', N'Nam', 3, 1, 1, 6, '2022-02-01', 1, 0),
 ('dev_fresher', '123', N'Phạm Đức Trọng', 'trong.pd@hrm.com', '0901000006', N'Nam', 4, 1, 1, 2, '2026-08-01', 1, 0),
 ('dev_tester', '123', N'Ngô Mai Phương', 'phuong.nm@hrm.com', '0901000007', N'Nữ', 4, 1, 3, 3, '2023-06-01', 1, 0),
-('mentor_java', '123', N'Lê Hữu Mentor', 'mentor.java@hrm.com', '0988888888', N'Nam', 5, 1, 1, 5, '2021-01-01', 1, 0),
+('mentor_java', '123', N'Lê Hữu Mentor', 'mentor.java@hrm.com', '0988888888', N'Nam', 4, 1, 1, 5, '2021-01-01', 1, 0),
 ('locked_user', '123', N'Nguyễn Khóa Khoản', 'locked.user@hrm.com', '0901999999', N'Nam', 4, 1, 1, 2, '2026-01-01', 0, 0)
     ) AS s (username, password, full_name, email, phone, gender, role_id, department_id, position_id, level_id, hire_date, status, is_deleted)
 ) AS src
@@ -255,8 +254,8 @@ WHERE NOT EXISTS (SELECT 1 FROM dbo.Flashcards existing WITH (UPDLOCK,HOLDLOCK) 
 GO
 
 -- Học liệu nguồn: khởi tạo trước kho đề để đề Học liệu liên kết đúng.
-INSERT INTO dbo.Learning_Materials (title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, file_size, video_url, duration_minutes, status, is_deleted, created_by, created_at, updated_at)
-SELECT src.title, src.description, src.material_type, src.scope_type, src.department_id, src.position_id, src.level_id, src.file_name, src.file_type, src.file_size, src.video_url, src.duration_minutes, src.status, src.is_deleted, src.created_by, src.created_at, src.updated_at
+INSERT INTO dbo.Learning_Materials (title, description, material_type, scope_type, department_id, position_id, level_id, material_url, file_name, file_type, file_size, video_url, duration_minutes, status, is_deleted, created_by, created_at, updated_at)
+SELECT src.title, src.description, src.material_type, src.scope_type, src.department_id, src.position_id, src.level_id, src.material_url, src.file_name, src.file_type, src.file_size, src.video_url, src.duration_minutes, src.status, src.is_deleted, src.created_by, src.created_at, src.updated_at
 FROM (
     SELECT s.title AS title,
         s.description AS description,
@@ -265,6 +264,7 @@ FROM (
         (SELECT TOP (1) department_id FROM dbo.Departments WHERE department_name=CASE s.department_id WHEN 1 THEN N'Phòng Kỹ Thuật (IT)' WHEN 2 THEN N'Phòng Nhân Sự (HR)' WHEN 3 THEN N'Phòng Kinh Doanh (Sales)' WHEN 4 THEN N'Phòng Marketing & Truyền Thông' WHEN 5 THEN N'Phòng Kế Toán - Tài Chính' END ORDER BY department_id) AS department_id,
         (SELECT TOP (1) position_id FROM dbo.Positions WHERE position_name=CASE s.position_id WHEN 1 THEN N'Java Developer' WHEN 2 THEN N'Frontend Developer' WHEN 3 THEN N'QA / Software Tester' WHEN 4 THEN N'HR Officer' WHEN 5 THEN N'Sales Executive' END ORDER BY position_id) AS position_id,
         (SELECT TOP (1) level_id FROM dbo.Job_Levels WHERE level_name=CASE s.level_id WHEN 1 THEN N'Intern' WHEN 2 THEN N'Fresher' WHEN 3 THEN N'Junior' WHEN 4 THEN N'Middle' WHEN 5 THEN N'Senior' WHEN 6 THEN N'Lead' END ORDER BY level_id) AS level_id,
+        COALESCE(s.video_url, N'/assets/docs/' + s.file_name) AS material_url,
         s.file_name AS file_name,
         s.file_type AS file_type,
         s.file_size AS file_size,
@@ -324,7 +324,7 @@ GO
 SET XACT_ABORT ON;
 BEGIN TRANSACTION;
 
-DECLARE @culture_creator_id INT = (SELECT TOP (1) user_id FROM dbo.Users WHERE username = 'hr_manager');
+DECLARE @culture_creator_id INT = (SELECT TOP (1) user_id FROM dbo.Users WHERE username = 'admin');
 DECLARE @technical_creator_id INT = (SELECT TOP (1) user_id FROM dbo.Users WHERE username = 'manager_it');
 DECLARE @technical_department_id INT = (
     SELECT TOP (1) department_id FROM dbo.Users

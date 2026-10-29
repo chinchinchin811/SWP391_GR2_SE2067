@@ -60,7 +60,7 @@ public class SeedDataIntegrationTest {
                 }
                 seed(conn, seed);
                 Map<String,Integer> first = snapshot(conn);
-                check(first.get("Roles") == 5 && first.get("Users") == 7 && first.get("Positions") == 19, "base seed counts");
+                check(first.get("Roles") == 4 && first.get("Users") == 7 && first.get("Positions") == 19, "base seed counts");
                 check(first.get("Learning_Materials") == 6 && first.get("Test_Content") == 8 && first.get("Test_Questions") == 110,
                         "six material banks plus culture/professional banks");
                 check(first.get("FlashcardDecks") == 2 && first.get("Flashcards") == 25 && first.get("Video_Checkpoints") == 5, "flashcard and checkpoint counts");
@@ -87,8 +87,8 @@ public class SeedDataIntegrationTest {
                 check(snapshot(conn).equals(first), "partial seed repairs missing row without duplicating others");
                 // Một lần chạy lỗi cũ có thể đã chèn trùng học liệu: không xóa dữ liệu,
                 // và vẫn chọn cùng học liệu đầu tiên để tránh nhân đôi kho đề.
-                execute(conn, "INSERT INTO Learning_Materials(title,description,material_type,scope_type,created_by) "
-                        + "SELECT title,description,material_type,scope_type,created_by FROM Learning_Materials WHERE material_id=(SELECT MIN(material_id) FROM Learning_Materials)");
+                execute(conn, "INSERT INTO Learning_Materials(title,description,material_type,scope_type,material_url,created_by) "
+                        + "SELECT title,description,material_type,scope_type,material_url,created_by FROM Learning_Materials WHERE material_id=(SELECT MIN(material_id) FROM Learning_Materials)");
                 Map<String,Integer> withDuplicate = snapshot(conn);
                 seed(conn, seed);
                 check(snapshot(conn).equals(withDuplicate), "pre-existing duplicate material does not create another bank");

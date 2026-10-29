@@ -7,11 +7,12 @@
 <%
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
-    request.setAttribute("pageTitle", "Vị trí & Cấp bậc | HRM");
+    request.setAttribute("pageTitle", "Vị trí & Cấp bậc | CPMS");
     List<Position> positions = (List<Position>) request.getAttribute("positions");
     List<Department> departments = (List<Department>) request.getAttribute("departments");
     List<JobLevel> jobLevels = (List<JobLevel>) request.getAttribute("jobLevels");
     Integer selectedDeptId = (Integer) request.getAttribute("selectedDeptId");
+    String searchKeyword = (String) request.getAttribute("searchKeyword");
     String successMessage = (String) session.getAttribute("successMessage");
     String errorMessage = (String) session.getAttribute("errorMessage");
     session.removeAttribute("successMessage");
@@ -22,11 +23,15 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1>Tổ Chức Vị Trí Công Việc & Cấp Bậc</h1>
+        <h1>Tổ Chức Vị Trí Công Việc &amp; Cấp Bậc</h1>
         <div>
             <% if (roleId == 1) { %>
                 <a href="<%= request.getContextPath() %>/positions?action=create" class="btn btn-primary">
-                    + Tạo Vị Trí Mới
+                    <i class="fa-solid fa-plus"></i> Tạo Vị Trí Mới
+                </a>
+            <% } else if (roleId == 3) { %>
+                <a href="<%= request.getContextPath() %>/positions?action=requestCreate" class="btn btn-primary">
+                    <i class="fa-solid fa-paper-plane"></i> Đề Xuất Vị Trí Mới
                 </a>
             <% } %>
         </div>
@@ -34,13 +39,18 @@
 
     <div class="content-body">
         <% if (successMessage != null) { %>
-            <div class="alert alert-success"><%= successMessage %></div>
+        <div class="alert alert-success"><%= successMessage %></div>
         <% } %>
         <% if (errorMessage != null) { %>
-            <div class="alert alert-danger"><%= errorMessage %></div>
+        <div class="alert alert-danger"><%= errorMessage %></div>
         <% } %>
 
         <form action="<%= request.getContextPath() %>/positions" method="GET" class="filter-box">
+            <div class="form-group" style="flex: 2; min-width: 200px;">
+                <label>Tìm kiếm vị trí:</label>
+                <input type="text" name="search" class="form-control" placeholder="Tên vị trí, mô tả công việc..." value="<%= searchKeyword != null ? searchKeyword : "" %>">
+            </div>
+
             <div class="form-group">
                 <label>Lọc theo Phòng Ban:</label>
                 <select name="departmentId" class="form-control" onchange="this.form.submit()">
@@ -50,16 +60,18 @@
                             for (Department d : departments) {
                                 boolean isSel = (selectedDeptId != null && selectedDeptId.equals(d.getDepartmentId()));
                     %>
-                        <option value="<%= d.getDepartmentId() %>" <%= isSel ? "selected" : "" %>><%= d.getDepartmentName() %></option>
+                    <option value="<%= d.getDepartmentId() %>" <%= isSel ? "selected" : "" %>><%= d.getDepartmentName() %></option>
                     <%
                             }
                         }
                     %>
                 </select>
             </div>
-            <% if (selectedDeptId != null && selectedDeptId > 0) { %>
-                <a href="<%= request.getContextPath() %>/positions" class="btn btn-secondary">Bỏ lọc</a>
-            <% } %>
+            
+            <div style="display: flex; gap: 5px;">
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter"></i> Lọc</button>
+                <a href="<%= request.getContextPath() %>/positions" class="btn btn-secondary">Làm mới</a>
+            </div>
         </form>
 
         <div style="display: flex; gap: 15px;">
@@ -92,7 +104,7 @@
                                 <td>
                                     <b><%= p.getPositionName() %></b>
                                     <% if (p.getDescription() != null && !p.getDescription().isEmpty()) { %>
-                                        <div style="font-size: 11px; color: #555555;"><%= p.getDescription() %></div>
+                                    <div style="font-size: 11px; color: #555555;"><%= p.getDescription() %></div>
                                     <% } %>
                                 </td>
                                 <td><%= p.getDepartmentName() != null ? p.getDepartmentName() : "Dùng chung" %></td>
@@ -103,9 +115,9 @@
                                 </td>
                                 <td>
                                     <% if (p.isStatus()) { %>
-                                        <span class="badge">Áp dụng</span>
+                                    <span class="badge">Áp dụng</span>
                                     <% } else { %>
-                                        <span class="badge">Tạm khóa</span>
+                                    <span class="badge">Tạm khóa</span>
                                     <% } %>
                                 </td>
                                 <% if (roleId == 1) { %>

@@ -5,7 +5,7 @@
 <%
     Department dept = (Department) request.getAttribute("department");
     boolean isEdit = (dept != null && dept.getDepartmentId() > 0);
-    request.setAttribute("pageTitle", (isEdit ? "Chỉnh sửa Phòng Ban" : "Tạo Phòng Ban Mới") + " | HRM");
+    request.setAttribute("pageTitle", (isEdit ? "Chỉnh sửa Phòng Ban" : "Tạo Phòng Ban Mới") + " | CPMS");
     List<User> managerCandidates = (List<User>) request.getAttribute("managerCandidates");
 %>
 <jsp:include page="/views/common/header.jsp" />
@@ -23,7 +23,7 @@
 
     <div class="content-body">
         <% if (request.getAttribute("error") != null) { %>
-            <div class="alert alert-danger"><%= request.getAttribute("error") %></div>
+        <div class="alert alert-danger"><%= request.getAttribute("error") %></div>
         <% } %>
 
         <div class="card" style="max-width: 600px; margin: 0 auto;">
@@ -34,7 +34,7 @@
                 <form action="<%= request.getContextPath() %>/departments" method="POST">
                     <input type="hidden" name="action" value="<%= isEdit ? "edit" : "create" %>">
                     <% if (isEdit) { %>
-                        <input type="hidden" name="departmentId" value="<%= dept.getDepartmentId() %>">
+                    <input type="hidden" name="departmentId" value="<%= dept.getDepartmentId() %>">
                     <% } %>
 
                     <div class="form-group">
@@ -43,24 +43,29 @@
                                value="<%= dept != null && dept.getDepartmentName() != null ? dept.getDepartmentName() : "" %>" required>
                     </div>
 
+                    <% if (!isEdit) { %>
+                    <input type="hidden" name="managerId" value="0">
+                    <% } else { %>
                     <div class="form-group">
-                        <label for="managerId">Trưởng Phòng (Manager):</label>
+                        <label for="managerId">Trưởng Phòng:</label>
                         <select id="managerId" name="managerId" class="form-control">
                             <option value="0">-- Chưa bổ nhiệm --</option>
                             <%
                                 if (managerCandidates != null) {
                                     for (User u : managerCandidates) {
+                                        if (u.getRoleId() == 1) continue;
                                         boolean isSelected = (dept != null && dept.getManagerId() != null && dept.getManagerId().equals(u.getUserId()));
                             %>
-                                <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>>
-                                    <%= u.getFullName() %> (<%= u.getRoleName() %>)
-                                </option>
+                            <option value="<%= u.getUserId() %>" <%= isSelected ? "selected" : "" %>>
+                                <%= u.getFullName() %> (<%= u.getRoleName() %><%= u.getPositionName() != null ? " - " + u.getPositionName() : "" %>)
+                            </option>
                             <%
                                     }
                                 }
                             %>
                         </select>
                     </div>
+                    <% } %>
 
                     <div class="form-group">
                         <label for="description">Mô Tả Chức Năng:</label>
