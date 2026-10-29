@@ -42,6 +42,14 @@ public class TestReminderListener implements ServletContextListener {
     public void contextDestroyed(ServletContextEvent event) {
         if (executor != null) {
             executor.shutdownNow();
+            try {
+                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    event.getServletContext().log("Worker nhắc lịch bài test chưa dừng sau 5 giây.");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                event.getServletContext().log("Bị ngắt khi chờ worker nhắc lịch bài test dừng.", e);
+            }
         }
     }
 }
