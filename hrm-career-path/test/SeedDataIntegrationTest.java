@@ -64,8 +64,16 @@ public class SeedDataIntegrationTest {
                 check(first.get("Learning_Materials") == 6 && first.get("Test_Content") == 8 && first.get("Test_Questions") == 110,
                         "six material banks plus culture/professional banks");
                 check(first.get("FlashcardDecks") == 2 && first.get("Flashcards") == 25 && first.get("Video_Checkpoints") == 5, "flashcard and checkpoint counts");
-                check(first.get("Training_Classes") == 1 && first.get("Class_Materials") == 6 && first.get("Class_Enrollments") == 1 && first.get("Learning_Progress") == 3,
+                check(first.get("Training_Classes") == 1 && first.get("Class_Materials") == 3 && first.get("Class_Enrollments") == 1 && first.get("Learning_Progress") == 3,
                         "class association seed counts");
+                check(count(conn, "SELECT COUNT(*) FROM Learning_Materials lm JOIN Departments d ON d.department_id=lm.department_id "
+                        + "WHERE lm.is_deleted=0 AND d.department_name=N'Phòng Kỹ Thuật (IT)'") == 3
+                        && count(conn, "SELECT COUNT(*) FROM Learning_Materials lm JOIN Departments d ON d.department_id=lm.department_id "
+                        + "WHERE lm.is_deleted=0 AND d.department_name=N'Phòng Nhân Sự (HR)'") == 3,
+                        "learning materials are split three for IT and three for HR");
+                check(count(conn, "SELECT COUNT(*) FROM Test_Content c JOIN Learning_Materials lm ON lm.material_id=c.learning_material_id "
+                        + "WHERE c.type='learning' AND c.is_deleted=0 AND c.department_id=lm.department_id") == 6,
+                        "every learning bank inherits its material department");
                 seed(conn, seed);
                 check(snapshot(conn).equals(first), "second seed does not add duplicates to any table");
                 check(count(conn, "SELECT COUNT(*) FROM Users u JOIN Roles r ON r.role_id=u.role_id JOIN Departments d ON d.department_id=u.department_id "
@@ -85,13 +93,16 @@ public class SeedDataIntegrationTest {
                 execute(conn, "DELETE FROM Flashcards WHERE card_id=(SELECT MIN(card_id) FROM Flashcards)");
                 seed(conn, seed);
                 check(snapshot(conn).equals(first), "partial seed repairs missing row without duplicating others");
-                // Một lần chạy lỗi cũ có thể đã chèn trùng học liệu: không xóa dữ liệu,
-                // và vẫn chọn cùng học liệu đầu tiên để tránh nhân đôi kho đề.
-                execute(conn, "INSERT INTO Learning_Materials(title,description,material_type,scope_type,material_url,created_by) "
-                        + "SELECT title,description,material_type,scope_type,material_url,created_by FROM Learning_Materials WHERE material_id=(SELECT MIN(material_id) FROM Learning_Materials)");
-                Map<String,Integer> withDuplicate = snapshot(conn);
+                // Mô phỏng dữ liệu từ bản seed cũ trước khi có unique index; lần chạy mới phải thu hồi bản trùng.
+                execute(conn, "DROP INDEX UX_Learning_Materials_Active_Department_Title ON Learning_Materials; "
+                        + "INSERT INTO Learning_Materials(title,description,material_type,scope_type,department_id,material_url,created_by) "
+                        + "SELECT title,description,material_type,scope_type,department_id,material_url,created_by "
+                        + "FROM Learning_Materials WHERE material_id=(SELECT MIN(material_id) FROM Learning_Materials); "
+                        + "INSERT INTO Test_Content(title,prompt,kind,type,department_id,created_by,status,is_deleted,learning_material_id) "
+                        + "SELECT N'Bộ đề trùng cũ',prompt,kind,type,department_id,created_by,status,0,(SELECT MAX(material_id) FROM Learning_Materials) "
+                        + "FROM Test_Content WHERE learning_material_id=(SELECT MIN(material_id) FROM Learning_Materials)");
                 seed(conn, seed);
-                check(snapshot(conn).equals(withDuplicate), "pre-existing duplicate material does not create another bank");
+                check(snapshot(conn).equals(first), "pre-existing duplicate material is consolidated into the canonical material");
             } finally {
                 if (created && database.matches("HRM_Seed_it_[a-f0-9]{32}")) {
                     conn.setCatalog("master");

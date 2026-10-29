@@ -253,7 +253,39 @@ FROM (
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Flashcards existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.deck_id=src.deck_id OR (existing.deck_id IS NULL AND src.deck_id IS NULL)) AND (existing.question=src.question OR (existing.question IS NULL AND src.question IS NULL)));
 GO
 
--- Học liệu nguồn: khởi tạo trước kho đề để đề Học liệu liên kết đúng.
+-- Học liệu nguồn: mỗi học liệu thuộc đúng một phòng ban quản lý.
+-- Ba chủ đề văn hóa/môi trường làm việc thuộc phòng HR; ba chủ đề kỹ thuật thuộc phòng IT.
+IF COL_LENGTH('dbo.Learning_Materials','material_url') IS NULL
+    EXEC(N'ALTER TABLE dbo.Learning_Materials ADD material_url NVARCHAR(1000) NULL');
+EXEC(N'UPDATE dbo.Learning_Materials
+       SET material_url=COALESCE(material_url,video_url,N''/assets/docs/''+file_name)
+       WHERE material_url IS NULL');
+GO
+
+DECLARE @seed_hr_department_id INT = (
+    SELECT TOP (1) department_id FROM dbo.Departments
+    WHERE department_name=N'Phòng Nhân Sự (HR)' AND is_deleted=0
+    ORDER BY department_id
+);
+IF @seed_hr_department_id IS NULL
+    THROW 50010, N'Không tìm thấy phòng Nhân Sự (HR) để phân loại học liệu.', 1;
+
+-- Sửa dữ liệu từ các bản seed cũ từng để học liệu văn hóa ở phạm vi toàn công ty.
+UPDATE dbo.Learning_Materials
+SET scope_type='DEPARTMENT', department_id=@seed_hr_department_id, updated_at=GETDATE()
+WHERE title IN (
+    N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty',
+    N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026',
+    N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp'
+) AND (scope_type<>'DEPARTMENT' OR department_id IS NULL OR department_id<>@seed_hr_department_id);
+
+UPDATE c
+SET c.department_id=lm.department_id
+FROM dbo.Test_Content c
+JOIN dbo.Learning_Materials lm ON lm.material_id=c.learning_material_id
+WHERE c.type='learning' AND c.is_deleted=0
+  AND (c.department_id IS NULL OR c.department_id<>lm.department_id);
+
 INSERT INTO dbo.Learning_Materials (title, description, material_type, scope_type, department_id, position_id, level_id, material_url, file_name, file_type, file_size, video_url, duration_minutes, status, is_deleted, created_by, created_at, updated_at)
 SELECT src.title, src.description, src.material_type, src.scope_type, src.department_id, src.position_id, src.level_id, src.material_url, src.file_name, src.file_type, src.file_size, src.video_url, src.duration_minutes, src.status, src.is_deleted, src.created_by, src.created_at, src.updated_at
 FROM (
@@ -276,10 +308,10 @@ FROM (
         s.created_at AS created_at,
         s.updated_at AS updated_at
     FROM (VALUES
--- 1. Sổ tay văn hóa doanh nghiệp (CULTURE)
+-- 1. Sổ tay văn hóa doanh nghiệp (DEPARTMENT HR)
 (N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty',
  N'Tài liệu định hướng chuẩn mực dành cho toàn bộ nhân sự mới: Tầm nhìn sứ mệnh, 5 giá trị cốt lõi, tác phong làm việc chuyên nghiệp, nội quy lao động và chính sách phúc lợi.',
- 'PDF', 'CULTURE', NULL, NULL, NULL,
+ 'PDF', 'DEPARTMENT', 2, NULL, NULL,
  N'So_Tay_Van_Hoa_Doanh_Nghiep.pdf', 'application/pdf', 1048576, 'https://viethandvh.com/wp-content/uploads/2026/04/So-tay-van-hoa.pdf', 30, 1, 0, 2, '2026-09-28 08:24:23.550', '2026-09-28 08:24:23.550'),
 
 -- 2. Slide đào tạo Agile/Scrum (DEPARTMENT IT)
@@ -300,20 +332,180 @@ FROM (
  'PDF', 'DEPARTMENT', 1, 1, 2,
  N'Java_Clean_Code_Conventions.pdf', 'application/pdf', 1258291, NULL, 40, 1, 0, 3, '2026-09-28 08:24:23.560', '2026-09-28 08:24:23.560'),
 
--- 5. Video giới thiệu văn hóa và tầm nhìn 2026 (CULTURE)
+-- 5. Video giới thiệu văn hóa và tầm nhìn 2026 (DEPARTMENT HR)
 (N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026',
  N'Thước phim truyền thông nội bộ giới thiệu lịch sử hình thành, đội ngũ ban điều hành, giá trị con người và định hướng phát triển bền vững của công ty trong năm 2026.',
- 'VIDEO', 'CULTURE', NULL, NULL, NULL,
+ 'VIDEO', 'DEPARTMENT', 2, NULL, NULL,
  NULL, 'video/mp4', NULL, 'https://www.youtube.com/watch?v=KRYONejN6SU', 15, 1, 0, 2, '2026-09-28 08:24:23.560', '2026-09-28 08:27:47.147'),
 
--- 6. Cẩm nang an toàn thông tin & bảo mật dữ liệu doanh nghiệp (CULTURE)
+-- 6. Cẩm nang an toàn thông tin & bảo mật dữ liệu doanh nghiệp (DEPARTMENT HR)
 (N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp',
  N'Hướng dẫn thực thi các tiêu chuẩn an toàn bảo mật thông tin nội bộ, nguyên tắc đặt mật khẩu định kỳ, bảo mật mã nguồn dự án và phòng ngừa tấn công lừa đảo qua mạng (Phishing).',
- 'PDF', 'CULTURE', NULL, NULL, NULL,
+ 'PDF', 'DEPARTMENT', 2, NULL, NULL,
  N'Cam_Nang_Quy_Chuan_An_Toan_Thong_Tin_Bao_Mat.pdf', 'application/pdf', 10518152, NULL, 20, 1, 0, 2, '2026-09-28 08:24:23.560', '2026-09-28 08:27:09.823')
     ) AS s (title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, file_size, video_url, duration_minutes, status, is_deleted, created_by, created_at, updated_at)
 ) AS src
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Learning_Materials existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.title=src.title OR (existing.title IS NULL AND src.title IS NULL)) AND (existing.scope_type=src.scope_type OR (existing.scope_type IS NULL AND src.scope_type IS NULL)) AND (existing.department_id=src.department_id OR (existing.department_id IS NULL AND src.department_id IS NULL)));
+GO
+
+-- Thu hồi các bản học liệu bị nhân đôi bởi seed cũ về bản có material_id nhỏ nhất.
+-- Liên kết lớp/tiến độ/checkpoint được chuyển sang bản chuẩn; bộ đề trùng bị ẩn
+-- nhưng bài làm cũ vẫn giữ nguyên content_id để không mất lịch sử câu trả lời.
+DECLARE @duplicate_materials TABLE (
+    duplicate_id INT PRIMARY KEY,
+    canonical_id INT NOT NULL
+);
+
+;WITH ranked AS (
+    SELECT material_id,
+           MIN(material_id) OVER (
+               PARTITION BY title,scope_type,ISNULL(department_id,-1)
+           ) AS canonical_id
+    FROM dbo.Learning_Materials
+    WHERE is_deleted=0
+)
+INSERT INTO @duplicate_materials(duplicate_id,canonical_id)
+SELECT material_id,canonical_id FROM ranked WHERE material_id<>canonical_id;
+
+IF EXISTS (SELECT 1 FROM @duplicate_materials)
+BEGIN
+    -- Đợt giao chưa bắt đầu dùng bộ đề chuẩn thay cho bộ đề seed bị trùng.
+    UPDATE t
+    SET t.default_content_id=canonical_content.id
+    FROM dbo.Test_Templates t
+    JOIN dbo.Test_Content duplicate_content ON duplicate_content.id=t.default_content_id
+    JOIN @duplicate_materials map ON map.duplicate_id=duplicate_content.learning_material_id
+    JOIN dbo.Test_Content canonical_content ON canonical_content.learning_material_id=map.canonical_id
+        AND canonical_content.is_deleted=0;
+
+    -- Giữ liên kết lớp, gộp về học liệu chuẩn rồi bỏ liên kết trùng.
+    INSERT INTO dbo.Class_Materials(class_id,material_id,order_index,is_mandatory)
+    SELECT cm.class_id,map.canonical_id,MIN(cm.order_index),MAX(CAST(cm.is_mandatory AS INT))
+    FROM dbo.Class_Materials cm
+    JOIN @duplicate_materials map ON map.duplicate_id=cm.material_id
+    WHERE NOT EXISTS (
+        SELECT 1 FROM dbo.Class_Materials current_row
+        WHERE current_row.class_id=cm.class_id AND current_row.material_id=map.canonical_id
+    )
+    GROUP BY cm.class_id,map.canonical_id;
+
+    DELETE cm
+    FROM dbo.Class_Materials cm
+    JOIN @duplicate_materials map ON map.duplicate_id=cm.material_id;
+
+    -- Nếu đã có tiến độ ở bản chuẩn thì ưu tiên bản chuẩn; nếu chưa thì chuyển tiến độ sang.
+    DELETE lp
+    FROM dbo.Learning_Progress lp
+    JOIN @duplicate_materials map ON map.duplicate_id=lp.material_id
+    WHERE EXISTS (
+        SELECT 1 FROM dbo.Learning_Progress canonical_progress
+        WHERE canonical_progress.user_id=lp.user_id
+          AND canonical_progress.material_id=map.canonical_id
+          AND (canonical_progress.class_id=lp.class_id
+               OR (canonical_progress.class_id IS NULL AND lp.class_id IS NULL))
+    );
+
+    UPDATE lp
+    SET lp.material_id=map.canonical_id
+    FROM dbo.Learning_Progress lp
+    JOIN @duplicate_materials map ON map.duplicate_id=lp.material_id;
+
+    UPDATE vc
+    SET vc.material_id=map.canonical_id
+    FROM dbo.Video_Checkpoints vc
+    JOIN @duplicate_materials map ON map.duplicate_id=vc.material_id;
+
+    -- Xóa hẳn bộ đề seed trùng chưa từng được giao; chỉ giữ soft-delete nếu đã có lịch sử làm bài.
+    DECLARE @removable_duplicate_contents TABLE (content_id INT PRIMARY KEY);
+    INSERT INTO @removable_duplicate_contents(content_id)
+    SELECT duplicate_content.id
+    FROM dbo.Test_Content duplicate_content
+    JOIN @duplicate_materials map ON map.duplicate_id=duplicate_content.learning_material_id
+    WHERE NOT EXISTS (SELECT 1 FROM dbo.Test_Assignments a WHERE a.content_id=duplicate_content.id)
+      AND NOT EXISTS (SELECT 1 FROM dbo.Test_Templates t WHERE t.default_content_id=duplicate_content.id)
+      AND NOT EXISTS (
+          SELECT 1 FROM dbo.Test_Answer_Options answer
+          JOIN dbo.Test_Questions question ON question.id=answer.question_id
+          WHERE question.content_id=duplicate_content.id
+      );
+
+    DELETE option_row
+    FROM dbo.Test_Question_Options option_row
+    JOIN dbo.Test_Questions question ON question.id=option_row.question_id
+    JOIN @removable_duplicate_contents removable ON removable.content_id=question.content_id;
+
+    DELETE question
+    FROM dbo.Test_Questions question
+    JOIN @removable_duplicate_contents removable ON removable.content_id=question.content_id;
+
+    DELETE duplicate_content
+    FROM dbo.Test_Content duplicate_content
+    JOIN @removable_duplicate_contents removable ON removable.content_id=duplicate_content.id;
+
+    -- Khi bản chuẩn đã có bộ đề, ẩn bộ đề trùng; nếu chưa có thì chuyển nguyên bộ đề sang bản chuẩn.
+    UPDATE duplicate_content
+    SET duplicate_content.is_deleted=1,
+        duplicate_content.learning_material_id=map.canonical_id
+    FROM dbo.Test_Content duplicate_content
+    JOIN @duplicate_materials map ON map.duplicate_id=duplicate_content.learning_material_id
+    WHERE EXISTS (
+        SELECT 1 FROM dbo.Test_Content canonical_content
+        WHERE canonical_content.learning_material_id=map.canonical_id
+          AND canonical_content.is_deleted=0
+    );
+
+    UPDATE duplicate_content
+    SET duplicate_content.learning_material_id=map.canonical_id
+    FROM dbo.Test_Content duplicate_content
+    JOIN @duplicate_materials map ON map.duplicate_id=duplicate_content.learning_material_id
+    WHERE duplicate_content.is_deleted=0;
+
+    DELETE material
+    FROM dbo.Learning_Materials material
+    JOIN @duplicate_materials map ON map.duplicate_id=material.material_id;
+END;
+
+-- Dọn nốt các bộ đề trùng đã được soft-delete ở lần sửa trước và không có lịch sử sử dụng.
+DECLARE @unused_deleted_contents TABLE (content_id INT PRIMARY KEY);
+INSERT INTO @unused_deleted_contents(content_id)
+SELECT deleted_content.id
+FROM dbo.Test_Content deleted_content
+WHERE deleted_content.type='learning' AND deleted_content.is_deleted=1
+  AND deleted_content.learning_material_id IS NOT NULL
+  AND EXISTS (
+      SELECT 1 FROM dbo.Test_Content active_content
+      WHERE active_content.learning_material_id=deleted_content.learning_material_id
+        AND active_content.is_deleted=0
+  )
+  AND NOT EXISTS (SELECT 1 FROM dbo.Test_Assignments a WHERE a.content_id=deleted_content.id)
+  AND NOT EXISTS (SELECT 1 FROM dbo.Test_Templates t WHERE t.default_content_id=deleted_content.id)
+  AND NOT EXISTS (
+      SELECT 1 FROM dbo.Test_Answer_Options answer
+      JOIN dbo.Test_Questions question ON question.id=answer.question_id
+      WHERE question.content_id=deleted_content.id
+  );
+
+DELETE option_row
+FROM dbo.Test_Question_Options option_row
+JOIN dbo.Test_Questions question ON question.id=option_row.question_id
+JOIN @unused_deleted_contents unused ON unused.content_id=question.content_id;
+
+DELETE question
+FROM dbo.Test_Questions question
+JOIN @unused_deleted_contents unused ON unused.content_id=question.content_id;
+
+DELETE deleted_content
+FROM dbo.Test_Content deleted_content
+JOIN @unused_deleted_contents unused ON unused.content_id=deleted_content.id;
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes
+    WHERE object_id=OBJECT_ID('dbo.Learning_Materials')
+      AND name='UX_Learning_Materials_Active_Department_Title'
+)
+    CREATE UNIQUE INDEX UX_Learning_Materials_Active_Department_Title
+        ON dbo.Learning_Materials(title,scope_type,department_id)
+        WHERE is_deleted=0;
 GO
 
 -- =======================================================
@@ -1429,6 +1621,13 @@ DECLARE @id_backend INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials 
 
 IF @class_id IS NOT NULL
 BEGIN
+    -- Lớp IT mẫu chỉ dùng học liệu thuộc phòng IT, không trộn bộ đề văn hóa của HR.
+    DELETE cm
+    FROM dbo.Class_Materials cm
+    JOIN dbo.Learning_Materials lm ON lm.material_id=cm.material_id
+    JOIN dbo.Training_Classes tc ON tc.class_id=cm.class_id
+    WHERE cm.class_id=@class_id AND lm.department_id<>tc.department_id;
+
     INSERT INTO dbo.Class_Materials (class_id, material_id, order_index, is_mandatory)
 SELECT src.class_id, src.material_id, src.order_index, src.is_mandatory
 FROM (
@@ -1437,12 +1636,9 @@ FROM (
         s.order_index AS order_index,
         s.is_mandatory AS is_mandatory
     FROM (VALUES
-(@class_id, @id_culture, 1, 1),
-    (@class_id, @id_video_culture, 2, 1),
-    (@class_id, @id_security, 3, 1),
-    (@class_id, @id_agile, 4, 1),
-    (@class_id, @id_cleancode, 5, 1),
-    (@class_id, @id_backend, 6, 1)
+    (@class_id, @id_agile, 1, 1),
+    (@class_id, @id_cleancode, 2, 1),
+    (@class_id, @id_backend, 3, 1)
     ) AS s (class_id, material_id, order_index, is_mandatory)
 ) AS src
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Class_Materials existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.class_id=src.class_id OR (existing.class_id IS NULL AND src.class_id IS NULL)) AND (existing.material_id=src.material_id OR (existing.material_id IS NULL AND src.material_id IS NULL)));
@@ -1453,6 +1649,12 @@ GO
 DECLARE @class_id INT = (SELECT TOP 1 class_id FROM dbo.Training_Classes WHERE class_code = 'CLS-IT-FRESHER-2026');
 IF @class_id IS NOT NULL
 BEGIN
+    DELETE lp
+    FROM dbo.Learning_Progress lp
+    JOIN dbo.Learning_Materials lm ON lm.material_id=lp.material_id
+    JOIN dbo.Training_Classes tc ON tc.class_id=lp.class_id
+    WHERE lp.class_id=@class_id AND lm.department_id<>tc.department_id;
+
     INSERT INTO dbo.Class_Enrollments (class_id, user_id, enrolled_by, enrollment_type, assigned_reason, status, progress_percent)
 SELECT src.class_id, src.user_id, src.enrolled_by, src.enrollment_type, src.assigned_reason, src.status, src.progress_percent
 FROM (
@@ -1469,11 +1671,11 @@ FROM (
 ) AS src
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Class_Enrollments existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.class_id=src.class_id OR (existing.class_id IS NULL AND src.class_id IS NULL)) AND (existing.user_id=src.user_id OR (existing.user_id IS NULL AND src.user_id IS NULL)));
 
-    DECLARE @id_culture INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty' ORDER BY material_id);
-    DECLARE @id_video_culture INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026' ORDER BY material_id);
-    DECLARE @id_security INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp' ORDER BY material_id);
+    DECLARE @id_agile INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum' ORDER BY material_id);
+    DECLARE @id_backend INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE' ORDER BY material_id);
+    DECLARE @id_cleancode INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Bộ Tiêu Chuẩn Lập Trình Java & Quy Định Đặt Mã Nguồn (Clean Code)' ORDER BY material_id);
 
-    IF @id_culture IS NOT NULL
+    IF @id_agile IS NOT NULL
         INSERT INTO dbo.Learning_Progress (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
 SELECT src.user_id, src.material_id, src.class_id, src.status, src.last_accessed_at, src.completed_at, src.notes
 FROM (
@@ -1485,12 +1687,12 @@ FROM (
         s.completed_at AS completed_at,
         s.notes AS notes
     FROM (VALUES
-(4, @id_culture, @class_id, 'COMPLETED', DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, -2, GETDATE()), N'Đã đọc xong sổ tay văn hóa doanh nghiệp')
+(4, @id_agile, @class_id, 'COMPLETED', DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, -2, GETDATE()), N'Đã hoàn thành học liệu quy trình Agile/Scrum')
     ) AS s (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
 ) AS src
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Learning_Progress existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.user_id=src.user_id OR (existing.user_id IS NULL AND src.user_id IS NULL)) AND (existing.material_id=src.material_id OR (existing.material_id IS NULL AND src.material_id IS NULL)) AND (existing.class_id=src.class_id OR (existing.class_id IS NULL AND src.class_id IS NULL)));
 
-    IF @id_video_culture IS NOT NULL
+    IF @id_backend IS NOT NULL
         INSERT INTO dbo.Learning_Progress (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
 SELECT src.user_id, src.material_id, src.class_id, src.status, src.last_accessed_at, src.completed_at, src.notes
 FROM (
@@ -1502,12 +1704,12 @@ FROM (
         s.completed_at AS completed_at,
         s.notes AS notes
     FROM (VALUES
-(4, @id_video_culture, @class_id, 'COMPLETED', DATEADD(DAY, -1, GETDATE()), DATEADD(DAY, -1, GETDATE()), N'Đã xem xong video giới thiệu và hoàn thành câu hỏi tương tác')
+(4, @id_backend, @class_id, 'COMPLETED', DATEADD(DAY, -1, GETDATE()), DATEADD(DAY, -1, GETDATE()), N'Đã xem xong video kiến trúc Java Backend')
     ) AS s (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
 ) AS src
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Learning_Progress existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.user_id=src.user_id OR (existing.user_id IS NULL AND src.user_id IS NULL)) AND (existing.material_id=src.material_id OR (existing.material_id IS NULL AND src.material_id IS NULL)) AND (existing.class_id=src.class_id OR (existing.class_id IS NULL AND src.class_id IS NULL)));
 
-    IF @id_security IS NOT NULL
+    IF @id_cleancode IS NOT NULL
         INSERT INTO dbo.Learning_Progress (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
 SELECT src.user_id, src.material_id, src.class_id, src.status, src.last_accessed_at, src.completed_at, src.notes
 FROM (
@@ -1519,7 +1721,7 @@ FROM (
         s.completed_at AS completed_at,
         s.notes AS notes
     FROM (VALUES
-(4, @id_security, @class_id, 'IN_PROGRESS', GETDATE(), NULL, N'Đang nghiên cứu cẩm nang an toàn thông tin & bảo mật')
+(4, @id_cleancode, @class_id, 'IN_PROGRESS', GETDATE(), NULL, N'Đang nghiên cứu quy chuẩn Java Clean Code')
     ) AS s (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
 ) AS src
 WHERE NOT EXISTS (SELECT 1 FROM dbo.Learning_Progress existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.user_id=src.user_id OR (existing.user_id IS NULL AND src.user_id IS NULL)) AND (existing.material_id=src.material_id OR (existing.material_id IS NULL AND src.material_id IS NULL)) AND (existing.class_id=src.class_id OR (existing.class_id IS NULL AND src.class_id IS NULL)));

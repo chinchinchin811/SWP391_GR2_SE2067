@@ -108,8 +108,7 @@ public final class TestDAO {
         args.add(actor.id());
         return "((t.class_id IS NULL AND ((t.type='culture' AND " + (actor.cultureManager() ? "1=1" : "1=0")
                 + ") OR (t.type IN ('department','learning') AND t.department_id=?)"
-                + " OR (t.type='learning' AND t.department_id IS NULL AND "
-                + (actor.departmentManager() ? "1=1" : "1=0") + ")))"
+                + "))"
                 + " OR (t.type='learning' AND EXISTS (SELECT 1 FROM Training_Classes tc WHERE tc.class_id=t.class_id"
                 + " AND tc.mentor_id=? AND tc.is_deleted=0 AND tc.status<>'CANCELLED')))";
     }
@@ -332,16 +331,23 @@ public final class TestDAO {
                     + " ON lm.material_id=cm.material_id WHERE cm.class_id=? AND cm.material_id=t.learning_material_id"
                     + " AND lm.is_deleted=0 AND lm.status=1))";
         }
-        args.add(actor.departmentManager() ? actor.managedDepartmentId() : null);
-        args.add(actor.id());
-        return "((t.type='culture' AND " + (actor.cultureManager() ? "1=1" : "1=0") + ")"
-                + " OR (t.type='department' AND t.department_id=?)"
-                + " OR (t.type='learning' AND (EXISTS (SELECT 1 FROM Class_Materials cm"
-                + " JOIN Training_Classes tc ON tc.class_id=cm.class_id JOIN Learning_Materials lm ON lm.material_id=cm.material_id"
-                + " WHERE cm.material_id=t.learning_material_id AND tc.mentor_id=? AND tc.is_deleted=0"
-                + " AND tc.status<>'CANCELLED' AND lm.is_deleted=0 AND lm.status=1)"
-                + (actor.departmentManager()
-                    ? " OR t.department_id IS NULL OR t.department_id=" + actor.managedDepartmentId() : "") + ")))";
+        List<String> scopes = new ArrayList<>();
+        if (actor.cultureManager()) {
+            scopes.add("t.type='culture'");
+        }
+        if (actor.departmentManager()) {
+            scopes.add("(t.type='department' AND t.department_id=?)");
+            args.add(actor.managedDepartmentId());
+            scopes.add("(t.type='learning' AND t.department_id=?)");
+            args.add(actor.managedDepartmentId());
+        } else if (actor.classMentor()) {
+            scopes.add("(t.type='learning' AND EXISTS (SELECT 1 FROM Class_Materials cm"
+                    + " JOIN Training_Classes tc ON tc.class_id=cm.class_id JOIN Learning_Materials lm ON lm.material_id=cm.material_id"
+                    + " WHERE cm.material_id=t.learning_material_id AND tc.mentor_id=? AND tc.is_deleted=0"
+                    + " AND tc.status<>'CANCELLED' AND lm.is_deleted=0 AND lm.status=1))");
+            args.add(actor.id());
+        }
+        return scopes.isEmpty() ? "1=0" : "(" + String.join(" OR ", scopes) + ")";
     }
 
     public List<TestClass> mentoredClasses(int userId) throws SQLException {
@@ -375,7 +381,7 @@ public final class TestDAO {
     public List<LearningMaterial> learningMaterials(TestActor actor) throws SQLException {
         List<LearningMaterial> rows = new ArrayList<>();
         try (PreparedStatement ps = prepare("SELECT material_id,title FROM Learning_Materials"
-                + " WHERE is_deleted=0 AND status=1 AND (scope_type='CULTURE' OR department_id=?)"
+                + " WHERE is_deleted=0 AND status=1 AND department_id=?"
                 + " ORDER BY title,material_id", actor.managedDepartmentId());
                 ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -390,7 +396,7 @@ public final class TestDAO {
 
     public boolean learningMaterialAvailable(TestActor actor, int materialId) throws SQLException {
         try (PreparedStatement ps = prepare("SELECT 1 FROM Learning_Materials WHERE material_id=?"
-                + " AND is_deleted=0 AND status=1 AND (scope_type='CULTURE' OR department_id=?)",
+                + " AND is_deleted=0 AND status=1 AND department_id=?",
                 materialId, actor.managedDepartmentId()); ResultSet rs = ps.executeQuery()) {
             return rs.next();
         }
