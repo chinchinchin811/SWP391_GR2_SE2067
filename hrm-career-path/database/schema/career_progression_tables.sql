@@ -106,3 +106,4 @@ BEGIN
     PRINT 'Đã tạo bảng dbo.Promotion_Evidence';
 END
 GO
+

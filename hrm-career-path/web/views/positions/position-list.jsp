@@ -90,7 +90,7 @@
                                 <th>Số Nhân Sự</th>
                                 <th>Trạng Thái</th>
                                 <% if (roleId == 1) { %>
-                                    <th style="text-align: center; width: 110px;">Thao Tác</th>
+                                    <th style="text-align: center; width: 180px;">Thao Tác</th>
                                 <% } %>
                             </tr>
                         </thead>
@@ -123,6 +123,7 @@
                                 <% if (roleId == 1) { %>
                                     <td>
                                         <div class="table-actions">
+                                            <a href="<%= request.getContextPath() %>/positions?action=criteria&amp;positionId=<%= p.getPositionId() %>" class="btn btn-sm" style="background: #4f46e5; color: #ffffff;" title="Cấu hình Barem Thăng Cấp"><i class="fa-solid fa-stairs"></i> Barem</a>
                                             <a href="<%= request.getContextPath() %>/positions?action=edit&amp;id=<%= p.getPositionId() %>" class="btn btn-sm btn-edit" aria-label="Sửa vị trí <%= p.getPositionName() %>">Sửa</a>
                                             <form action="<%= request.getContextPath() %>/positions" method="POST" style="display: inline-block;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vị trí này?');">
                                                 <input type="hidden" name="action" value="delete">

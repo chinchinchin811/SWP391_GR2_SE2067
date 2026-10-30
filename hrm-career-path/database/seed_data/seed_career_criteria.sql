@@ -49,3 +49,4 @@ VALUES
 
 PRINT 'Đã nạp thành công bộ dữ liệu mẫu Tiêu chí Barem thăng cấp cho Java Developer!';
 GO
+

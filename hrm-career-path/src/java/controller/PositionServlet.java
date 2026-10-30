@@ -1,11 +1,14 @@
 package controller;
 
+import dal.CareerProgressionDAO;
 import dal.DepartmentDAO;
 import dal.PositionDAO;
 import dal.PositionRequestDAO;
+import model.CriteriaRequirement;
 import model.Department;
 import model.JobLevel;
 import model.Position;
+import model.PositionLevelCriteria;
 import model.PositionRequest;
 import model.User;
 import jakarta.servlet.ServletException;
@@ -14,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 
 public class PositionServlet extends HttpServlet {
@@ -21,6 +25,7 @@ public class PositionServlet extends HttpServlet {
     private final PositionDAO positionDAO = new PositionDAO();
     private final DepartmentDAO departmentDAO = new DepartmentDAO();
     private final PositionRequestDAO positionRequestDAO = new PositionRequestDAO();
+    private final CareerProgressionDAO careerProgressionDAO = new CareerProgressionDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -100,9 +105,15 @@ public class PositionServlet extends HttpServlet {
             case "create":
                 showCreateForm(request, response);
                 break;
+
             case "edit":
                 showEditForm(request, response);
                 break;
+
+            case "criteria":
+                showCriteria(request, response, currentUser);
+                break;
+
             default:
                 listPositions(request, response, currentUser);
                 break;
@@ -148,7 +159,7 @@ public class PositionServlet extends HttpServlet {
             return;
         }
 
-        // Chỉ Admin (role 1) mới được thêm/sửa/xóa vị trí trực tiếp
+        // Chỉ Admin (role 1) mới được thêm/sửa/xóa vị trí và cấu hình barem
         if (currentUser.getRoleId() != 1) {
             response.sendRedirect(request.getContextPath() + "/positions");
             return;
@@ -164,9 +175,154 @@ public class PositionServlet extends HttpServlet {
             case "delete":
                 deletePosition(request, response);
                 break;
+            case "saveCriteria":
+                saveCriteria(request, response, currentUser);
+                break;
+            case "deleteCriteria":
+                deleteCriteria(request, response, currentUser);
+                break;
+            case "addRequirement":
+                addRequirement(request, response, currentUser);
+                break;
+            case "deleteRequirement":
+                deleteRequirement(request, response, currentUser);
+                break;
             default:
                 response.sendRedirect(request.getContextPath() + "/positions");
                 break;
+        }
+    }
+
+    // ==========================================
+    // ACTION HANDLERS
+    // ==========================================
+
+    private void showCriteria(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws ServletException, IOException {
+        String posIdStr = request.getParameter("positionId");
+        if (posIdStr == null || posIdStr.isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+            return;
+        }
+        try {
+            int posId = Integer.parseInt(posIdStr);
+            Position pos = positionDAO.getPositionById(posId);
+            if (pos == null) {
+                response.sendRedirect(request.getContextPath() + "/positions");
+                return;
+            }
+            List<PositionLevelCriteria> criteriaList = careerProgressionDAO.getCriteriaByPosition(posId);
+            List<JobLevel> allLevels = positionDAO.getAllJobLevels();
+
+            request.setAttribute("position", pos);
+            request.setAttribute("criteriaList", criteriaList);
+            request.setAttribute("allLevels", allLevels);
+            request.getRequestDispatcher("/views/positions/position-criteria.jsp").forward(request, response);
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
+    }
+
+    private void saveCriteria(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String posIdStr = request.getParameter("positionId");
+        String fromLevelStr = request.getParameter("fromLevelId");
+        String toLevelStr = request.getParameter("toLevelId");
+        String summary = request.getParameter("competencySummary");
+        String testScoreStr = request.getParameter("minTestScore");
+        String ratingStr = request.getParameter("minManagerRating");
+
+        try {
+            int posId = Integer.parseInt(posIdStr);
+            int fromLvl = Integer.parseInt(fromLevelStr);
+            int toLvl = Integer.parseInt(toLevelStr);
+
+            PositionLevelCriteria c = new PositionLevelCriteria();
+            c.setPositionId(posId);
+            c.setFromLevelId(fromLvl);
+            c.setToLevelId(toLvl);
+            c.setCompetencySummary(summary != null ? summary.trim() : "");
+            c.setStatus(true);
+
+            if (testScoreStr != null && !testScoreStr.trim().isEmpty()) {
+                c.setMinTestScore(new BigDecimal(testScoreStr.trim()));
+            } else {
+                c.setMinTestScore(new BigDecimal("80.0"));
+            }
+            if (ratingStr != null && !ratingStr.trim().isEmpty()) {
+                c.setMinManagerRating(new BigDecimal(ratingStr.trim()));
+            } else {
+                c.setMinManagerRating(new BigDecimal("7.5"));
+            }
+
+            int id = careerProgressionDAO.addCriteria(c);
+            if (id > 0) {
+                request.getSession().setAttribute("successMessage", "Đã thiết lập nấc barem thăng tiến mới thành công!");
+            } else {
+                request.getSession().setAttribute("errorMessage", "Không thể lưu barem. Có thể nấc thăng tiến giữa 2 cấp bậc này đã tồn tại!");
+            }
+            response.sendRedirect(request.getContextPath() + "/positions?action=criteria&positionId=" + posId);
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
+    }
+
+    private void deleteCriteria(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String critIdStr = request.getParameter("criteriaId");
+        String posIdStr = request.getParameter("positionId");
+        try {
+            int critId = Integer.parseInt(critIdStr);
+            careerProgressionDAO.deleteCriteria(critId);
+            request.getSession().setAttribute("successMessage", "Đã xóa nấc barem thăng tiến!");
+            response.sendRedirect(request.getContextPath() + "/positions?action=criteria&positionId=" + posIdStr);
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
+    }
+
+    private void addRequirement(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String critIdStr = request.getParameter("criteriaId");
+        String posIdStr = request.getParameter("positionId");
+        String title = request.getParameter("requirementTitle");
+        String type = request.getParameter("requirementType");
+        String desc = request.getParameter("description");
+        String isMandatoryStr = request.getParameter("isMandatory");
+
+        try {
+            int critId = Integer.parseInt(critIdStr);
+            CriteriaRequirement req = new CriteriaRequirement();
+            req.setCriteriaId(critId);
+            req.setRequirementTitle(title != null ? title.trim() : "");
+            req.setRequirementType(type != null ? type.trim() : "OTHER");
+            req.setDescription(desc != null ? desc.trim() : "");
+            req.setMandatory("true".equalsIgnoreCase(isMandatoryStr) || "1".equals(isMandatoryStr));
+            req.setOrderIndex(1);
+
+            int id = careerProgressionDAO.addRequirement(req);
+            if (id > 0) {
+                request.getSession().setAttribute("successMessage", "Đã thêm tiêu chí minh chứng thực tế mới!");
+            } else {
+                request.getSession().setAttribute("errorMessage", "Thêm tiêu chí thất bại!");
+            }
+            response.sendRedirect(request.getContextPath() + "/positions?action=criteria&positionId=" + posIdStr);
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
+    }
+
+    private void deleteRequirement(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String reqIdStr = request.getParameter("requirementId");
+        String posIdStr = request.getParameter("positionId");
+        try {
+            int reqId = Integer.parseInt(reqIdStr);
+            careerProgressionDAO.deleteRequirement(reqId);
+            request.getSession().setAttribute("successMessage", "Đã xóa tiêu chí minh chứng!");
+            response.sendRedirect(request.getContextPath() + "/positions?action=criteria&positionId=" + posIdStr);
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
         }
     }
 
@@ -238,7 +394,6 @@ public class PositionServlet extends HttpServlet {
         }
 
         List<Department> departments;
-        // Nếu là Manager (role 3), chỉ xem vị trí trong phòng ban mình phụ trách
         if (currentUser != null && currentUser.getRoleId() == 3) {
             Department myDept = departmentDAO.getDepartmentByManagerId(currentUser.getUserId());
             if (myDept != null) {

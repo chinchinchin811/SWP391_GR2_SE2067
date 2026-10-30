@@ -93,6 +93,18 @@
         <servlet-name>MentorServlet</servlet-name>
         <url-pattern>/mentors</url-pattern>
     </servlet-mapping>
+    <servlet>
+        <servlet-name>CareerPathServlet</servlet-name>
+        <servlet-class>controller.CareerPathServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CareerPathServlet</servlet-name>
+        <url-pattern>/career-path</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>CareerPathServlet</servlet-name>
+        <url-pattern>/promotions</url-pattern>
+    </servlet-mapping>
     <session-config>
         <session-timeout>60</session-timeout>
     </session-config>
