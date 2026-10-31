@@ -6,7 +6,9 @@
 <%@ page import="model.CriteriaRequirement" %>
 <%@ page import="model.PromotionRequest" %>
 <%@ page import="model.PromotionEvidence" %>
+<%@ page import="java.text.SimpleDateFormat" %>
 <%
+    SimpleDateFormat sdfDateTime = new SimpleDateFormat("dd/MM/yyyy HH:mm");
     User user = (User) request.getAttribute("employee");
     JobLevel currentLevel = (JobLevel) request.getAttribute("currentLevel");
     JobLevel nextLevel = (JobLevel) request.getAttribute("nextLevel");
@@ -147,7 +149,7 @@
                                 <i class="fa-solid fa-file-lines" style="color: #4f46e5;"></i> Hồ Sơ Đang Xét Duyệt (Mã: #<%= existingRequest.getRequestId() %>)
                             </span>
                             <span style="font-size: 12.5px; color: #64748b;">
-                                Ngày nộp: <%= existingRequest.getCreatedAt() %>
+                                Ngày nộp: <%= existingRequest.getCreatedAt() != null ? sdfDateTime.format(existingRequest.getCreatedAt()) : "" %>
                             </span>
                         </div>
 

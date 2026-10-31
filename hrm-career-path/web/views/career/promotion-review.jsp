@@ -2,7 +2,9 @@
 <%@ page import="model.User" %>
 <%@ page import="model.PromotionRequest" %>
 <%@ page import="model.PromotionEvidence" %>
+<%@ page import="java.text.SimpleDateFormat" %>
 <%
+    SimpleDateFormat sdfDateTime = new SimpleDateFormat("dd/MM/yyyy HH:mm");
     User currentUser = (User) session.getAttribute("currentUser");
     int roleId = (currentUser != null) ? currentUser.getRoleId() : 4;
     PromotionRequest reqItem = (PromotionRequest) request.getAttribute("requestItem");
@@ -237,7 +239,7 @@
                     </h3>
                     <p style="margin: 0; font-size: 13.5px; color: #047857;">
                         Quyết định được ký bởi: <strong><%= reqItem.getHrName() != null ? reqItem.getHrName() : "HR" %></strong> 
-                        vào ngày <%= reqItem.getHrActionDate() %><br>
+                        vào ngày <%= reqItem.getHrActionDate() != null ? sdfDateTime.format(reqItem.getHrActionDate()) : "" %><br>
                         Ghi chú: "<%= reqItem.getHrNotes() != null ? reqItem.getHrNotes() : "" %>"
                     </p>
                 </div>
