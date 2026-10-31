@@ -23,7 +23,7 @@
          ========================================================= -->
     <div class="topbar">
         <div>
-            <h1>Báo Cáo Quản Trị Hệ Thống</h1>
+            <h1>Báo Cáo Quản Trị Hệ Thống</h1>            
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
             <a href="<%= request.getContextPath() %>/departments?action=create" class="btn btn-secondary">
@@ -34,10 +34,10 @@
             </a>
             <a href="<%= request.getContextPath() %>/positions?action=requests" class="btn btn-primary">
                 <i class="fa-solid fa-clipboard-check"></i> Duyệt Đề Xuất Vị Trí
-                <%
+                <% 
                     Object pendingReqCountObj = request.getAttribute("countPendingRequests");
                     int pendingReqCount = (pendingReqCountObj != null) ? (Integer) pendingReqCountObj : 0;
-                    if (pendingReqCount > 0) {
+                    if (pendingReqCount > 0) { 
                 %>
                     <span class="badge" style="background-color: #ef4444; color: #fff; margin-left: 5px;"><%= pendingReqCount %></span>
                 <% } %>
@@ -163,7 +163,7 @@
          ========================================================= -->
     <div class="topbar">
         <div>
-            <h1>Báo Cáo Tổng Quan Nhân Sự</h1>
+            <h1>Báo Cáo Tổng Quan Nhân Sự</h1>            
         </div>
         <div style="display: flex; gap: 10px; align-items: center;">
             <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
@@ -171,10 +171,10 @@
             </a>
             <a href="<%= request.getContextPath() %>/transfer?action=hrRequests" class="btn btn-secondary">
                 <i class="fa-solid fa-people-arrows"></i> Điều Chuyển Nhân Sự
-                <%
+                <% 
                     Object pendingTransferCountObj = request.getAttribute("countPendingTransfers");
                     int pendingTransferCount = (pendingTransferCountObj != null) ? (Integer) pendingTransferCountObj : 0;
-                    if (pendingTransferCount > 0) {
+                    if (pendingTransferCount > 0) { 
                 %>
                     <span class="badge" style="background-color: #ef4444; color: #fff; margin-left: 5px;"><%= pendingTransferCount %></span>
                 <% } %>

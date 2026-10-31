@@ -6,7 +6,6 @@
     TestService.ContentDetail editingSet=(TestService.ContentDetail)request.getAttribute("editingSet");
     boolean editing=editingSet!=null;
     TestContent setContent=editing ? editingSet.content() : null;
-    List<LearningMaterial> learningMaterials=(List<LearningMaterial>)request.getAttribute("learningMaterials");
     String setBase=request.getContextPath()+"/tests";
     String setCsrf=(String)session.getAttribute("testCsrf");
 %>
@@ -26,23 +25,11 @@
                        value="<%= editing ? h(setContent.title()) : "" %>">
             </label>
             <label>Loại bộ đề
-                <select name="type" id="setType" required>
+                <select name="type" required>
                     <% if(setActor.cultureManager()) { %><option value="culture" <%= editing && "culture".equals(setContent.type()) ? "selected" : "" %>>Văn hóa doanh nghiệp</option><% } %>
                     <% if(setActor.professionalManager()) { %><option value="department" <%= editing && "department".equals(setContent.type()) ? "selected" : "" %>>Chuyên môn</option><% } %>
-                    <% if(setActor.professionalManager()) { %><option value="learning" <%= editing && "learning".equals(setContent.type()) ? "selected" : "" %>>Học liệu</option><% } %>
                 </select>
             </label>
-            <% if(learningMaterials!=null && !learningMaterials.isEmpty()) { %>
-            <label id="learningMaterialField">Học liệu nguồn
-                <select name="learningMaterialId" id="learningMaterialId">
-                    <option value="">-- Chọn học liệu --</option>
-                    <% for(LearningMaterial material:learningMaterials) { %>
-                    <option value="<%= material.getMaterialId() %>" <%= editing && Objects.equals(setContent.learningMaterialId(),material.getMaterialId()) ? "selected" : "" %>><%= h(material.getTitle()) %></option>
-                    <% } %>
-                </select>
-                <small>Mỗi học liệu chỉ có một bộ đề Học liệu đang hoạt động.</small>
-            </label>
-            <% } %>
             <label>Mô tả / hướng dẫn
                 <textarea name="description" maxlength="20000" rows="5" placeholder="Mô tả mục tiêu và hướng dẫn làm bài"><%= editing ? h(setContent.prompt()) : "" %></textarea>
             </label>
@@ -117,20 +104,6 @@
         var list = document.getElementById('setQuestionList');
         var template = document.getElementById('setQuestionTemplate');
         var count = document.getElementById('questionCount');
-        var setType = document.getElementById('setType');
-        var materialField = document.getElementById('learningMaterialField');
-        var materialSelect = document.getElementById('learningMaterialId');
-
-        function syncMaterialField() {
-            var learning = setType && setType.value === 'learning';
-            if (materialField)
-                materialField.hidden = !learning;
-            if (materialSelect) {
-                materialSelect.required = learning;
-                if (!learning)
-                    materialSelect.value = '';
-            }
-        }
 
         function wireOption(row) {
             if (row.dataset.wired === 'true')
@@ -237,8 +210,6 @@
         }
 
         document.getElementById('addQuestionButton').addEventListener('click', addQuestion);
-        if (setType)
-            setType.addEventListener('change', syncMaterialField);
         document.getElementById('customSetForm').addEventListener('submit', function (event) {
             renumber();
             if (list.children.length === 0) {
@@ -253,7 +224,6 @@
         Array.prototype.forEach.call(list.children, wireSection);
         if (list.children.length === 0)
             addQuestion();
-        syncMaterialField();
         renumber();
     })();
 </script>
