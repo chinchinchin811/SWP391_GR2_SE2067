@@ -70,7 +70,8 @@ GO
 -- =======================================================
 CREATE TABLE dbo.Job_Levels (
     level_id INT IDENTITY(1,1) PRIMARY KEY,
-    level_name NVARCHAR(50) NOT NULL UNIQUE, -- 'Intern', 'Fresher', 'Junior', 'Middle', 'Senior', 'Lead'
+    position_id INT NULL REFERENCES dbo.Positions(position_id), -- Cấp bậc riêng theo từng Vị trí
+    level_name NVARCHAR(50) NOT NULL, -- 'Intern', 'Fresher', 'Junior', 'Middle', 'Senior', 'Lead'
     rank_order INT NOT NULL,
     description NVARCHAR(255) NULL
 );

@@ -199,7 +199,7 @@ public class PositionDAO {
     public List<JobLevel> getAllJobLevels() {
         List<JobLevel> list = new ArrayList<>();
         String sql = """
-            SELECT level_id, level_name, rank_order, description 
+            SELECT level_id, position_id, level_name, rank_order, description 
             FROM Job_Levels 
             ORDER BY rank_order ASC
             """;
@@ -207,6 +207,7 @@ public class PositionDAO {
             while (rs.next()) {
                 JobLevel level = new JobLevel(
                         rs.getInt("level_id"),
+                        (Integer) rs.getObject("position_id"),
                         rs.getString("level_name"),
                         rs.getInt("rank_order"),
                         rs.getString("description")
@@ -217,6 +218,141 @@ public class PositionDAO {
             e.printStackTrace();
         }
         return list;
+    }
+
+    public List<JobLevel> getLevelsByPosition(int positionId) {
+        List<JobLevel> list = new ArrayList<>();
+        String sql = """
+            SELECT level_id, position_id, level_name, rank_order, description 
+            FROM Job_Levels 
+            WHERE position_id = ?
+            ORDER BY rank_order ASC, level_id ASC
+            """;
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, positionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    JobLevel level = new JobLevel(
+                            rs.getInt("level_id"),
+                            (Integer) rs.getObject("position_id"),
+                            rs.getString("level_name"),
+                            rs.getInt("rank_order"),
+                            rs.getString("description")
+                    );
+                    list.add(level);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public JobLevel getJobLevelById(int levelId) {
+        String sql = """
+            SELECT level_id, position_id, level_name, rank_order, description 
+            FROM Job_Levels 
+            WHERE level_id = ?
+            """;
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, levelId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return new JobLevel(
+                            rs.getInt("level_id"),
+                            (Integer) rs.getObject("position_id"),
+                            rs.getString("level_name"),
+                            rs.getInt("rank_order"),
+                            rs.getString("description")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public int addJobLevel(JobLevel level) {
+        String sql = """
+            INSERT INTO Job_Levels (position_id, level_name, rank_order, description)
+            VALUES (?, ?, ?, ?)
+            """;
+        try (Connection conn = DBContext.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+            if (level.getPositionId() != null) {
+                ps.setInt(1, level.getPositionId());
+            } else {
+                ps.setNull(1, Types.INTEGER);
+            }
+            ps.setString(2, level.getLevelName());
+            ps.setInt(3, level.getRankOrder());
+            ps.setString(4, level.getDescription());
+
+            int affected = ps.executeUpdate();
+            if (affected > 0) {
+                try (ResultSet rs = ps.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    public boolean updateJobLevel(JobLevel level) {
+        String sql = """
+            UPDATE Job_Levels 
+            SET level_name = ?, rank_order = ?, description = ?
+            WHERE level_id = ?
+            """;
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, level.getLevelName());
+            ps.setInt(2, level.getRankOrder());
+            ps.setString(3, level.getDescription());
+            ps.setInt(4, level.getLevelId());
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean deleteJobLevel(int levelId) {
+        String sql = "DELETE FROM Job_Levels WHERE level_id = ?";
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, levelId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean isLevelUsed(int levelId) {
+        String sql = """
+            SELECT (SELECT COUNT(*) FROM Users WHERE level_id = ?) +
+                   (SELECT COUNT(*) FROM Position_Level_Criteria WHERE from_level_id = ? OR to_level_id = ?) +
+                   (SELECT COUNT(*) FROM Promotion_Requests WHERE current_level_id = ? OR target_level_id = ?) AS total_ref
+            """;
+        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, levelId);
+            ps.setInt(2, levelId);
+            ps.setInt(3, levelId);
+            ps.setInt(4, levelId);
+            ps.setInt(5, levelId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("total_ref") > 0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public int countPositions() {

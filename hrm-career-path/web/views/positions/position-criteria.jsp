@@ -36,8 +36,11 @@
                     <i class="fa-solid fa-plus"></i> Thêm Nấc Thăng Tiến Mới
                 </button>
             <% } %>
-            <a href="<%= request.getContextPath() %>/positions" class="btn btn-secondary">
-                <i class="fa-solid fa-arrow-left"></i> Quay lại Vị Trí
+            <a href="<%= request.getContextPath() %>/positions?action=detail&id=<%= pos != null ? pos.getPositionId() : 0 %>" class="btn btn-secondary">
+                <i class="fa-solid fa-layer-group"></i> Chi Tiết & Cấp Bậc
+            </a>
+            <a href="<%= request.getContextPath() %>/positions" class="btn btn-outline-secondary">
+                <i class="fa-solid fa-arrow-left"></i> Danh Sách Vị Trí
             </a>
         </div>
     </div>
@@ -211,44 +214,49 @@
             <button type="button" onclick="closeAddCriteriaModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8;">&times;</button>
         </div>
 
-        <form action="<%= request.getContextPath() %>/positions" method="POST">
+        <form id="addCriteriaForm" action="<%= request.getContextPath() %>/positions" method="POST" novalidate onsubmit="return validateCriteriaForm(event);">
             <input type="hidden" name="action" value="saveCriteria">
             <input type="hidden" name="positionId" value="<%= pos != null ? pos.getPositionId() : 0 %>">
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 14px;">
                 <div class="form-group">
                     <label style="font-weight: 600; font-size: 13px;">Từ Cấp Bậc (*):</label>
-                    <select name="fromLevelId" class="form-control" required>
+                    <select id="fromLevelId" name="fromLevelId" class="form-control" onchange="clearFieldError(this, 'err_fromLevelId')">
                         <option value="">-- Chọn Cấp Bậc Hiện Tại --</option>
                         <% if (allLevels != null) { for (JobLevel lvl : allLevels) { %>
-                            <option value="<%= lvl.getLevelId() %>"><%= lvl.getRankOrder() %>. <%= lvl.getLevelName() %></option>
+                            <option value="<%= lvl.getLevelId() %>" data-rank="<%= lvl.getRankOrder() %>">Bậc <%= lvl.getRankOrder() %>. <%= lvl.getLevelName() %></option>
                         <% }} %>
                     </select>
+                    <div id="err_fromLevelId" class="inline-error" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: none;"></div>
                 </div>
                 <div class="form-group">
                     <label style="font-weight: 600; font-size: 13px;">Lên Cấp Bậc Mục Tiêu (*):</label>
-                    <select name="toLevelId" class="form-control" required>
+                    <select id="toLevelId" name="toLevelId" class="form-control" onchange="clearFieldError(this, 'err_toLevelId')">
                         <option value="">-- Chọn Cấp Bậc Đích --</option>
                         <% if (allLevels != null) { for (JobLevel lvl : allLevels) { %>
-                            <option value="<%= lvl.getLevelId() %>"><%= lvl.getRankOrder() %>. <%= lvl.getLevelName() %></option>
+                            <option value="<%= lvl.getLevelId() %>" data-rank="<%= lvl.getRankOrder() %>">Bậc <%= lvl.getRankOrder() %>. <%= lvl.getLevelName() %></option>
                         <% }} %>
                     </select>
+                    <div id="err_toLevelId" class="inline-error" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: none;"></div>
                 </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 14px;">
                 <label style="font-weight: 600; font-size: 13px;">Tóm Tắt Năng Lực Cốt Lõi Yêu Cầu (*):</label>
-                <textarea name="competencySummary" rows="3" class="form-control" placeholder="Ví dụ: Nắm vững kiến trúc Microservices, làm chủ Docker, tối ưu hóa CSDL..." required></textarea>
+                <textarea id="competencySummary" name="competencySummary" rows="3" class="form-control" placeholder="Ví dụ: Nắm vững kiến trúc Microservices, làm chủ Docker, tối ưu hóa CSDL..." oninput="clearFieldError(this, 'err_competencySummary')"></textarea>
+                <div id="err_competencySummary" class="inline-error" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: none;"></div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 18px;">
                 <div class="form-group">
                     <label style="font-weight: 600; font-size: 13px;">Điểm Bài Test Sát Hạch Sàn (0 - 100):</label>
-                    <input type="number" step="0.1" name="minTestScore" class="form-control" value="80.0" required>
+                    <input type="number" step="0.1" id="minTestScore" name="minTestScore" class="form-control" value="80.0" oninput="clearFieldError(this, 'err_minTestScore')">
+                    <div id="err_minTestScore" class="inline-error" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: none;"></div>
                 </div>
                 <div class="form-group">
                     <label style="font-weight: 600; font-size: 13px;">Điểm Đánh Giá Sàn Từ Manager (1 - 10):</label>
-                    <input type="number" step="0.1" name="minManagerRating" class="form-control" value="7.5" required>
+                    <input type="number" step="0.1" id="minManagerRating" name="minManagerRating" class="form-control" value="7.5" oninput="clearFieldError(this, 'err_minManagerRating')">
+                    <div id="err_minManagerRating" class="inline-error" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: none;"></div>
                 </div>
             </div>
 
@@ -271,14 +279,14 @@
             <button type="button" onclick="closeAddReqModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8;">&times;</button>
         </div>
 
-        <form action="<%= request.getContextPath() %>/positions" method="POST">
+        <form id="addReqForm" action="<%= request.getContextPath() %>/positions" method="POST" novalidate onsubmit="return validateReqForm(event);">
             <input type="hidden" name="action" value="addRequirement">
             <input type="hidden" name="positionId" value="<%= pos != null ? pos.getPositionId() : 0 %>">
             <input type="hidden" id="modalCriteriaId" name="criteriaId" value="">
 
             <div class="form-group" style="margin-bottom: 12px;">
                 <label style="font-weight: 600; font-size: 13px;">Phân Loại Tiêu Chí (*):</label>
-                <select name="requirementType" class="form-control" required>
+                <select name="requirementType" class="form-control">
                     <option value="PROJECT_EXPERIENCE">Kinh Nghiệm Dự Án Thực Tế (Project Experience)</option>
                     <option value="CUSTOMER_SATISFACTION">Đánh Giá Khách Hàng / CSAT (Customer Satisfaction)</option>
                     <option value="CERTIFICATE">Chứng Chỉ Chuyên Môn / Quốc Tế (External Certificate)</option>
@@ -288,7 +296,8 @@
 
             <div class="form-group" style="margin-bottom: 12px;">
                 <label style="font-weight: 600; font-size: 13px;">Tên Tiêu Chí Yêu Cầu (*):</label>
-                <input type="text" name="requirementTitle" class="form-control" placeholder="Ví dụ: Tham gia tối thiểu 2 dự án thực tế đạt tiến độ" required>
+                <input type="text" id="reqTitle" name="requirementTitle" class="form-control" placeholder="Ví dụ: Tham gia tối thiểu 2 dự án thực tế đạt tiến độ" oninput="clearFieldError(this, 'err_reqTitle')">
+                <div id="err_reqTitle" class="inline-error" style="color: #dc2626; font-size: 12px; margin-top: 4px; display: none;"></div>
             </div>
 
             <div class="form-group" style="margin-bottom: 12px;">
@@ -313,12 +322,14 @@
 
 <script>
 function openAddCriteriaModal() {
+    clearCriteriaErrors();
     document.getElementById('addCriteriaModal').style.display = 'flex';
 }
 function closeAddCriteriaModal() {
     document.getElementById('addCriteriaModal').style.display = 'none';
 }
 function openAddReqModal(criteriaId, stepTitle) {
+    clearReqErrors();
     document.getElementById('modalCriteriaId').value = criteriaId;
     document.getElementById('modalCriteriaSub').innerText = 'Cho nấc: ' + stepTitle;
     document.getElementById('addReqModal').style.display = 'flex';
@@ -331,6 +342,141 @@ window.onclick = function(event) {
     var m2 = document.getElementById('addReqModal');
     if (event.target === m1) closeAddCriteriaModal();
     if (event.target === m2) closeAddReqModal();
+};
+
+function showError(inputEl, errId, msg) {
+    if (inputEl) {
+        inputEl.style.borderColor = '#ef4444';
+        inputEl.style.backgroundColor = '#fff5f5';
+    }
+    var errDiv = document.getElementById(errId);
+    if (errDiv) {
+        errDiv.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> ' + msg;
+        errDiv.style.display = 'block';
+    }
+}
+
+function clearFieldError(inputEl, errId) {
+    if (inputEl) {
+        inputEl.style.borderColor = '#cbd5e1';
+        inputEl.style.backgroundColor = '#ffffff';
+    }
+    var errDiv = document.getElementById(errId);
+    if (errDiv) {
+        errDiv.style.display = 'none';
+        errDiv.innerHTML = '';
+    }
+}
+
+function clearCriteriaErrors() {
+    var errs = ['err_fromLevelId', 'err_toLevelId', 'err_competencySummary', 'minTestScore', 'minManagerRating'];
+    var inputs = ['fromLevelId', 'toLevelId', 'competencySummary', 'minTestScore', 'minManagerRating'];
+    inputs.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.style.borderColor = '#cbd5e1';
+            el.style.backgroundColor = '#ffffff';
+        }
+    });
+    var inlineErrors = document.querySelectorAll('#addCriteriaModal .inline-error');
+    inlineErrors.forEach(function(div) {
+        div.style.display = 'none';
+        div.innerHTML = '';
+    });
+}
+
+function clearReqErrors() {
+    var el = document.getElementById('reqTitle');
+    if (el) {
+        el.style.borderColor = '#cbd5e1';
+        el.style.backgroundColor = '#ffffff';
+    }
+    var errDiv = document.getElementById('err_reqTitle');
+    if (errDiv) {
+        errDiv.style.display = 'none';
+        errDiv.innerHTML = '';
+    }
+}
+
+function validateCriteriaForm(e) {
+    var isValid = true;
+    var fromSelect = document.getElementById('fromLevelId');
+    var toSelect = document.getElementById('toLevelId');
+    var summaryInput = document.getElementById('competencySummary');
+    var testScoreInput = document.getElementById('minTestScore');
+    var ratingInput = document.getElementById('minManagerRating');
+
+    // Reset previous errors
+    clearCriteriaErrors();
+
+    // 1. Validate fromLevelId
+    if (!fromSelect.value) {
+        showError(fromSelect, 'err_fromLevelId', 'Vui lòng chọn cấp bậc hiện tại.');
+        isValid = false;
+    }
+
+    // 2. Validate toLevelId
+    if (!toSelect.value) {
+        showError(toSelect, 'err_toLevelId', 'Vui lòng chọn cấp bậc mục tiêu.');
+        isValid = false;
+    } else if (fromSelect.value) {
+        if (fromSelect.value === toSelect.value) {
+            showError(toSelect, 'err_toLevelId', 'Cấp bậc mục tiêu không được trùng với cấp bậc hiện tại!');
+            isValid = false;
+        } else {
+            var fromOpt = fromSelect.options[fromSelect.selectedIndex];
+            var toOpt = toSelect.options[toSelect.selectedIndex];
+            var fromRank = parseInt(fromOpt.getAttribute('data-rank') || '0', 10);
+            var toRank = parseInt(toOpt.getAttribute('data-rank') || '0', 10);
+            if (toRank <= fromRank) {
+                showError(toSelect, 'err_toLevelId', 'Cấp bậc mục tiêu phải cao hơn cấp bậc hiện tại (Bậc ' + toRank + ' không thể nhỏ hơn hoặc bằng Bậc ' + fromRank + ')!');
+                isValid = false;
+            }
+        }
+    }
+
+    // 3. Validate competencySummary
+    if (!summaryInput.value || summaryInput.value.trim() === '') {
+        showError(summaryInput, 'err_competencySummary', 'Vui lòng nhập tóm tắt năng lực cốt lõi yêu cầu.');
+        isValid = false;
+    }
+
+    // 4. Validate minTestScore
+    var score = parseFloat(testScoreInput.value);
+    if (isNaN(score) || score < 0 || score > 100) {
+        showError(testScoreInput, 'err_minTestScore', 'Điểm bài test sát hạch sàn phải từ 0 đến 100.');
+        isValid = false;
+    }
+
+    // 5. Validate minManagerRating
+    var rating = parseFloat(ratingInput.value);
+    if (isNaN(rating) || rating < 0 || rating > 10) {
+        showError(ratingInput, 'err_minManagerRating', 'Điểm đánh giá kín sàn từ Manager phải từ 0 đến 10.');
+        isValid = false;
+    }
+
+    if (!isValid) {
+        e.preventDefault();
+        return false;
+    }
+    return true;
+}
+
+function validateReqForm(e) {
+    var isValid = true;
+    var titleInput = document.getElementById('reqTitle');
+    clearReqErrors();
+
+    if (!titleInput.value || titleInput.value.trim() === '') {
+        showError(titleInput, 'err_reqTitle', 'Vui lòng nhập tên tiêu chí yêu cầu.');
+        isValid = false;
+    }
+
+    if (!isValid) {
+        e.preventDefault();
+        return false;
+    }
+    return true;
 }
 </script>
 

@@ -5,6 +5,7 @@ import java.io.Serializable;
 public class JobLevel implements Serializable {
 
     private int levelId;
+    private Integer positionId;
     private String levelName;
     private int rankOrder;
     private String description;
@@ -19,12 +20,28 @@ public class JobLevel implements Serializable {
         this.description = description;
     }
 
+    public JobLevel(int levelId, Integer positionId, String levelName, int rankOrder, String description) {
+        this.levelId = levelId;
+        this.positionId = positionId;
+        this.levelName = levelName;
+        this.rankOrder = rankOrder;
+        this.description = description;
+    }
+
     public int getLevelId() {
         return levelId;
     }
 
     public void setLevelId(int levelId) {
         this.levelId = levelId;
+    }
+
+    public Integer getPositionId() {
+        return positionId;
+    }
+
+    public void setPositionId(Integer positionId) {
+        this.positionId = positionId;
     }
 
     public String getLevelName() {
