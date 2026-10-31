@@ -165,7 +165,7 @@
         <div>
             <h1>Báo Cáo Tổng Quan Nhân Sự</h1>            
         </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
+<!--        <div style="display: flex; gap: 10px; align-items: center;">
             <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
                 <i class="fa-solid fa-user-plus"></i> + Khai Báo Nhân Viên Mới
             </a>
@@ -179,7 +179,7 @@
                     <span class="badge" style="background-color: #ef4444; color: #fff; margin-left: 5px;"><%= pendingTransferCount %></span>
                 <% } %>
             </a>            
-        </div>
+        </div>-->
     </div>
 
     <div class="content-body">
