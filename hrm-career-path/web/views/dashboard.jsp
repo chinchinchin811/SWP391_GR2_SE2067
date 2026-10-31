@@ -178,10 +178,7 @@
                 %>
                     <span class="badge" style="background-color: #ef4444; color: #fff; margin-left: 5px;"><%= pendingTransferCount %></span>
                 <% } %>
-            </a>
-            <a href="<%= request.getContextPath() %>/mentors?action=pair" class="btn btn-secondary">
-                <i class="fa-solid fa-handshake"></i> Ghép Nối Mentor
-            </a>
+            </a>            
         </div>
     </div>
 
