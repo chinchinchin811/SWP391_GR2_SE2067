@@ -110,7 +110,7 @@
                             if (positions != null && !positions.isEmpty()) {
                                 for (Position p : positions) {
                         %>
-                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                        <tr onclick="handleRowClick(event, '<%= request.getContextPath() %>/positions?action=detail&id=<%= p.getPositionId() %>')" style="border-bottom: 1px solid #f1f5f9; cursor: pointer;" title="Nhấp vào dòng để xem chi tiết vị trí <%= p.getPositionName() %>">
                             <td style="padding: 14px 16px; font-weight: 700; color: #64748b;">#<%= p.getPositionId() %></td>
                             <td style="padding: 14px 16px;">
                                 <a href="<%= request.getContextPath() %>/positions?action=detail&amp;id=<%= p.getPositionId() %>" style="color: #1e293b; font-weight: 700; font-size: 14.5px; text-decoration: none;">
@@ -139,28 +139,28 @@
                             </td>
                             <td style="padding: 14px 16px; text-align: center;">
                                 <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
-                                    <a href="<%= request.getContextPath() %>/positions?action=detail&amp;id=<%= p.getPositionId() %>" 
-                                       class="btn btn-sm" style="background: #0284c7; color: #ffffff; padding: 5px 10px; font-size: 12px; border-radius: 4px;" title="Xem chi tiết, danh sách cấp bậc &amp; lộ trình">
-                                        <i class="fa-solid fa-circle-info"></i> Chi tiết
-                                    </a>
                                     <% if (roleId == 1) { %>
-                                        <a href="<%= request.getContextPath() %>/positions?action=criteria&amp;positionId=<%= p.getPositionId() %>" 
-                                           class="btn btn-sm" style="background: #4f46e5; color: #ffffff; padding: 5px 10px; font-size: 12px; border-radius: 4px;" title="Cấu hình Barem Thăng Cấp">
-                                            <i class="fa-solid fa-stairs"></i> Barem
+                                        <a href="<%= request.getContextPath() %>/positions?action=detail&amp;id=<%= p.getPositionId() %>" 
+                                           class="btn btn-sm" style="background: #0284c7; color: #ffffff; padding: 5px 12px; font-size: 12.5px; border-radius: 4px; font-weight: 500;" title="Cấu hình cấp bậc &amp; lộ trình thăng tiến">
+                                            <i class="fa-solid fa-sliders"></i> Cấu hình lộ trình
                                         </a>
                                         <a href="<%= request.getContextPath() %>/positions?action=edit&amp;id=<%= p.getPositionId() %>" 
-                                           class="btn btn-sm btn-secondary" style="padding: 5px 10px; font-size: 12px; border-radius: 4px;" aria-label="Sửa vị trí <%= p.getPositionName() %>">
-                                            <i class="fa-solid fa-pen"></i> Sửa
+                                           class="btn btn-sm btn-secondary" style="padding: 5px 10px; font-size: 12px; border-radius: 4px;" title="Chỉnh sửa thông tin vị trí">
+                                            <i class="fa-solid fa-pen-to-square"></i>
                                         </a>
-                                        <form action="<%= request.getContextPath() %>/positions" method="POST" style="display: inline-block; margin: 0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vị trí này?');">
+                                        <form action="<%= request.getContextPath() %>/positions" method="POST" style="display: inline;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa vị trí này?');">
                                             <input type="hidden" name="action" value="delete">
                                             <input type="hidden" name="id" value="<%= p.getPositionId() %>">
-                                            <button type="submit" class="btn btn-sm btn-danger" style="padding: 5px 10px; font-size: 12px; border-radius: 4px;" aria-label="Xóa vị trí <%= p.getPositionName() %>">
-                                                <i class="fa-solid fa-trash"></i> Xóa
+                                            <button type="submit" class="btn btn-sm btn-danger" style="padding: 5px 10px; font-size: 12px; border-radius: 4px;" title="Xóa vị trí">
+                                                <i class="fa-solid fa-trash"></i>
                                             </button>
                                         </form>
-                                    <% } %>
-                                </div>
+                                    <% } else { %>
+                                        <a href="<%= request.getContextPath() %>/positions?action=detail&amp;id=<%= p.getPositionId() %>" 
+                                           class="btn btn-sm" style="background: #0284c7; color: #ffffff; padding: 5px 12px; font-size: 12.5px; border-radius: 4px; font-weight: 500;" title="Xem cấp bậc &amp; lộ trình thăng tiến">
+                                            <i class="fa-solid fa-eye"></i> Xem lộ trình
+                                        </a>
+                                    <% } %></div>
                             </td>
                         </tr>
                         <%
@@ -180,5 +180,15 @@
         </div>
     </div>
 </main>
+
+
+<script>
+function handleRowClick(e, url) {
+    if (e.target.closest('a') || e.target.closest('button') || e.target.closest('input') || e.target.closest('form')) {
+        return;
+    }
+    window.location.href = url;
+}
+</script>
 
 <jsp:include page="/views/common/footer.jsp" />

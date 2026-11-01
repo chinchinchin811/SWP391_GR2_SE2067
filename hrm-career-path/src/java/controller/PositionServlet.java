@@ -118,6 +118,11 @@ public class PositionServlet extends HttpServlet {
                 showCriteria(request, response, currentUser);
                 break;
 
+            case "criteriaConfig":
+                String cfgPosId = request.getParameter("positionId");
+                response.sendRedirect(request.getContextPath() + "/positions" + (cfgPosId != null ? "?action=detail&id=" + cfgPosId : ""));
+                break;
+
             default:
                 listPositions(request, response, currentUser);
                 break;
@@ -242,6 +247,13 @@ public class PositionServlet extends HttpServlet {
         }
     }
 
+    private String resolveRedirectUrl(HttpServletRequest request, String returnTo, int posId) {
+        if ("criteria".equals(returnTo)) {
+            return request.getContextPath() + "/positions?action=criteria&positionId=" + posId;
+        }
+        return request.getContextPath() + "/positions?action=detail&id=" + posId;
+    }
+
     private void saveCriteria(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws IOException {
         String posIdStr = request.getParameter("positionId");
@@ -254,9 +266,7 @@ public class PositionServlet extends HttpServlet {
 
         try {
             int posId = Integer.parseInt(posIdStr);
-            String redirectUrl = "detail".equals(returnTo)
-                    ? request.getContextPath() + "/positions?action=detail&id=" + posId
-                    : request.getContextPath() + "/positions?action=criteria&positionId=" + posId;
+            String redirectUrl = resolveRedirectUrl(request, returnTo, posId);
 
             int fromLvl = Integer.parseInt(fromLevelStr);
             int toLvl = Integer.parseInt(toLevelStr);
@@ -317,11 +327,10 @@ public class PositionServlet extends HttpServlet {
         String returnTo = request.getParameter("returnTo");
         try {
             int critId = Integer.parseInt(critIdStr);
+            int posId = Integer.parseInt(posIdStr);
             careerProgressionDAO.deleteCriteria(critId);
             request.getSession().setAttribute("successMessage", "Đã xóa nấc barem thăng tiến!");
-            String redirectUrl = "detail".equals(returnTo)
-                    ? request.getContextPath() + "/positions?action=detail&id=" + posIdStr
-                    : request.getContextPath() + "/positions?action=criteria&positionId=" + posIdStr;
+            String redirectUrl = resolveRedirectUrl(request, returnTo, posId);
             response.sendRedirect(redirectUrl);
         } catch (Exception e) {
             response.sendRedirect(request.getContextPath() + "/positions");
@@ -340,6 +349,7 @@ public class PositionServlet extends HttpServlet {
 
         try {
             int critId = Integer.parseInt(critIdStr);
+            int posId = Integer.parseInt(posIdStr);
             CriteriaRequirement req = new CriteriaRequirement();
             req.setCriteriaId(critId);
             req.setRequirementTitle(title != null ? title.trim() : "");
@@ -354,9 +364,7 @@ public class PositionServlet extends HttpServlet {
             } else {
                 request.getSession().setAttribute("errorMessage", "Thêm tiêu chí thất bại!");
             }
-            String redirectUrl = "detail".equals(returnTo)
-                    ? request.getContextPath() + "/positions?action=detail&id=" + posIdStr
-                    : request.getContextPath() + "/positions?action=criteria&positionId=" + posIdStr;
+            String redirectUrl = resolveRedirectUrl(request, returnTo, posId);
             response.sendRedirect(redirectUrl);
         } catch (Exception e) {
             response.sendRedirect(request.getContextPath() + "/positions");
@@ -370,11 +378,10 @@ public class PositionServlet extends HttpServlet {
         String returnTo = request.getParameter("returnTo");
         try {
             int reqId = Integer.parseInt(reqIdStr);
+            int posId = Integer.parseInt(posIdStr);
             careerProgressionDAO.deleteRequirement(reqId);
             request.getSession().setAttribute("successMessage", "Đã xóa tiêu chí minh chứng!");
-            String redirectUrl = "detail".equals(returnTo)
-                    ? request.getContextPath() + "/positions?action=detail&id=" + posIdStr
-                    : request.getContextPath() + "/positions?action=criteria&positionId=" + posIdStr;
+            String redirectUrl = resolveRedirectUrl(request, returnTo, posId);
             response.sendRedirect(redirectUrl);
         } catch (Exception e) {
             response.sendRedirect(request.getContextPath() + "/positions");
@@ -627,13 +634,18 @@ public class PositionServlet extends HttpServlet {
         String name = request.getParameter("levelName");
         String rankStr = request.getParameter("rankOrder");
         String desc = request.getParameter("description");
+        String returnTo = request.getParameter("returnTo");
 
         try {
             int posId = Integer.parseInt(posIdStr);
+            String target = "config".equals(returnTo)
+                    ? request.getContextPath() + "/positions?action=criteriaConfig&positionId=" + posId
+                    : request.getContextPath() + "/positions?action=detail&id=" + posId;
+
             int rank = Integer.parseInt(rankStr);
             if (name == null || name.trim().isEmpty() || rank <= 0) {
                 request.getSession().setAttribute("errorMessage", "Vui lòng nhập tên cấp bậc và thứ tự bậc hợp lệ (> 0)!");
-                response.sendRedirect(request.getContextPath() + "/positions?action=detail&id=" + posId);
+                response.sendRedirect(target);
                 return;
             }
 
@@ -645,11 +657,11 @@ public class PositionServlet extends HttpServlet {
 
             int newId = positionDAO.addJobLevel(lvl);
             if (newId > 0) {
-                request.getSession().setAttribute("successMessage", "Đã thêm cấp bậc '" + lvl.getLevelName() + "' cho vị trí!");
+                request.getSession().setAttribute("successMessage", "Đã thêm cấp bậc '" + lvl.getLevelName() + "' cho vị trí (Các bậc liên quan đã tự động cập nhật thứ tự)!");
             } else {
                 request.getSession().setAttribute("errorMessage", "Không thể thêm cấp bậc. Vui lòng kiểm tra lại thông tin!");
             }
-            response.sendRedirect(request.getContextPath() + "/positions?action=detail&id=" + posId);
+            response.sendRedirect(target);
         } catch (Exception e) {
             e.printStackTrace();
             response.sendRedirect(request.getContextPath() + "/positions");
@@ -663,11 +675,15 @@ public class PositionServlet extends HttpServlet {
         String name = request.getParameter("levelName");
         String rankStr = request.getParameter("rankOrder");
         String desc = request.getParameter("description");
+        String returnTo = request.getParameter("returnTo");
 
         try {
             int posId = Integer.parseInt(posIdStr);
             int levelId = Integer.parseInt(levelIdStr);
             int rank = Integer.parseInt(rankStr);
+            String target = "config".equals(returnTo)
+                    ? request.getContextPath() + "/positions?action=criteriaConfig&positionId=" + posId
+                    : request.getContextPath() + "/positions?action=detail&id=" + posId;
 
             JobLevel lvl = new JobLevel();
             lvl.setLevelId(levelId);
@@ -678,11 +694,11 @@ public class PositionServlet extends HttpServlet {
 
             boolean ok = positionDAO.updateJobLevel(lvl);
             if (ok) {
-                request.getSession().setAttribute("successMessage", "Đã cập nhật thông tin cấp bậc!");
+                request.getSession().setAttribute("successMessage", "Đã cập nhật thông tin cấp bậc (Thứ tự các bậc liên quan đã được tự động dời nấc tương ứng)!");
             } else {
                 request.getSession().setAttribute("errorMessage", "Cập nhật cấp bậc thất bại!");
             }
-            response.sendRedirect(request.getContextPath() + "/positions?action=detail&id=" + posId);
+            response.sendRedirect(target);
         } catch (Exception e) {
             response.sendRedirect(request.getContextPath() + "/positions");
         }
@@ -692,21 +708,25 @@ public class PositionServlet extends HttpServlet {
             throws IOException {
         String posIdStr = request.getParameter("positionId");
         String levelIdStr = request.getParameter("levelId");
+        String returnTo = request.getParameter("returnTo");
         try {
             int posId = Integer.parseInt(posIdStr);
             int levelId = Integer.parseInt(levelIdStr);
+            String target = "config".equals(returnTo)
+                    ? request.getContextPath() + "/positions?action=criteriaConfig&positionId=" + posId
+                    : request.getContextPath() + "/positions?action=detail&id=" + posId;
 
             if (positionDAO.isLevelUsed(levelId)) {
                 request.getSession().setAttribute("errorMessage", "Không thể xóa cấp bậc này vì đang được nhân viên giữ hoặc đang có trong barem thăng tiến!");
             } else {
                 boolean ok = positionDAO.deleteJobLevel(levelId);
                 if (ok) {
-                    request.getSession().setAttribute("successMessage", "Đã xóa cấp bậc khỏi vị trí!");
+                    request.getSession().setAttribute("successMessage", "Đã xóa cấp bậc khỏi vị trí (Các bậc sau đó đã tự động giảm 1 nấc)!");
                 } else {
                     request.getSession().setAttribute("errorMessage", "Xóa cấp bậc thất bại!");
                 }
             }
-            response.sendRedirect(request.getContextPath() + "/positions?action=detail&id=" + posId);
+            response.sendRedirect(target);
         } catch (Exception e) {
             response.sendRedirect(request.getContextPath() + "/positions");
         }
@@ -715,8 +735,13 @@ public class PositionServlet extends HttpServlet {
     private void copyDefaultLevels(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws IOException {
         String posIdStr = request.getParameter("positionId");
+        String returnTo = request.getParameter("returnTo");
         try {
             int posId = Integer.parseInt(posIdStr);
+            String target = "config".equals(returnTo)
+                    ? request.getContextPath() + "/positions?action=criteriaConfig&positionId=" + posId
+                    : request.getContextPath() + "/positions?action=detail&id=" + posId;
+
             String[][] defaults = {
                 {"Intern", "1", "Thực tập sinh"},
                 {"Fresher", "2", "Nhân viên mới vào nghề"},
@@ -734,7 +759,7 @@ public class PositionServlet extends HttpServlet {
                 positionDAO.addJobLevel(lvl);
             }
             request.getSession().setAttribute("successMessage", "Đã khởi tạo bộ 6 cấp bậc tiêu chuẩn cho vị trí!");
-            response.sendRedirect(request.getContextPath() + "/positions?action=detail&id=" + posId);
+            response.sendRedirect(target);
         } catch (Exception e) {
             response.sendRedirect(request.getContextPath() + "/positions");
         }

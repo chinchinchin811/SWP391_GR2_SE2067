@@ -60,13 +60,13 @@
 
 <main class="main-content">
     <div class="topbar">
-        <div>
-            <div style="font-size: 12.5px; color: #64748b; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+        <div style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 3px;">
+            <div style="font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 6px;">
                 <a href="<%= request.getContextPath() %>/positions" style="color: #64748b; text-decoration: none;">Vị Trí Chuyên Môn</a>
-                <i class="fa-solid fa-chevron-right" style="font-size: 10px;"></i>
-                <span style="color: #1e293b; font-weight: 600;"><%= pos != null ? pos.getPositionName() : "" %></span>
+                <i class="fa-solid fa-chevron-right" style="font-size: 9px; color: #94a3b8;"></i>
+                <span style="color: #475569; font-weight: 500;">Chi Tiết Vị Trí</span>
             </div>
-            <h1 style="margin: 0; font-size: 22px; color: #0f172a;">
+            <h1 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; line-height: 1.2;">
                 <%= pos != null ? pos.getPositionName() : "Chi Tiết Vị Trí" %>
             </h1>
         </div>
@@ -459,7 +459,7 @@
             <div class="form-group" style="margin-bottom: 14px;">
                 <label style="font-weight: 600; font-size: 13px;">Thứ Tự Bậc (Rank Order) (*):</label>
                 <input type="number" id="addRankOrder" name="rankOrder" class="form-control" placeholder="1, 2, 3..." value="<%= (levels != null ? levels.size() + 1 : 1) %>" oninput="clearFieldError(this, 'err_addRankOrder')">
-                <small style="color: #64748b; font-size: 12px;">Số nguyên > 0. Càng cao đại diện cho bậc càng cao.</small>
+                <small style="color: #4338ca; font-size: 12px; background: #e0e7ff; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-top: 4px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Hệ thống tự động đẩy các bậc sau đó lên 1 nấc nếu chọn thứ tự đã có.</small>
                 <div id="err_addRankOrder" class="inline-error"></div>
             </div>
 

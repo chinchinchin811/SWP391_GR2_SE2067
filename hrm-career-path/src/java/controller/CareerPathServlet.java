@@ -87,7 +87,13 @@ public class CareerPathServlet extends HttpServlet {
     private void showMyCareerPath(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws ServletException, IOException {
         User employee = userDAO.getUserById(currentUser.getUserId());
-        List<JobLevel> allLevels = positionDAO.getAllJobLevels();
+        List<JobLevel> allLevels = null;
+        if (employee != null && employee.getPositionId() != null) {
+            allLevels = positionDAO.getLevelsByPosition(employee.getPositionId());
+        }
+        if (allLevels == null || allLevels.isEmpty()) {
+            allLevels = positionDAO.getAllJobLevels();
+        }
 
         JobLevel currentLevel = null;
         JobLevel nextLevel = null;

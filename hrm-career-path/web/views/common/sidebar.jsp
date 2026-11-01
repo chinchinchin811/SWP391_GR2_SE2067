@@ -52,16 +52,12 @@
                             <i class="fa-regular fa-building nav-icon"></i> <span>Cơ Cấu Tổ Chức Phòng Ban</span>
                         </a>
                     </li>
-                    <li class="<%= currentURI.contains("/positions") && !"requests".equals(action) && !"criteriaConfig".equals(action) ? "active" : "" %>">
+                    <li class="<%= currentURI.contains("/positions") && !"requests".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/positions">
                             <i class="fa-solid fa-id-badge nav-icon"></i> <span>Vị trí và cấp bậc</span>
                         </a>
                     </li>
-                    <li class="<%= currentURI.contains("/positions") && "criteriaConfig".equals(action) ? "active" : "" %>">
-                        <a href="<%= request.getContextPath() %>/positions?action=criteriaConfig">
-                            <i class="fa-solid fa-sliders nav-icon"></i> <span>Cấu hình điều kiện thăng tiến</span>
-                        </a>
-                    </li>
+
                 </ul>
             </li>
             <li class="<%= currentURI.contains("/positions") && "requests".equals(action) ? "active" : "" %>">

@@ -61,7 +61,7 @@
                             if (departments != null && !departments.isEmpty()) {
                                 for (Department d : departments) {
                         %>
-                        <tr>
+                        <tr onclick="handleRowClick(event, '<%= request.getContextPath() %>/positions?departmentId=<%= d.getDepartmentId() %>')" style="cursor: pointer;" title="Nhấp vào dòng để xem danh sách vị trí của phòng <%= d.getDepartmentName() %>">
                             <td><%= d.getDepartmentId() %></td>
                             <td><b><%= d.getDepartmentName() %></b></td>
                             <td>
@@ -215,5 +215,15 @@ document.addEventListener('keydown', function(e) {
 });
 </script>
 <% } %>
+
+
+<script>
+function handleRowClick(e, url) {
+    if (e.target.closest('a') || e.target.closest('button') || e.target.closest('input') || e.target.closest('form')) {
+        return;
+    }
+    window.location.href = url;
+}
+</script>
 
 <jsp:include page="/views/common/footer.jsp" />
