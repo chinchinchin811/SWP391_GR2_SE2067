@@ -1,0 +1,126 @@
+LUỒNG DỮ LIỆU DEMO: LỘ TRÌNH THĂNG TIẾN NGHỀ NGHIỆP & TỰ ĐỘNG THĂNG CẤP (CPMS)
+Tài liệu hướng dẫn dữ liệu mẫu và các bước kiểm thử luồng thăng tiến nhân sự lũy tiến
+
+================================================================================
+I. DANH SÁCH TÀI KHOẢN THỬ NGHIỆM TRÊN HỆ THỐNG
+================================================================================
+1. Tài khoản Nhân viên (Employee - Đối tượng thăng tiến):
+   - Tên đăng nhập: dev_fresher
+   - Mật khẩu: 123
+   - Họ và tên: Phạm Đức Trọng
+   - Phòng ban: Phòng Kỹ Thuật (IT)
+   - Vị trí chuyên môn: Java Developer
+   - Cấp bậc ban đầu: Bậc 2 (Fresher) -> Mục tiêu thăng tiến: Bậc 3 (Junior)
+
+2. Tài khoản Trưởng phòng trực tiếp (Manager - Người thẩm định):
+   - Tên đăng nhập: manager_it
+   - Mật khẩu: 123
+   - Họ và tên: Trần Văn Minh
+   - Vai trò: Trưởng phòng Kỹ Thuật (IT)
+
+3. Tài khoản Quản trị viên (Admin):
+   - Tên đăng nhập: admin
+   - Mật khẩu: 123
+
+4. Tài khoản Nhân sự (HR):
+   - Tên đăng nhập: hr_manager
+   - Mật khẩu: 123
+
+================================================================================
+II. KỊCH BẢN KIỂM THỬ 1: KIỂM TRA BẮT LỖI TẠI POPUP (VALIDATION TEXT ĐỎ)
+================================================================================
+Mục tiêu: Đảm bảo khi người dùng nhập sai, hệ thống KHÔNG bật popup tooltip mặc định của trình duyệt mà xuất hiện dòng cảnh báo chữ màu đỏ ngay dưới ô nhập liệu.
+
+Bước thực hiện:
+1. Đăng nhập tài khoản: dev_fresher / 123.
+2. Truy cập menu: "Lộ Trình Thăng Tiến" (hoặc truy cập URL: http://localhost:8084/hrm-career-path/career-path).
+3. Tại Bảng 2 "Tiêu Chuẩn Năng Lực & Nộp Minh Chứng Lên Bậc: Junior", tìm một tiêu chí bất kỳ và bấm nút: "Nộp minh chứng".
+4. Thử nghiệm lỗi 1 (Để trống tóm tắt):
+   - Ô "Tóm tắt kết quả minh chứng": Để trống.
+   - Bấm nút: "Lưu Minh Chứng".
+   - Kết quả mong đợi: Dòng chữ màu đỏ xuất hiện ngay dưới textarea:
+     "Vui lòng nhập tóm tắt nội dung minh chứng."
+     (Trình duyệt không bật popup tooltip mặc định).
+
+5. Thử nghiệm lỗi 2 (Đường dẫn URL sai định dạng):
+   - Ô "Tóm tắt kết quả minh chứng": Nhập "Tham gia dự án Backend".
+   - Ô "Đường dẫn liên kết tài liệu minh chứng": Nhập "dd" hoặc "abc" (chuỗi không phải URL).
+   - Bấm nút: "Lưu Minh Chứng".
+   - Kết quả mong đợi: Dòng chữ màu đỏ xuất hiện ngay dưới ô URL:
+     "Đường dẫn không hợp lệ. Vui lòng nhập đúng định dạng URL (ví dụ: https://...)."
+
+6. Thử nghiệm nhập đúng:
+   - Sửa ô URL thành: https://github.com/myproject/crm-backend
+   - Dòng chữ đỏ lập tức biến mất khi người dùng bắt đầu gõ.
+
+================================================================================
+III. KỊCH BẢN KIỂM THỬ 2: NỘP MINH CHỨNG LŨY TIẾN TỪNG TIÊU CHÍ (EMPLOYEE)
+================================================================================
+Mục tiêu: Nhân viên nộp minh chứng từng phần cho từng tiêu chuẩn riêng biệt mà không cần nộp cùng lúc cả bộ hồ sơ.
+
+Mẫu 1: Minh chứng Tiêu chí Dự án thực tế (Bắt buộc)
+- Chọn dòng tiêu chí: "Tham gia tối thiểu 1 dự án thực tế đạt tiến độ bàn giao"
+- Bấm nút: "Nộp minh chứng"
+- Tóm tắt kết quả minh chứng:
+  Đóng vai trò Backend Developer trong dự án CRM Doanh Nghiệp. Trực tiếp thiết kế CSDL, xây dựng các module RESTful API quản lý khách hàng và tích hợp gửi email tự động đạt chuẩn tiến độ Sprint.
+- Đường dẫn tài liệu:
+  https://github.com/fpt-project/crm-enterprise-backend
+- Bấm: "Lưu Minh Chứng"
+- Kết quả mong đợi: Thông báo xanh "Đã lưu minh chứng thành công! Đang chờ Quản lý thẩm định.", trạng thái dòng chuyển thành "Chờ duyệt", nút đổi thành "Cập nhật".
+
+Mẫu 2: Minh chứng Tiêu chí Chứng chỉ chuyên môn (Tự chọn / Bổ trợ)
+- Chọn dòng tiêu chí: "Có chứng chỉ đào tạo Java Backend hoặc chứng chỉ tương đương"
+- Bấm nút: "Nộp minh chứng"
+- Tóm tắt kết quả minh chứng:
+  Đã hoàn thành và sở hữu chứng chỉ hoàn tất khóa đào tạo chuyên sâu Java Spring Boot Microservices do Udemy cấp với tổng thời lượng 40 giờ học thực chiến.
+- Đường dẫn tài liệu:
+  https://drive.google.com/file/d/1A2B3C4D_JavaSpringBoot_Certificate/view
+- Bấm: "Lưu Minh Chứng"
+
+Mẫu 3: Minh chứng Tiêu chí Đánh giá hiệu suất từ PM/Tech Lead (Bắt buộc)
+- Chọn dòng tiêu chí: "Đánh giá hiệu suất từ PM/Tech Lead đạt mức Tốt trở lên"
+- Bấm nút: "Nộp minh chứng"
+- Tóm tắt kết quả minh chứng:
+  Báo cáo đánh giá KPI quý 3 đạt mức A (92/100 điểm) từ Tech Lead dự án, không có bug nghiêm trọng trong các đợt phát hành Release 1.0 và 2.0.
+- Đường dẫn tài liệu:
+  https://drive.google.com/file/d/sample-kpi-evaluation-report/view
+- Bấm: "Lưu Minh Chứng"
+
+================================================================================
+IV. KỊCH BẢN KIỂM THỬ 3: QUẢN LÝ THẨM ĐỊNH & TỰ ĐỘNG THĂNG CẤP (AUTO-PROMOTE)
+================================================================================
+Mục tiêu: Quản lý đăng nhập xem xét từng minh chứng, xác nhận Đạt. Khi đủ 100% điều kiện bắt buộc, hệ thống tự động thăng cấp cho nhân sự.
+
+Bước thực hiện:
+1. Đăng xuất tài khoản nhân viên, đăng nhập tài khoản Trưởng phòng: manager_it / 123.
+2. Vào menu: "Phòng Ban Phụ Trách" -> "Quyết Định Bổ Nhiệm" (hoặc truy cập URL: http://localhost:8084/hrm-career-path/promotions).
+3. Tại danh sách hồ sơ, tìm hồ sơ của nhân viên "Phạm Đức Trọng" (Mã hồ sơ ứng với bước từ Fresher lên Junior), bấm nút: "Chi Tiết".
+4. Thẩm định từng minh chứng:
+   - Tại bảng danh sách minh chứng của nhân viên, Quản lý kiểm tra link và bấm nút: "Xác nhận Đạt" cho từng minh chứng bắt buộc.
+5. Đánh giá kín hiệu suất:
+   - Điểm đánh giá năng lực kín (Manager Rating): Nhập 8.5 (yêu cầu sàn là >= 7.5/10đ).
+   - Quyết định của Quản lý: Chọn "Đề xuất thăng cấp (RECOMMENDED)".
+   - Ý kiến nhận xét: "Nhân viên nắm vững kiến thức chuyên môn, hoàn thành tốt các nhiệm vụ trong dự án thực tế, đáp ứng đầy đủ tiêu chuẩn thăng cấp lên bậc Junior."
+   - Bấm: "Gửi Phiếu Đánh Giá".
+
+6. Kiểm tra kết quả Tự Động Thăng Cấp (Auto-Promote):
+   - Ngay sau khi các điều kiện bắt buộc đạt 100% và điểm sàn thỏa mãn:
+   - Hệ thống hiển thị thông báo:
+     "ĐÃ ĐÁNH GIÁ ĐẠT VÀ HỆ THỐNG ĐÃ TỰ ĐỘNG THĂNG CẤP THÀNH CÔNG CHO NHÂN SỰ!"
+   - Trạng thái hồ sơ tự động chuyển thành: "APPROVED".
+
+================================================================================
+V. KỊCH BẢN KIỂM THỬ 4: XÁC MINH CẤP BẬC MỚI TRÊN TÀI KHOẢN NHÂN VIÊN
+================================================================================
+Bước thực hiện:
+1. Đăng xuất tài khoản Quản lý, đăng nhập lại tài khoản: dev_fresher / 123.
+2. Truy cập lại trang: http://localhost:8084/hrm-career-path/career-path.
+3. Kiểm tra các thông tin cập nhật:
+   - Khung tổng quan: "CẤP BẬC HIỆN TẠI" đã tự động nhảy thành "Junior" (Bậc 3) và "MỤC TIÊU TIẾP THEO" chuyển thành "Middle" (Bậc 4).
+   - Bảng 1 "Thang Cấp Bậc Vị Trí Chuyên Môn":
+     + Bậc 1 (Intern): Đã hoàn thành
+     + Bậc 2 (Fresher): Đã hoàn thành
+     + Bậc 3 (Junior): Đang đảm nhiệm (Hiện tại)
+     + Bậc 4 (Middle): Mục tiêu tiếp theo
+   - Bảng 2: Tự động nạp bộ tiêu chuẩn năng lực của nấc tiếp theo (Junior lên Middle).
+

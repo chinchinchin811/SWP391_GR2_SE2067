@@ -622,6 +622,219 @@ public class CareerProgressionDAO {
         return c;
     }
 
+    public PromotionRequest getOrCreateActivePromotionRequest(int userId, int positionId, int currentLevelId, int targetLevelId, int criteriaId) {
+        String findSql = """
+            SELECT request_id FROM Promotion_Requests
+            WHERE user_id = ? AND position_id = ? AND current_level_id = ? AND target_level_id = ?
+              AND status NOT IN ('REJECTED', 'APPROVED')
+            ORDER BY request_id DESC
+            """;
+        try (Connection conn = DBContext.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(findSql)) {
+            ps.setInt(1, userId);
+            ps.setInt(2, positionId);
+            ps.setInt(3, currentLevelId);
+            ps.setInt(4, targetLevelId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    int reqId = rs.getInt("request_id");
+                    return getPromotionRequestById(reqId);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        // Nếu chưa có, tạo hồ sơ lũy tiến ở trạng thái IN_PROGRESS
+        String insertSql = """
+            INSERT INTO Promotion_Requests
+            (user_id, position_id, current_level_id, target_level_id, criteria_id, status)
+            VALUES (?, ?, ?, ?, ?, 'IN_PROGRESS')
+            """;
+        try (Connection conn = DBContext.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, userId);
+            ps.setInt(2, positionId);
+            ps.setInt(3, currentLevelId);
+            ps.setInt(4, targetLevelId);
+            ps.setInt(5, criteriaId);
+            if (ps.executeUpdate() > 0) {
+                try (ResultSet keys = ps.getGeneratedKeys()) {
+                    if (keys.next()) {
+                        int newId = keys.getInt(1);
+                        return getPromotionRequestById(newId);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public boolean submitOrUpdateEvidence(int requestId, int requirementId, String summary, String url) {
+        String checkSql = "SELECT evidence_id FROM Promotion_Evidence WHERE request_id = ? AND requirement_id = ?";
+        String updateSql = "UPDATE Promotion_Evidence SET evidence_summary = ?, evidence_url = ?, is_verified = 0, verified_at = NULL WHERE evidence_id = ?";
+        String insertSql = "INSERT INTO Promotion_Evidence (request_id, requirement_id, evidence_summary, evidence_url, is_verified) VALUES (?, ?, ?, ?, 0)";
+
+        try (Connection conn = DBContext.getInstance().getConnection()) {
+            int existingId = -1;
+            try (PreparedStatement psCheck = conn.prepareStatement(checkSql)) {
+                psCheck.setInt(1, requestId);
+                psCheck.setInt(2, requirementId);
+                try (ResultSet rs = psCheck.executeQuery()) {
+                    if (rs.next()) {
+                        existingId = rs.getInt("evidence_id");
+                    }
+                }
+            }
+
+            if (existingId > 0) {
+                try (PreparedStatement psUpdate = conn.prepareStatement(updateSql)) {
+                    psUpdate.setString(1, summary);
+                    psUpdate.setString(2, url);
+                    psUpdate.setInt(3, existingId);
+                    return psUpdate.executeUpdate() > 0;
+                }
+            } else {
+                try (PreparedStatement psInsert = conn.prepareStatement(insertSql)) {
+                    psInsert.setInt(1, requestId);
+                    psInsert.setInt(2, requirementId);
+                    psInsert.setString(3, summary);
+                    psInsert.setString(4, url);
+                    return psInsert.executeUpdate() > 0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public boolean checkAndAutoPromote(int requestId, int actorId) {
+        PromotionRequest req = getPromotionRequestById(requestId);
+        if (req == null || "APPROVED".equals(req.getStatus())) {
+            return false;
+        }
+
+        List<CriteriaRequirement> requirements = getRequirementsByCriteria(req.getCriteriaId());
+        List<PromotionEvidence> evidenceList = getEvidenceByRequest(requestId);
+
+        // 1. Kiểm tra toàn bộ điều kiện bắt buộc đã được nộp và thẩm định Đạt
+        boolean allMandatoryMet = true;
+        if (requirements != null && !requirements.isEmpty()) {
+            for (CriteriaRequirement cr : requirements) {
+                if (cr.isMandatory()) {
+                    boolean verified = false;
+                    if (evidenceList != null) {
+                        for (PromotionEvidence ev : evidenceList) {
+                            if (ev.getRequirementId() == cr.getRequirementId() && ev.isVerified()) {
+                                verified = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!verified) {
+                        allMandatoryMet = false;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!allMandatoryMet) {
+            return false;
+        }
+
+        // 2. Không cho phép tự động thăng chức khi Quản lý chưa hoàn tất Phiếu Đánh Giá Hiệu Suất
+        // Bắt buộc Quản lý phải hoàn tất form đánh giá và chọn ĐỀ XUẤT THĂNG CẤP ("RECOMMENDED")
+        if (req.getManagerStatus() == null || !"RECOMMENDED".equals(req.getManagerStatus())) {
+            return false;
+        }
+
+        // 3. Với mọi minh chứng nhân viên đã nộp, Quản lý phải thẩm định xong (không còn mục nào Chưa duyệt)
+        if (evidenceList != null && !evidenceList.isEmpty()) {
+            for (PromotionEvidence ev : evidenceList) {
+                if (!ev.isVerified()) {
+                    return false;
+                }
+            }
+        }
+
+        // 4. Kiểm tra điểm số tối thiểu theo cấu hình lộ trình (nếu có)
+        PositionLevelCriteria criteria = getCriteriaById(req.getCriteriaId());
+        if (criteria != null) {
+            // Kiểm tra điểm đánh giá manager nếu có cấu hình sàn
+            if (criteria.getMinManagerRating() != null && criteria.getMinManagerRating().compareTo(BigDecimal.ZERO) > 0) {
+                if (req.getManagerRating() == null || req.getManagerRating().compareTo(criteria.getMinManagerRating()) < 0) {
+                    return false;
+                }
+            }
+            // Kiểm tra điểm test sàn nếu có
+            if (criteria.getMinTestScore() != null && criteria.getMinTestScore().compareTo(BigDecimal.ZERO) > 0) {
+                if (req.getTestScore() == null || req.getTestScore().compareTo(criteria.getMinTestScore()) < 0) {
+                    return false;
+                }
+            }
+        }
+
+        int promoterId = actorId > 0 ? actorId : req.getUserId();
+        return hrApproveAndPromote(
+                requestId,
+                promoterId,
+                "APPROVED",
+                "Tu dong nang cap bac do hoan thanh day du 100% tieu chuan lo trinh",
+                req.getUserId(),
+                req.getTargetLevelId(),
+                req.getCurrentLevelId(),
+                req.getPositionId()
+        );
+    }
+
+    public boolean reopenPromotionRequest(int requestId) {
+        PromotionRequest req = getPromotionRequestById(requestId);
+        if (req == null) return false;
+
+        Connection conn = null;
+        try {
+            conn = DBContext.getInstance().getConnection();
+            conn.setAutoCommit(false);
+
+            // 1. Đưa trạng thái Promotion_Requests về IN_PROGRESS
+            String sqlReq = """
+                UPDATE Promotion_Requests
+                SET status = 'IN_PROGRESS', hr_id = NULL, hr_decision = NULL, hr_action_date = NULL, hr_notes = NULL
+                WHERE request_id = ?
+                """;
+            try (PreparedStatement ps = conn.prepareStatement(sqlReq)) {
+                ps.setInt(1, requestId);
+                ps.executeUpdate();
+            }
+
+            // 2. Trả cấp bậc của user về lại current_level_id
+            if (req.getCurrentLevelId() > 0 && req.getUserId() > 0) {
+                String sqlUser = "UPDATE Users SET level_id = ? WHERE user_id = ?";
+                try (PreparedStatement ps = conn.prepareStatement(sqlUser)) {
+                    ps.setInt(1, req.getCurrentLevelId());
+                    ps.setInt(2, req.getUserId());
+                    ps.executeUpdate();
+                }
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) {}
+            }
+            e.printStackTrace();
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ex) {}
+            }
+        }
+        return false;
+    }
+
     private PromotionRequest mapPromotionRequest(ResultSet rs) throws SQLException {
         PromotionRequest r = new PromotionRequest();
         r.setRequestId(rs.getInt("request_id"));

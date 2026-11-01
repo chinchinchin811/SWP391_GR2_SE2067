@@ -33,12 +33,12 @@
     <div class="content-body">
         <% if (successMessage != null) { %>
         <div class="alert alert-success" style="background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
-            <i class="fa-solid fa-circle-check" style="margin-right: 6px;"></i> <%= successMessage %>
+            <%= successMessage %>
         </div>
         <% } %>
         <% if (errorMessage != null) { %>
         <div class="alert alert-danger" style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
-            <i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i> <%= errorMessage %>
+            <%= errorMessage %>
         </div>
         <% } %>
 
@@ -76,7 +76,7 @@
                                 <span style="background: #e2e8f0; color: #334155; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;">
                                     <%= r.getCurrentLevelName() %>
                                 </span>
-                                <i class="fa-solid fa-arrow-right" style="font-size: 11px; margin: 0 4px; color: #94a3b8;"></i>
+                                <span style="font-size: 12px; margin: 0 4px; color: #94a3b8;">&rarr;</span>
                                 <span style="background: #ecfdf5; color: #047857; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700;">
                                     <%= r.getTargetLevelName() %>
                                 </span>
@@ -95,15 +95,15 @@
                             </td>
                             <td style="padding: 12px 16px; text-align: center;">
                                 <a href="<%= request.getContextPath() %>/promotions?action=review&id=<%= r.getRequestId() %>" 
-                                   class="btn btn-sm btn-primary" style="padding: 5px 12px; font-size: 12.5px;">
-                                    <%= isManager ? "Thẩm Định" : "Xem Xét" %>
+                                   class="btn btn-sm btn-primary" style="padding: 5px 12px; font-size: 12.5px;"
+                                   title="Bấm để xem chi tiết và thẩm định minh chứng hồ sơ">
+                                    Chi Tiết / Thẩm Định
                                 </a>
                             </td>
                         </tr>
                         <% }} else { %>
                         <tr>
                             <td colspan="7" style="text-align: center; padding: 40px; color: #64748b;">
-                                <i class="fa-solid fa-inbox" style="font-size: 36px; color: #cbd5e1; margin-bottom: 10px; display: block;"></i>
                                 Hiện tại không có hồ sơ đề xuất nâng bậc nào cần xử lý.
                             </td>
                         </tr>
