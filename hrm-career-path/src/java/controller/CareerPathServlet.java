@@ -79,6 +79,8 @@ public class CareerPathServlet extends HttpServlet {
             submitHrDecision(request, response, currentUser);
         } else if ("reopenPromotion".equals(action)) {
             reopenPromotion(request, response, currentUser);
+        } else if ("submitDemoTestScore".equals(action)) {
+            submitDemoTestScore(request, response, currentUser);
         } else {
             response.sendRedirect(request.getContextPath() + "/dashboard");
         }
@@ -187,6 +189,8 @@ public class CareerPathServlet extends HttpServlet {
                 return;
             }
 
+            PositionLevelCriteria criteria = careerProgressionDAO.getCriteriaById(reqItem.getCriteriaId());
+            request.setAttribute("criteria", criteria);
             request.setAttribute("requestItem", reqItem);
             request.getRequestDispatcher("/views/career/promotion-review.jsp").forward(request, response);
         } catch (NumberFormatException e) {
@@ -336,16 +340,36 @@ public class CareerPathServlet extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/promotions");
     }
 
+    private void submitDemoTestScore(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String reqIdStr = request.getParameter("requestId");
+        try {
+            int reqId = Integer.parseInt(reqIdStr);
+            careerProgressionDAO.updateTestScore(reqId, new BigDecimal("85.0"));
+            careerProgressionDAO.checkAndAutoPromote(reqId, currentUser.getUserId());
+            request.getSession().setAttribute("successMessage", "Đã hoàn thành bài thi sát hạch lý thuyết với điểm số: 85.0/100đ (ĐẠT CHUẨN)!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        response.sendRedirect(request.getContextPath() + "/career-path");
+    }
+
     private void submitManagerReview(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws IOException {
         String reqIdStr = request.getParameter("requestId");
         String ratingStr = request.getParameter("managerRating");
         String decision = request.getParameter("managerDecision");
         String notes = request.getParameter("managerNotes");
+        String testScoreStr = request.getParameter("testScore");
 
         try {
             int reqId = Integer.parseInt(reqIdStr);
             BigDecimal rating = new BigDecimal(ratingStr != null ? ratingStr.trim() : "8.0");
+            if (testScoreStr != null && !testScoreStr.trim().isEmpty()) {
+                try {
+                    careerProgressionDAO.updateTestScore(reqId, new BigDecimal(testScoreStr.trim()));
+                } catch (Exception ex) {}
+            }
 
             boolean ok = careerProgressionDAO.managerReview(reqId, currentUser.getUserId(), rating, notes, decision);
             if (ok) {

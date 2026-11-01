@@ -167,7 +167,20 @@
                                    style="width: 100%; padding: 9px 12px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px;" required>
                         </div>
 
-                        <!-- Dòng 2: Ý Kiến Đề Xuất -->
+                        <!-- Dòng 2: Điểm Bài Thi Sát Hạch Chuyên Môn -->
+                        <div class="form-group" style="margin-bottom: 18px;">
+                            <label style="display: block; font-weight: 700; font-size: 13.5px; color: #1e293b; margin-bottom: 6px;">
+                                Điểm Bài Thi Sát Hạch Chuyên Môn (Thang điểm 100) (*):
+                            </label>
+                            <input type="number" step="0.5" min="0" max="100" name="testScore" class="form-control" 
+                                   value="<%= reqItem.getTestScore() != null ? reqItem.getTestScore() : "85.0" %>" 
+                                   style="width: 100%; padding: 9px 12px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+                            <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">
+                                Điểm chuẩn yêu cầu theo lộ trình: &gt;= 80.0đ. Giá trị mặc định 85.0đ để hỗ trợ thẩm định nhanh.
+                            </small>
+                        </div>
+
+                        <!-- Dòng 3: Ý Kiến Đề Xuất -->
                         <div class="form-group" style="margin-bottom: 18px;">
                             <label style="display: block; font-weight: 700; font-size: 13.5px; color: #1e293b; margin-bottom: 6px;">
                                 Ý Kiến Đề Xuất Xét Duyệt (*):

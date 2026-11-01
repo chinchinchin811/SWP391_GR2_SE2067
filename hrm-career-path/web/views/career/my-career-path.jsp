@@ -312,8 +312,18 @@
                                         <span style="background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; padding: 3px 8px; border-radius: 4px; font-weight: 600; font-size: 11.5px;">Chưa đạt</span>
                                     <% } %>
                                 </td>
-                                <td style="padding: 12px; text-align: center; color: #64748b; font-size: 12px;">
-                                    Hệ thống tự động
+                                <td style="padding: 12px; text-align: center;">
+                                    <% if (isTestPassed) { %>
+                                        <span style="color: #059669; font-weight: 700; font-size: 12px;">Đã ghi nhận</span>
+                                    <% } else { %>
+                                        <form action="<%= request.getContextPath() %>/career-path" method="POST" style="margin: 0; display: inline;">
+                                            <input type="hidden" name="action" value="submitDemoTestScore">
+                                            <input type="hidden" name="requestId" value="<%= (existingRequest != null) ? existingRequest.getRequestId() : "" %>">
+                                            <button type="submit" class="btn btn-sm btn-primary" style="font-size: 11.5px; padding: 4px 10px; font-weight: 600;" title="Bấm để làm bài thi / ghi nhận điểm thi chuyên môn đạt chuẩn 85đ">
+                                                Làm bài thi (Nhận 85đ)
+                                            </button>
+                                        </form>
+                                    <% } %>
                                 </td>
                             </tr>
                             <% } %>

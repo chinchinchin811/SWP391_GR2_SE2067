@@ -790,6 +790,19 @@ public class CareerProgressionDAO {
         );
     }
 
+    public boolean updateTestScore(int requestId, BigDecimal testScore) {
+        String sql = "UPDATE Promotion_Requests SET test_score = ? WHERE request_id = ?";
+        try (Connection conn = DBContext.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBigDecimal(1, testScore);
+            ps.setInt(2, requestId);
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public boolean reopenPromotionRequest(int requestId) {
         PromotionRequest req = getPromotionRequestById(requestId);
         if (req == null) return false;
