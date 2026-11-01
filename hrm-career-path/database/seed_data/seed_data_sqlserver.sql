@@ -9,90 +9,98 @@
 USE HRM_Project_DB;
 GO
 
--- Có thể chạy lại: chỉ thêm dữ liệu mẫu còn thiếu, không ghi đè dữ liệu đang có.
-SET NOCOUNT ON;
-SET XACT_ABORT ON;
-SET QUOTED_IDENTIFIER ON;
-SET ANSI_NULLS ON;
-SET ANSI_PADDING ON;
-SET ANSI_WARNINGS ON;
-SET ARITHABORT ON;
-SET CONCAT_NULL_YIELDS_NULL ON;
-SET NUMERIC_ROUNDABORT OFF;
+-- =======================================================
+-- 0. TƯƠNG THÍCH BẢNG FLASHCARD VỚI DATABASE CŨ
+-- Nếu đã chạy schema mới, các cột và ràng buộc bên dưới đã có nên sẽ được bỏ qua.
+-- Khối này cần chạy trước phần seed bộ thẻ ở mục 7.
+-- =======================================================
+IF COL_LENGTH('dbo.FlashcardDecks', 'deck_type') IS NULL
+BEGIN
+    ALTER TABLE dbo.FlashcardDecks
+        ADD deck_type NVARCHAR(20) NOT NULL
+            CONSTRAINT DF_FlashcardDecks_Type DEFAULT 'professional';
+END;
+GO
+
+IF COL_LENGTH('dbo.FlashcardDecks', 'position_id') IS NULL
+BEGIN
+    ALTER TABLE dbo.FlashcardDecks ADD position_id INT NULL;
+END;
+GO
+
+UPDATE dbo.FlashcardDecks
+SET deck_type = 'culture', position_id = NULL
+WHERE title = N'Văn hóa công ty';
+GO
+
+UPDATE d
+SET d.position_id = p.position_id
+FROM dbo.FlashcardDecks d
+JOIN dbo.Positions p ON p.position_name = N'Java Developer' AND p.is_deleted = 0
+WHERE d.deck_type = 'professional'
+  AND d.position_id IS NULL
+  AND d.title LIKE N'%Java%';
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_FlashcardDecks_Position')
+BEGIN
+    ALTER TABLE dbo.FlashcardDecks WITH CHECK
+        ADD CONSTRAINT FK_FlashcardDecks_Position FOREIGN KEY (position_id)
+            REFERENCES dbo.Positions(position_id) ON DELETE SET NULL;
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_FlashcardDecks_Type')
+BEGIN
+    ALTER TABLE dbo.FlashcardDecks WITH CHECK
+        ADD CONSTRAINT CK_FlashcardDecks_Type CHECK (deck_type IN ('culture', 'professional'));
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CK_FlashcardDecks_CulturePosition')
+BEGIN
+    ALTER TABLE dbo.FlashcardDecks WITH CHECK
+        ADD CONSTRAINT CK_FlashcardDecks_CulturePosition CHECK (deck_type <> 'culture' OR position_id IS NULL);
+END;
 GO
 
 -- =======================================================
 -- 1. SEED DATA: BẢNG PHÂN QUYỀN (ROLES)
 -- =======================================================
-INSERT INTO dbo.Roles (role_name, description)
-SELECT src.role_name, src.description
-FROM (
-    SELECT s.role_name AS role_name,
-        s.description AS description
-    FROM (VALUES
+INSERT INTO dbo.Roles (role_name, description) VALUES
 ('ADMIN', N'Quản trị viên hệ thống'),
 ('HR', N'Nhân sự quản lý phòng ban, vị trí và nhân viên'),
 ('MANAGER', N'Trưởng phòng quản lý nhân viên trong phòng ban của mình'),
-('EMPLOYEE', N'Nhân viên công ty')
-    ) AS s (role_name, description)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Roles existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.role_name=src.role_name OR (existing.role_name IS NULL AND src.role_name IS NULL)));
+('EMPLOYEE', N'Nhân viên công ty');
 GO
 
 -- =======================================================
 -- 2. SEED DATA: BẢNG CẤP BẬC (JOB_LEVELS)
 -- =======================================================
-INSERT INTO dbo.Job_Levels (level_name, rank_order, description)
-SELECT src.level_name, src.rank_order, src.description
-FROM (
-    SELECT s.level_name AS level_name,
-        s.rank_order AS rank_order,
-        s.description AS description
-    FROM (VALUES
+INSERT INTO dbo.Job_Levels (level_name, rank_order, description) VALUES
 (N'Intern', 1, N'Thực tập sinh'),
 (N'Fresher', 2, N'Nhân viên mới vào nghề'),
 (N'Junior', 3, N'Nhân viên có từ 1 - 2 năm kinh nghiệm'),
 (N'Middle', 4, N'Nhân viên từ 2 - 4 năm kinh nghiệm'),
 (N'Senior', 5, N'Chuyên viên từ 4+ năm kinh nghiệm'),
-(N'Lead', 6, N'Trưởng nhóm chuyên môn')
-    ) AS s (level_name, rank_order, description)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Job_Levels existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.level_name=src.level_name OR (existing.level_name IS NULL AND src.level_name IS NULL)));
+(N'Lead', 6, N'Trưởng nhóm chuyên môn');
 GO
 
 -- =======================================================
 -- 3. SEED DATA: BẢNG PHÒNG BAN (DEPARTMENTS)
 -- =======================================================
-INSERT INTO dbo.Departments (department_name, description, status, is_deleted)
-SELECT src.department_name, src.description, src.status, src.is_deleted
-FROM (
-    SELECT s.department_name AS department_name,
-        s.description AS description,
-        s.status AS status,
-        s.is_deleted AS is_deleted
-    FROM (VALUES
+INSERT INTO dbo.Departments (department_name, description, status, is_deleted) VALUES
 (N'Phòng Kỹ Thuật (IT)', N'Phát triển, bảo trì và vận hành hệ thống phần mềm', 1, 0),
 (N'Phòng Nhân Sự (HR)', N'Tuyển dụng, đào tạo và quản lý chế độ chính sách nhân sự', 1, 0),
 (N'Phòng Kinh Doanh (Sales)', N'Kinh doanh giải pháp, phát triển thị trường và chăm sóc khách hàng', 1, 0),
 (N'Phòng Marketing & Truyền Thông', N'Xây dựng thương hiệu, tiếp thị số và truyền thông doanh nghiệp', 1, 0),
-(N'Phòng Kế Toán - Tài Chính', N'Quản lý dòng tiền, kế toán tổng hợp và lập kế hoạch tài chính', 1, 0)
-    ) AS s (department_name, description, status, is_deleted)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Departments existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.department_name=src.department_name OR (existing.department_name IS NULL AND src.department_name IS NULL)));
+(N'Phòng Kế Toán - Tài Chính', N'Quản lý dòng tiền, kế toán tổng hợp và lập kế hoạch tài chính', 1, 0);
 GO
 
 -- =======================================================
 -- 4. SEED DATA: BẢNG VỊ TRÍ CÔNG VIỆC (POSITIONS)
 -- =======================================================
-INSERT INTO dbo.Positions (position_name, department_id, description, status, is_deleted)
-SELECT src.position_name, src.department_id, src.description, src.status, src.is_deleted
-FROM (
-    SELECT s.position_name AS position_name,
-        (SELECT TOP (1) department_id FROM dbo.Departments WHERE department_name=CASE s.department_id WHEN 1 THEN N'Phòng Kỹ Thuật (IT)' WHEN 2 THEN N'Phòng Nhân Sự (HR)' WHEN 3 THEN N'Phòng Kinh Doanh (Sales)' WHEN 4 THEN N'Phòng Marketing & Truyền Thông' WHEN 5 THEN N'Phòng Kế Toán - Tài Chính' END ORDER BY department_id) AS department_id,
-        s.description AS description,
-        s.status AS status,
-        s.is_deleted AS is_deleted
-    FROM (VALUES
+INSERT INTO dbo.Positions (position_name, department_id, description, status, is_deleted) VALUES
 -- 1. Phòng Kỹ Thuật (IT - Department 1)
 (N'Java Developer', 1, N'Lập trình viên backend Java/Spring/Jakarta EE', 1, 0),
 (N'Frontend Developer', 1, N'Lập trình viên giao diện web React/Vue/HTML/CSS', 1, 0),
@@ -119,98 +127,141 @@ FROM (
 -- 5. Phòng Kế Toán - Tài Chính (Department 5)
 (N'Kế Toán Tổng Hợp (General Accountant)', 5, N'Hạch toán chi phí, doanh thu và lập báo cáo tài chính', 1, 0),
 (N'Chuyên Viên Kiểm Toán Nội Bộ', 5, N'Kiểm soát rủi ro tài chính và tuân thủ quy chế chi tiêu', 1, 0),
-(N'Financial Planning & Analysis (FP&A)', 5, N'Chuyên viên phân tích và dự báo kế hoạch tài chính', 1, 0)
-    ) AS s (position_name, department_id, description, status, is_deleted)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Positions existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.position_name=src.position_name OR (existing.position_name IS NULL AND src.position_name IS NULL)) AND (existing.department_id=src.department_id OR (existing.department_id IS NULL AND src.department_id IS NULL)));
+(N'Financial Planning & Analysis (FP&A)', 5, N'Chuyên viên phân tích và dự báo kế hoạch tài chính', 1, 0);
 GO
 
 -- =======================================================
 -- 5. SEED DATA: BẢNG TÀI KHOẢN NGƯỜI DÙNG (USERS)
 -- =======================================================
-INSERT INTO dbo.Users (username, password, full_name, email, phone, gender, role_id, department_id, position_id, level_id, hire_date, status, is_deleted)
-SELECT src.username, src.password, src.full_name, src.email, src.phone, src.gender, src.role_id, src.department_id, src.position_id, src.level_id, src.hire_date, src.status, src.is_deleted
-FROM (
-    SELECT s.username AS username,
-        s.password AS password,
-        s.full_name AS full_name,
-        s.email AS email,
-        s.phone AS phone,
-        s.gender AS gender,
-        (SELECT TOP (1) role_id FROM dbo.Roles WHERE role_name=CASE s.role_id WHEN 1 THEN N'ADMIN' WHEN 2 THEN N'HR' WHEN 3 THEN N'MANAGER' WHEN 4 THEN N'EMPLOYEE' END ORDER BY role_id) AS role_id,
-        (SELECT TOP (1) department_id FROM dbo.Departments WHERE department_name=CASE s.department_id WHEN 1 THEN N'Phòng Kỹ Thuật (IT)' WHEN 2 THEN N'Phòng Nhân Sự (HR)' WHEN 3 THEN N'Phòng Kinh Doanh (Sales)' WHEN 4 THEN N'Phòng Marketing & Truyền Thông' WHEN 5 THEN N'Phòng Kế Toán - Tài Chính' END ORDER BY department_id) AS department_id,
-        (SELECT TOP (1) position_id FROM dbo.Positions WHERE position_name=CASE s.position_id WHEN 1 THEN N'Java Developer' WHEN 2 THEN N'Frontend Developer' WHEN 3 THEN N'QA / Software Tester' WHEN 4 THEN N'HR Officer' WHEN 5 THEN N'Sales Executive' END ORDER BY position_id) AS position_id,
-        (SELECT TOP (1) level_id FROM dbo.Job_Levels WHERE level_name=CASE s.level_id WHEN 1 THEN N'Intern' WHEN 2 THEN N'Fresher' WHEN 3 THEN N'Junior' WHEN 4 THEN N'Middle' WHEN 5 THEN N'Senior' WHEN 6 THEN N'Lead' END ORDER BY level_id) AS level_id,
-        s.hire_date AS hire_date,
-        s.status AS status,
-        s.is_deleted AS is_deleted
-    FROM (VALUES
-('admin', '123', N'Quản Trị Viên', 'admin@hrm.com', '0901000001', N'Nam', 1, 1, 1, 6, '2022-01-01', 1, 0),
-('hr_manager', '123', N'Phạm Thu Hà', 'ha.pt@hrm.com', '0901000002', N'Nữ', 2, 2, 4, 5, '2022-03-15', 1, 0),
-('manager_it', '123', N'Trần Văn Minh', 'minh.tv@hrm.com', '0901000003', N'Nam', 3, 1, 1, 6, '2022-02-01', 1, 0),
-('dev_fresher', '123', N'Phạm Đức Trọng', 'trong.pd@hrm.com', '0901000006', N'Nam', 4, 1, 1, 2, '2026-08-01', 1, 0),
-('dev_tester', '123', N'Ngô Mai Phương', 'phuong.nm@hrm.com', '0901000007', N'Nữ', 4, 1, 3, 3, '2023-06-01', 1, 0),
-('mentor_java', '123', N'Lê Hữu Mentor', 'mentor.java@hrm.com', '0988888888', N'Nam', 4, 1, 1, 5, '2021-01-01', 1, 0),
-('locked_user', '123', N'Nguyễn Khóa Khoản', 'locked.user@hrm.com', '0901999999', N'Nam', 4, 1, 1, 2, '2026-01-01', 0, 0)
-    ) AS s (username, password, full_name, email, phone, gender, role_id, department_id, position_id, level_id, hire_date, status, is_deleted)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Users existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.username=src.username OR existing.email=src.email));
+INSERT INTO dbo.Users (username, password, full_name, email, phone, gender, dob, role_id, department_id, position_id, level_id, hire_date, status, is_deleted) VALUES
+-- 1. Tài khoản cốt lõi và nhân sự khởi tạo ban đầu
+('admin', '123', N'Quản Trị Viên', 'admin@hrm.com', '0901000001', N'Nam', '1990-01-15', 1, 1, 1, 6, '2022-01-01', 1, 0),
+('hr_manager', '123', N'Phạm Thu Hà', 'ha.pt@hrm.com', '0901000002', N'Nữ', '1992-06-20', 2, 2, 4, 5, '2022-03-15', 1, 0),
+('manager_it', '123', N'Trần Văn Minh', 'minh.tv@hrm.com', '0901000003', N'Nam', '1988-11-10', 3, 1, 1, 6, '2022-02-01', 1, 0),
+('dev_fresher', '123', N'Phạm Đức Trọng', 'trong.pd@hrm.com', '0901000006', N'Nam', '2002-08-15', 4, 1, 1, 2, '2026-08-01', 1, 0),
+('dev_tester', '123', N'Ngô Mai Phương', 'phuong.nm@hrm.com', '0901000007', N'Nữ', '1998-04-25', 4, 1, 3, 3, '2023-06-01', 1, 0),
+('mentor_java', '123', N'Lê Hữu Mentor', 'mentor.java@hrm.com', '0988888888', N'Nam', '1993-09-05', 4, 1, 1, 5, '2021-01-01', 1, 0),
+('locked_user', '123', N'Nguyễn Khóa Khoản', 'locked.user@hrm.com', '0901999999', N'Nam', '2000-02-14', 4, 1, 1, 2, '2026-01-01', 0, 0),
+
+-- =======================================================
+-- SEED BỔ SUNG: MỖI VỊ TRÍ CÓ ÍT NHẤT 3 NHÂN VIÊN
+-- =======================================================
+-- [Vị trí 1: Java Developer - Phòng IT (Dept 1)] (Đã có dev_fresher, mentor_java, locked_user)
+('java_trunghieu', '123', N'Đỗ Trung Hiếu', 'hieu.dt@hrm.com', '0901000010', N'Nam', '1999-05-14', 4, 1, 1, 3, '2024-03-01', 1, 0),
+('java_quanghuy', '123', N'Vũ Quang Huy', 'huy.vq@hrm.com', '0901000011', N'Nam', '1996-08-20', 4, 1, 1, 4, '2023-05-15', 1, 0),
+
+-- [Vị trí 2: Frontend Developer - Phòng IT (Dept 1)]
+('fe_hoangnam', '123', N'Lê Hoàng Nam', 'nam.lh@hrm.com', '0901000012', N'Nam', '2001-09-12', 4, 1, 2, 2, '2026-07-01', 1, 0),
+('fe_thuytien', '123', N'Nguyễn Thủy Tiên', 'tien.nt@hrm.com', '0901000013', N'Nữ', '1998-12-05', 4, 1, 2, 3, '2024-02-10', 1, 0),
+('fe_anhduc', '123', N'Trần Anh Đức', 'duc.ta@hrm.com', '0901000014', N'Nam', '1995-04-18', 4, 1, 2, 5, '2022-09-01', 1, 0),
+
+-- [Vị trí 3: QA / Software Tester - Phòng IT (Dept 1)] (Đã có dev_tester)
+('qa_tuananh', '123', N'Bùi Tuấn Anh', 'anh.bt@hrm.com', '0901000015', N'Nam', '2002-03-22', 4, 1, 3, 2, '2026-06-15', 1, 0),
+('qa_hongnhung', '123', N'Đặng Hồng Nhung', 'nhung.dh@hrm.com', '0901000016', N'Nữ', '1996-10-30', 4, 1, 3, 4, '2023-08-01', 1, 0),
+
+-- [Vị trí 4: HR Officer - Phòng Nhân Sự (Dept 2)] (Đã có hr_manager)
+('hr_minhnguyet', '123', N'Hoàng Minh Nguyệt', 'nguyet.hm@hrm.com', '0901000017', N'Nữ', '2000-07-19', 4, 2, 4, 2, '2026-05-01', 1, 0),
+('hr_baongoc', '123', N'Trần Bảo Ngọc', 'ngoc.tb@hrm.com', '0901000018', N'Nữ', '1997-01-25', 4, 2, 4, 3, '2024-04-12', 1, 0),
+('hr_thanhtruc', '123', N'Lê Thanh Trúc', 'truc.lt@hrm.com', '0901000019', N'Nữ', '1995-03-14', 4, 2, 4, 4, '2023-02-20', 1, 0),
+
+-- [Vị trí 5: Sales Executive - Phòng Kinh Doanh (Dept 3)]
+('sales_quangthang', '123', N'Lý Quang Thắng', 'thang.lq@hrm.com', '0901000020', N'Nam', '1998-06-14', 4, 3, 5, 3, '2024-01-15', 1, 0),
+('sales_thanhhang', '123', N'Phan Thanh Hằng', 'hang.pt@hrm.com', '0901000021', N'Nữ', '1996-02-28', 4, 3, 5, 4, '2023-04-01', 1, 0),
+('sales_ducmanh', '123', N'Nguyễn Đức Mạnh', 'manh.nd@hrm.com', '0901000022', N'Nam', '1993-11-09', 4, 3, 5, 5, '2022-07-20', 1, 0),
+
+-- [Vị trí 6: DevOps Engineer - Phòng IT (Dept 1)]
+('devops_quocbao', '123', N'Trịnh Quốc Bảo', 'bao.tq@hrm.com', '0901000023', N'Nam', '1999-08-11', 4, 1, 6, 3, '2024-06-01', 1, 0),
+('devops_hoanglong', '123', N'Võ Hoàng Long', 'long.vh@hrm.com', '0901000024', N'Nam', '1995-12-03', 4, 1, 6, 4, '2023-02-15', 1, 0),
+('devops_vietkhoi', '123', N'Đinh Việt Khôi', 'khoi.dv@hrm.com', '0901000025', N'Nam', '1992-05-24', 4, 1, 6, 5, '2021-10-10', 1, 0),
+
+-- [Vị trí 7: Business Analyst (BA) - Phòng IT (Dept 1)]
+('ba_thaochieu', '123', N'Nguyễn Phương Thảo', 'thao.np@hrm.com', '0901000026', N'Nữ', '2001-04-16', 4, 1, 7, 2, '2026-08-01', 1, 0),
+('ba_quockhanh', '123', N'Phạm Quốc Khánh', 'khanh.pq@hrm.com', '0901000027', N'Nam', '1997-09-08', 4, 1, 7, 3, '2024-03-20', 1, 0),
+('ba_camtu', '123', N'Lê Cẩm Tú', 'tu.lc@hrm.com', '0901000028', N'Nữ', '1994-01-30', 4, 1, 7, 5, '2022-04-05', 1, 0),
+
+-- [Vị trí 8: Mobile App Developer - Phòng IT (Dept 1)]
+('mobile_duyquang', '123', N'Lương Duy Quang', 'quang.ld@hrm.com', '0901000029', N'Nam', '2000-11-27', 4, 1, 8, 2, '2026-07-15', 1, 0),
+('mobile_minhtri', '123', N'Hồ Minh Trí', 'tri.hm@hrm.com', '0901000030', N'Nam', '1998-03-05', 4, 1, 8, 3, '2024-05-02', 1, 0),
+('mobile_xuantung', '123', N'Dương Xuân Tùng', 'tung.dx@hrm.com', '0901000031', N'Nam', '1995-07-19', 4, 1, 8, 4, '2023-01-10', 1, 0),
+
+-- [Vị trí 9: Talent Acquisition Specialist - Phòng Nhân Sự (Dept 2)]
+('ta_khanhlinh', '123', N'Đỗ Khánh Linh', 'linh.dk@hrm.com', '0901000032', N'Nữ', '2001-10-14', 4, 2, 9, 2, '2026-09-01', 1, 0),
+('ta_ngocthach', '123', N'Vũ Ngọc Thạch', 'thach.vn@hrm.com', '0901000033', N'Nam', '1997-05-22', 4, 2, 9, 3, '2024-02-18', 1, 0),
+('ta_thanhhuyen', '123', N'Ngô Thanh Huyền', 'huyen.nt@hrm.com', '0901000034', N'Nữ', '1994-12-10', 4, 2, 9, 5, '2022-08-01', 1, 0),
+
+-- [Vị trí 10: C&B Specialist - Phòng Nhân Sự (Dept 2)]
+('cb_minhtam', '123', N'Phan Minh Tâm', 'tam.pm@hrm.com', '0901000035', N'Nữ', '2000-02-18', 4, 2, 10, 2, '2026-04-10', 1, 0),
+('cb_thanhhai', '123', N'Trần Thanh Hải', 'hai.tt@hrm.com', '0901000036', N'Nam', '1996-07-09', 4, 2, 10, 4, '2023-09-15', 1, 0),
+('cb_kimchi', '123', N'Hoàng Kim Chi', 'chi.hk@hrm.com', '0901000037', N'Nữ', '1993-04-03', 4, 2, 10, 5, '2021-11-20', 1, 0),
+
+-- [Vị trí 11: Training & Development Executive - Phòng Nhân Sự (Dept 2)]
+('td_huonggiang', '123', N'Bùi Hương Giang', 'giang.bh@hrm.com', '0901000038', N'Nữ', '1999-09-25', 4, 2, 11, 3, '2024-07-01', 1, 0),
+('td_vankhang', '123', N'Đặng Văn Khang', 'khang.dv@hrm.com', '0901000039', N'Nam', '1995-03-17', 4, 2, 11, 4, '2023-03-12', 1, 0),
+('td_lananh', '123', N'Nguyễn Lan Anh', 'anh.nl@hrm.com', '0901000040', N'Nữ', '1992-08-14', 4, 2, 11, 5, '2022-01-15', 1, 0),
+
+-- [Vị trí 12: Key Account Manager (KAM) - Phòng Kinh Doanh (Dept 3)]
+('kam_minhtriet', '123', N'Lê Minh Triết', 'triet.lm@hrm.com', '0901000041', N'Nam', '1996-01-11', 4, 3, 12, 3, '2024-04-01', 1, 0),
+('kam_thuha', '123', N'Đỗ Thu Hà', 'ha.dt@hrm.com', '0901000042', N'Nữ', '1994-06-29', 4, 3, 12, 4, '2023-05-18', 1, 0),
+('kam_hoangviet', '123', N'Trần Hoàng Việt', 'viet.th@hrm.com', '0901000043', N'Nam', '1991-10-05', 4, 3, 12, 5, '2021-08-01', 1, 0),
+
+-- [Vị trí 13: Business Development Rep (BDR) - Phòng Kinh Doanh (Dept 3)]
+('bdr_thienan', '123', N'Ngô Thiên Ân', 'an.nt@hrm.com', '0901000044', N'Nam', '2001-08-19', 4, 3, 13, 2, '2026-08-15', 1, 0),
+('bdr_ngoctuyen', '123', N'Phạm Ngọc Tuyền', 'tuyen.pn@hrm.com', '0901000045', N'Nữ', '1998-11-23', 4, 3, 13, 3, '2024-06-10', 1, 0),
+('bdr_vanphuong', '123', N'Vũ Văn Phương', 'phuong.vv@hrm.com', '0901000046', N'Nam', '1995-02-14', 4, 3, 13, 4, '2023-06-01', 1, 0),
+
+-- [Vị trí 14: Digital Marketing Specialist - Phòng Marketing (Dept 4)]
+('mkt_quynhnga', '123', N'Lê Quỳnh Nga', 'nga.lq@hrm.com', '0901000047', N'Nữ', '2000-04-08', 4, 4, 14, 2, '2026-05-20', 1, 0),
+('mkt_theanh', '123', N'Đinh Thế Anh', 'anh.dt@hrm.com', '0901000048', N'Nam', '1997-12-15', 4, 4, 14, 3, '2024-03-01', 1, 0),
+('mkt_maily', '123', N'Hoàng Mai Ly', 'ly.hm@hrm.com', '0901000049', N'Nữ', '1994-09-02', 4, 4, 14, 5, '2022-02-15', 1, 0),
+
+-- [Vị trí 15: Content Creator & Copywriter - Phòng Marketing (Dept 4)]
+('content_traanh', '123', N'Nguyễn Trà Anh', 'traanh.nt@hrm.com', '0901000050', N'Nữ', '2002-01-17', 4, 4, 15, 2, '2026-09-10', 1, 0),
+('content_xuanbac', '123', N'Trần Xuân Bắc', 'bac.tx@hrm.com', '0901000051', N'Nam', '1999-05-26', 4, 4, 15, 3, '2024-08-05', 1, 0),
+('content_anhthu', '123', N'Phan Anh Thư', 'thu.pa@hrm.com', '0901000052', N'Nữ', '1996-08-11', 4, 4, 15, 4, '2023-07-15', 1, 0),
+
+-- [Vị trí 16: UI/UX Product Designer - Phòng Marketing (Dept 4)]
+('uiux_minhchau', '123', N'Vũ Minh Châu', 'chau.vm@hrm.com', '0901000053', N'Nữ', '2001-06-30', 4, 4, 16, 2, '2026-06-01', 1, 0),
+('uiux_giahuong', '123', N'Lâm Gia Hưởng', 'huong.lg@hrm.com', '0901000054', N'Nam', '1997-03-14', 4, 4, 16, 3, '2024-01-20', 1, 0),
+('uiux_thanhvan', '123', N'Đặng Thanh Vân', 'van.dt@hrm.com', '0901000055', N'Nữ', '1993-10-22', 4, 4, 16, 5, '2021-12-01', 1, 0),
+
+-- [Vị trí 17: Kế Toán Tổng Hợp (General Accountant) - Phòng Tài Chính (Dept 5)]
+('acc_thuhien', '123', N'Bùi Thu Hiền', 'hien.bt@hrm.com', '0901000056', N'Nữ', '1999-07-04', 4, 5, 17, 3, '2024-04-15', 1, 0),
+('acc_vanquy', '123', N'Lê Văn Quý', 'quy.lv@hrm.com', '0901000057', N'Nam', '1996-11-18', 4, 5, 17, 4, '2023-05-01', 1, 0),
+('acc_bichngoc', '123', N'Nguyễn Bích Ngọc', 'ngoc.nb@hrm.com', '0901000058', N'Nữ', '1992-02-09', 4, 5, 17, 5, '2021-09-10', 1, 0),
+
+-- [Vị trí 18: Chuyên Viên Kiểm Toán Nội Bộ - Phòng Tài Chính (Dept 5)]
+('audit_hongphuc', '123', N'Trần Hồng Phúc', 'phuc.th@hrm.com', '0901000059', N'Nam', '1998-04-12', 4, 5, 18, 3, '2024-05-10', 1, 0),
+('audit_haivan', '123', N'Phạm Hải Vân', 'van.ph@hrm.com', '0901000060', N'Nữ', '1995-08-27', 4, 5, 18, 4, '2023-08-20', 1, 0),
+('audit_quangdinh', '123', N'Đỗ Quang Định', 'dinh.dq@hrm.com', '0901000061', N'Nam', '1991-03-15', 4, 5, 18, 5, '2021-07-01', 1, 0),
+
+-- [Vị trí 19: Financial Planning & Analysis (FP&A) - Phòng Tài Chính (Dept 5)]
+('fpa_nguyenhoa', '123', N'Hoàng Nguyên Hòa', 'hoa.hn@hrm.com', '0901000062', N'Nam', '2000-12-08', 4, 5, 19, 2, '2026-07-01', 1, 0),
+('fpa_thanhmai', '123', N'Lê Thanh Mai', 'mai.lt@hrm.com', '0901000063', N'Nữ', '1997-01-20', 4, 5, 19, 3, '2024-02-25', 1, 0),
+('fpa_trongnghia', '123', N'Nguyễn Trọng Nghĩa', 'nghia.nt@hrm.com', '0901000064', N'Nam', '1993-09-11', 4, 5, 19, 5, '2022-03-01', 1, 0);
 GO
 
 -- Cập nhật Trưởng phòng cho các phòng ban
-UPDATE dbo.Departments SET manager_id = (SELECT user_id FROM dbo.Users WHERE username='manager_it')
-WHERE department_name=N'Phòng Kỹ Thuật (IT)' AND manager_id IS NULL;
-UPDATE dbo.Departments SET manager_id = (SELECT user_id FROM dbo.Users WHERE username='hr_manager')
-WHERE department_name=N'Phòng Nhân Sự (HR)' AND manager_id IS NULL;
+UPDATE dbo.Departments SET manager_id = 3 WHERE department_id = 1;
+UPDATE dbo.Departments SET manager_id = 2 WHERE department_id = 2;
 GO
 
 -- =======================================================
 -- 6. SEED DATA: LỊCH SỬ BIẾN ĐỘNG (EMPLOYEE_HISTORY)
 -- =======================================================
-INSERT INTO dbo.Employee_History (user_id, old_department_id, new_department_id, old_position_id, new_position_id, old_level_id, new_level_id, change_type, change_date, notes, created_by)
-SELECT src.user_id, src.old_department_id, src.new_department_id, src.old_position_id, src.new_position_id, src.old_level_id, src.new_level_id, src.change_type, src.change_date, src.notes, src.created_by
-FROM (
-    SELECT (SELECT TOP (1) user_id FROM dbo.Users WHERE username=CASE s.user_id WHEN 1 THEN N'admin' WHEN 2 THEN N'hr_manager' WHEN 3 THEN N'manager_it' WHEN 4 THEN N'dev_fresher' WHEN 5 THEN N'dev_tester' WHEN 6 THEN N'mentor_java' WHEN 7 THEN N'locked_user' END ORDER BY user_id) AS user_id,
-        (SELECT TOP (1) department_id FROM dbo.Departments WHERE department_name=CASE s.old_department_id WHEN 1 THEN N'Phòng Kỹ Thuật (IT)' WHEN 2 THEN N'Phòng Nhân Sự (HR)' WHEN 3 THEN N'Phòng Kinh Doanh (Sales)' WHEN 4 THEN N'Phòng Marketing & Truyền Thông' WHEN 5 THEN N'Phòng Kế Toán - Tài Chính' END ORDER BY department_id) AS old_department_id,
-        (SELECT TOP (1) department_id FROM dbo.Departments WHERE department_name=CASE s.new_department_id WHEN 1 THEN N'Phòng Kỹ Thuật (IT)' WHEN 2 THEN N'Phòng Nhân Sự (HR)' WHEN 3 THEN N'Phòng Kinh Doanh (Sales)' WHEN 4 THEN N'Phòng Marketing & Truyền Thông' WHEN 5 THEN N'Phòng Kế Toán - Tài Chính' END ORDER BY department_id) AS new_department_id,
-        (SELECT TOP (1) position_id FROM dbo.Positions WHERE position_name=CASE s.old_position_id WHEN 1 THEN N'Java Developer' WHEN 2 THEN N'Frontend Developer' WHEN 3 THEN N'QA / Software Tester' WHEN 4 THEN N'HR Officer' WHEN 5 THEN N'Sales Executive' END ORDER BY position_id) AS old_position_id,
-        (SELECT TOP (1) position_id FROM dbo.Positions WHERE position_name=CASE s.new_position_id WHEN 1 THEN N'Java Developer' WHEN 2 THEN N'Frontend Developer' WHEN 3 THEN N'QA / Software Tester' WHEN 4 THEN N'HR Officer' WHEN 5 THEN N'Sales Executive' END ORDER BY position_id) AS new_position_id,
-        (SELECT TOP (1) level_id FROM dbo.Job_Levels WHERE level_name=CASE s.old_level_id WHEN 1 THEN N'Intern' WHEN 2 THEN N'Fresher' WHEN 3 THEN N'Junior' WHEN 4 THEN N'Middle' WHEN 5 THEN N'Senior' WHEN 6 THEN N'Lead' END ORDER BY level_id) AS old_level_id,
-        (SELECT TOP (1) level_id FROM dbo.Job_Levels WHERE level_name=CASE s.new_level_id WHEN 1 THEN N'Intern' WHEN 2 THEN N'Fresher' WHEN 3 THEN N'Junior' WHEN 4 THEN N'Middle' WHEN 5 THEN N'Senior' WHEN 6 THEN N'Lead' END ORDER BY level_id) AS new_level_id,
-        s.change_type AS change_type,
-        s.change_date AS change_date,
-        s.notes AS notes,
-        (SELECT TOP (1) user_id FROM dbo.Users WHERE username=CASE s.created_by WHEN 1 THEN N'admin' WHEN 2 THEN N'hr_manager' WHEN 3 THEN N'manager_it' WHEN 4 THEN N'dev_fresher' WHEN 5 THEN N'dev_tester' WHEN 6 THEN N'mentor_java' WHEN 7 THEN N'locked_user' END ORDER BY user_id) AS created_by
-    FROM (VALUES
-(4, NULL, 1, NULL, 1, NULL, 2, 'NEW_HIRE', '2026-08-01', N'Tuyển dụng mới vị trí Java Developer', 2)
-    ) AS s (user_id, old_department_id, new_department_id, old_position_id, new_position_id, old_level_id, new_level_id, change_type, change_date, notes, created_by)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Employee_History existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.user_id=src.user_id OR (existing.user_id IS NULL AND src.user_id IS NULL)) AND (existing.change_type=src.change_type OR (existing.change_type IS NULL AND src.change_type IS NULL)) AND (existing.change_date=src.change_date OR (existing.change_date IS NULL AND src.change_date IS NULL)));
+INSERT INTO dbo.Employee_History (user_id, old_department_id, new_department_id, old_position_id, new_position_id, old_level_id, new_level_id, change_type, change_date, notes, created_by) VALUES
+(4, NULL, 1, NULL, 1, NULL, 2, 'NEW_HIRE', '2026-08-01', N'Tuyển dụng mới vị trí Java Developer', 2);
 GO
 
 -- =======================================================
 -- 7. SEED DATA: FLASHCARDS HỌC TẬP
 -- =======================================================
-INSERT INTO dbo.FlashcardDecks (title, description)
-SELECT src.title, src.description
-FROM (
-    SELECT s.title AS title,
-        s.description AS description
-    FROM (VALUES
-(N'Văn hóa công ty', N'Kiến thức nhập môn và văn hóa công ty'),
-(N'Chuyên môn Java Backend', N'Kiến thức chuyên môn lập trình Java')
-    ) AS s (title, description)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.FlashcardDecks existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.title=src.title OR (existing.title IS NULL AND src.title IS NULL)));
+INSERT INTO dbo.FlashcardDecks (title, description, deck_type, position_id) VALUES
+(N'Văn hóa công ty', N'Kiến thức nhập môn và văn hóa công ty', 'culture', NULL),
+(N'Java Backend', N'Kiến thức chuyên môn lập trình Java', 'professional',
+    (SELECT TOP (1) position_id FROM dbo.Positions WHERE position_name = N'Java Developer' AND is_deleted = 0));
 GO
 
-INSERT INTO dbo.Flashcards (deck_id, question, answer)
-SELECT src.deck_id, src.question, src.answer
-FROM (
-    SELECT (SELECT TOP (1) deck_id FROM dbo.FlashcardDecks WHERE title=CASE s.deck_id WHEN 1 THEN N'Văn hóa công ty' WHEN 2 THEN N'Chuyên môn Java Backend' END ORDER BY deck_id) AS deck_id,
-        s.question AS question,
-        s.answer AS answer
-    FROM (VALUES
+INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
 (1, N'Giờ làm việc kết thúc lúc mấy giờ?', N'17:30 hàng ngày.'),
 (1, N'Thành viên mới cần làm gì trong ngày đầu tiên?', N'Hoàn tất thủ tục onboarding, làm quen với team, tài khoản hệ thống và nội quy công ty.'),
 (1, N'Nhân viên cần báo trước bao nhiêu ngày khi xin nghỉ phép?', N'Thực hiện theo quy định nghỉ phép của công ty và thông báo cho quản lý trước thời gian nghỉ.'),
@@ -220,19 +271,10 @@ FROM (
 (1, N'Nhân viên có cần bảo mật thông tin công ty không?', N'Có. Nhân viên phải bảo mật thông tin nội bộ, thông tin khách hàng và dữ liệu của công ty.'),
 (1, N'Khi đến muộn, nhân viên nên làm gì?', N'Thông báo cho quản lý hoặc người phụ trách và tuân thủ quy định chấm công của công ty.'),
 (1, N'Tại sao cần tham gia các buổi training của công ty?', N'Để cập nhật kiến thức, quy trình, kỹ năng và các quy định cần thiết cho công việc.'),
-(1, N'Nhân viên mới có thể hỏi ai khi không hiểu công việc?', N'Có thể hỏi Mentor, Team Leader, Manager hoặc đồng nghiệp phù hợp.')
-    ) AS s (deck_id, question, answer)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Flashcards existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.deck_id=src.deck_id OR (existing.deck_id IS NULL AND src.deck_id IS NULL)) AND (existing.question=src.question OR (existing.question IS NULL AND src.question IS NULL)));
+(1, N'Nhân viên mới có thể hỏi ai khi không hiểu công việc?', N'Có thể hỏi Mentor, Team Leader, Manager hoặc đồng nghiệp phù hợp.');
 GO
 
-INSERT INTO dbo.Flashcards (deck_id, question, answer)
-SELECT src.deck_id, src.question, src.answer
-FROM (
-    SELECT (SELECT TOP (1) deck_id FROM dbo.FlashcardDecks WHERE title=CASE s.deck_id WHEN 1 THEN N'Văn hóa công ty' WHEN 2 THEN N'Chuyên môn Java Backend' END ORDER BY deck_id) AS deck_id,
-        s.question AS question,
-        s.answer AS answer
-    FROM (VALUES
+INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
 (2, N'Java là gì?', N'Java là một ngôn ngữ lập trình hướng đối tượng, được sử dụng phổ biến để phát triển ứng dụng web, desktop và backend.'),
 (2, N'OOP có mấy tính chất cơ bản?', N'4 tính chất: Đóng gói, Kế thừa, Đa hình và Trừu tượng.'),
 (2, N'Class trong Java là gì?', N'Class là một khuôn mẫu dùng để định nghĩa thuộc tính và hành vi của object.'),
@@ -247,269 +289,11 @@ FROM (
 (2, N'Try-catch trong Java dùng để làm gì?', N'Dùng để xử lý exception và tránh làm chương trình kết thúc đột ngột.'),
 (2, N'ArrayList trong Java là gì?', N'ArrayList là một collection có thể lưu trữ nhiều phần tử và có kích thước có thể thay đổi.'),
 (2, N'Git dùng để làm gì?', N'Git là hệ thống quản lý phiên bản giúp theo dõi, lưu trữ và quản lý các thay đổi của source code.'),
-(2, N'API là gì?', N'API là giao diện cho phép các ứng dụng hoặc hệ thống giao tiếp và trao đổi dữ liệu với nhau.')
-    ) AS s (deck_id, question, answer)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Flashcards existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.deck_id=src.deck_id OR (existing.deck_id IS NULL AND src.deck_id IS NULL)) AND (existing.question=src.question OR (existing.question IS NULL AND src.question IS NULL)));
-GO
-
--- Học liệu nguồn: mỗi học liệu thuộc đúng một phòng ban quản lý.
--- Ba chủ đề văn hóa/môi trường làm việc thuộc phòng HR; ba chủ đề kỹ thuật thuộc phòng IT.
-IF COL_LENGTH('dbo.Learning_Materials','material_url') IS NULL
-    EXEC(N'ALTER TABLE dbo.Learning_Materials ADD material_url NVARCHAR(1000) NULL');
-EXEC(N'UPDATE dbo.Learning_Materials
-       SET material_url=COALESCE(material_url,video_url,N''/assets/docs/''+file_name)
-       WHERE material_url IS NULL');
-GO
-
-DECLARE @seed_hr_department_id INT = (
-    SELECT TOP (1) department_id FROM dbo.Departments
-    WHERE department_name=N'Phòng Nhân Sự (HR)' AND is_deleted=0
-    ORDER BY department_id
-);
-IF @seed_hr_department_id IS NULL
-    THROW 50010, N'Không tìm thấy phòng Nhân Sự (HR) để phân loại học liệu.', 1;
-
--- Sửa dữ liệu từ các bản seed cũ từng để học liệu văn hóa ở phạm vi toàn công ty.
-UPDATE dbo.Learning_Materials
-SET scope_type='DEPARTMENT', department_id=@seed_hr_department_id, updated_at=GETDATE()
-WHERE title IN (
-    N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty',
-    N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026',
-    N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp'
-) AND (scope_type<>'DEPARTMENT' OR department_id IS NULL OR department_id<>@seed_hr_department_id);
-
-UPDATE c
-SET c.department_id=lm.department_id
-FROM dbo.Test_Content c
-JOIN dbo.Learning_Materials lm ON lm.material_id=c.learning_material_id
-WHERE c.type='learning' AND c.is_deleted=0
-  AND (c.department_id IS NULL OR c.department_id<>lm.department_id);
-
-INSERT INTO dbo.Learning_Materials (title, description, material_type, scope_type, department_id, position_id, level_id, material_url, file_name, file_type, file_size, video_url, duration_minutes, status, is_deleted, created_by, created_at, updated_at)
-SELECT src.title, src.description, src.material_type, src.scope_type, src.department_id, src.position_id, src.level_id, src.material_url, src.file_name, src.file_type, src.file_size, src.video_url, src.duration_minutes, src.status, src.is_deleted, src.created_by, src.created_at, src.updated_at
-FROM (
-    SELECT s.title AS title,
-        s.description AS description,
-        s.material_type AS material_type,
-        s.scope_type AS scope_type,
-        (SELECT TOP (1) department_id FROM dbo.Departments WHERE department_name=CASE s.department_id WHEN 1 THEN N'Phòng Kỹ Thuật (IT)' WHEN 2 THEN N'Phòng Nhân Sự (HR)' WHEN 3 THEN N'Phòng Kinh Doanh (Sales)' WHEN 4 THEN N'Phòng Marketing & Truyền Thông' WHEN 5 THEN N'Phòng Kế Toán - Tài Chính' END ORDER BY department_id) AS department_id,
-        (SELECT TOP (1) position_id FROM dbo.Positions WHERE position_name=CASE s.position_id WHEN 1 THEN N'Java Developer' WHEN 2 THEN N'Frontend Developer' WHEN 3 THEN N'QA / Software Tester' WHEN 4 THEN N'HR Officer' WHEN 5 THEN N'Sales Executive' END ORDER BY position_id) AS position_id,
-        (SELECT TOP (1) level_id FROM dbo.Job_Levels WHERE level_name=CASE s.level_id WHEN 1 THEN N'Intern' WHEN 2 THEN N'Fresher' WHEN 3 THEN N'Junior' WHEN 4 THEN N'Middle' WHEN 5 THEN N'Senior' WHEN 6 THEN N'Lead' END ORDER BY level_id) AS level_id,
-        COALESCE(s.video_url, N'/assets/docs/' + s.file_name) AS material_url,
-        s.file_name AS file_name,
-        s.file_type AS file_type,
-        s.file_size AS file_size,
-        s.video_url AS video_url,
-        s.duration_minutes AS duration_minutes,
-        s.status AS status,
-        s.is_deleted AS is_deleted,
-        (SELECT TOP (1) user_id FROM dbo.Users WHERE username=CASE s.created_by WHEN 1 THEN N'admin' WHEN 2 THEN N'hr_manager' WHEN 3 THEN N'manager_it' WHEN 4 THEN N'dev_fresher' WHEN 5 THEN N'dev_tester' WHEN 6 THEN N'mentor_java' WHEN 7 THEN N'locked_user' END ORDER BY user_id) AS created_by,
-        s.created_at AS created_at,
-        s.updated_at AS updated_at
-    FROM (VALUES
--- 1. Sổ tay văn hóa doanh nghiệp (DEPARTMENT HR)
-(N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty',
- N'Tài liệu định hướng chuẩn mực dành cho toàn bộ nhân sự mới: Tầm nhìn sứ mệnh, 5 giá trị cốt lõi, tác phong làm việc chuyên nghiệp, nội quy lao động và chính sách phúc lợi.',
- 'PDF', 'DEPARTMENT', 2, NULL, NULL,
- N'So_Tay_Van_Hoa_Doanh_Nghiep.pdf', 'application/pdf', 1048576, 'https://viethandvh.com/wp-content/uploads/2026/04/So-tay-van-hoa.pdf', 30, 1, 0, 2, '2026-09-28 08:24:23.550', '2026-09-28 08:24:23.550'),
-
--- 2. Slide đào tạo Agile/Scrum (DEPARTMENT IT)
-(N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum',
- N'Trình chiếu bài giảng chi tiết về quy trình vận hành Sprint, các buổi lễ Scrum (Planning, Daily Standup, Review, Retrospective), cách quản lý Task trên Jira và văn hóa phối hợp đội ngũ.',
- 'SLIDE', 'DEPARTMENT', 1, 1, 2,
- N'Agile_Scrum_Onboarding.pptx', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 2097152, 'https://docs.google.com/presentation/d/1WX3Lvh6A8TqQBmbr4XyRN8SaWSsxIoQo/edit?rtpof=true', 45, 1, 0, 3, '2026-09-28 08:24:23.553', '2026-09-28 08:29:17.967'),
-
--- 3. Video kiến trúc Java Backend & Servlet Jakarta EE (DEPARTMENT IT)
-(N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE',
- N'Khóa học video cô đọng chuẩn kiến trúc phần mềm MVC, vòng đời Servlet, Bộ lọc Filter, quản lý Session và tương tác cơ sở dữ liệu qua JDBC Transaction trong dự án doanh nghiệp thực tế.',
- 'VIDEO', 'DEPARTMENT', 1, 1, 2,
- NULL, 'video/mp4', NULL, 'https://www.youtube.com/watch?v=4wqMsmSEllA&t=532s', 25, 1, 0, 3, '2026-09-28 08:24:23.557', '2026-09-28 08:30:25.600'),
-
--- 4. Bộ tiêu chuẩn lập trình Java Clean Code (DEPARTMENT IT)
-(N'Bộ Tiêu Chuẩn Lập Trình Java & Quy Định Đặt Mã Nguồn (Clean Code)',
- N'Tài liệu quy định chi tiết về cấu trúc mã nguồn, quy chuẩn đặt tên biến/hàm/lớp, nguyên tắc SOLID, kỹ thuật xử lý ngoại lệ và viết Unit Test theo chuẩn dự án doanh nghiệp.',
- 'PDF', 'DEPARTMENT', 1, 1, 2,
- N'Java_Clean_Code_Conventions.pdf', 'application/pdf', 1258291, NULL, 40, 1, 0, 3, '2026-09-28 08:24:23.560', '2026-09-28 08:24:23.560'),
-
--- 5. Video giới thiệu văn hóa và tầm nhìn 2026 (DEPARTMENT HR)
-(N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026',
- N'Thước phim truyền thông nội bộ giới thiệu lịch sử hình thành, đội ngũ ban điều hành, giá trị con người và định hướng phát triển bền vững của công ty trong năm 2026.',
- 'VIDEO', 'DEPARTMENT', 2, NULL, NULL,
- NULL, 'video/mp4', NULL, 'https://www.youtube.com/watch?v=KRYONejN6SU', 15, 1, 0, 2, '2026-09-28 08:24:23.560', '2026-09-28 08:27:47.147'),
-
--- 6. Cẩm nang an toàn thông tin & bảo mật dữ liệu doanh nghiệp (DEPARTMENT HR)
-(N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp',
- N'Hướng dẫn thực thi các tiêu chuẩn an toàn bảo mật thông tin nội bộ, nguyên tắc đặt mật khẩu định kỳ, bảo mật mã nguồn dự án và phòng ngừa tấn công lừa đảo qua mạng (Phishing).',
- 'PDF', 'DEPARTMENT', 2, NULL, NULL,
- N'Cam_Nang_Quy_Chuan_An_Toan_Thong_Tin_Bao_Mat.pdf', 'application/pdf', 10518152, NULL, 20, 1, 0, 2, '2026-09-28 08:24:23.560', '2026-09-28 08:27:09.823')
-    ) AS s (title, description, material_type, scope_type, department_id, position_id, level_id, file_name, file_type, file_size, video_url, duration_minutes, status, is_deleted, created_by, created_at, updated_at)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Learning_Materials existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.title=src.title OR (existing.title IS NULL AND src.title IS NULL)) AND (existing.scope_type=src.scope_type OR (existing.scope_type IS NULL AND src.scope_type IS NULL)) AND (existing.department_id=src.department_id OR (existing.department_id IS NULL AND src.department_id IS NULL)));
-GO
-
--- Thu hồi các bản học liệu bị nhân đôi bởi seed cũ về bản có material_id nhỏ nhất.
--- Liên kết lớp/tiến độ/checkpoint được chuyển sang bản chuẩn; bộ đề trùng bị ẩn
--- nhưng bài làm cũ vẫn giữ nguyên content_id để không mất lịch sử câu trả lời.
-DECLARE @duplicate_materials TABLE (
-    duplicate_id INT PRIMARY KEY,
-    canonical_id INT NOT NULL
-);
-
-;WITH ranked AS (
-    SELECT material_id,
-           MIN(material_id) OVER (
-               PARTITION BY title,scope_type,ISNULL(department_id,-1)
-           ) AS canonical_id
-    FROM dbo.Learning_Materials
-    WHERE is_deleted=0
-)
-INSERT INTO @duplicate_materials(duplicate_id,canonical_id)
-SELECT material_id,canonical_id FROM ranked WHERE material_id<>canonical_id;
-
-IF EXISTS (SELECT 1 FROM @duplicate_materials)
-BEGIN
-    -- Đợt giao chưa bắt đầu dùng bộ đề chuẩn thay cho bộ đề seed bị trùng.
-    UPDATE t
-    SET t.default_content_id=canonical_content.id
-    FROM dbo.Test_Templates t
-    JOIN dbo.Test_Content duplicate_content ON duplicate_content.id=t.default_content_id
-    JOIN @duplicate_materials map ON map.duplicate_id=duplicate_content.learning_material_id
-    JOIN dbo.Test_Content canonical_content ON canonical_content.learning_material_id=map.canonical_id
-        AND canonical_content.is_deleted=0;
-
-    -- Giữ liên kết lớp, gộp về học liệu chuẩn rồi bỏ liên kết trùng.
-    INSERT INTO dbo.Class_Materials(class_id,material_id,order_index,is_mandatory)
-    SELECT cm.class_id,map.canonical_id,MIN(cm.order_index),MAX(CAST(cm.is_mandatory AS INT))
-    FROM dbo.Class_Materials cm
-    JOIN @duplicate_materials map ON map.duplicate_id=cm.material_id
-    WHERE NOT EXISTS (
-        SELECT 1 FROM dbo.Class_Materials current_row
-        WHERE current_row.class_id=cm.class_id AND current_row.material_id=map.canonical_id
-    )
-    GROUP BY cm.class_id,map.canonical_id;
-
-    DELETE cm
-    FROM dbo.Class_Materials cm
-    JOIN @duplicate_materials map ON map.duplicate_id=cm.material_id;
-
-    -- Nếu đã có tiến độ ở bản chuẩn thì ưu tiên bản chuẩn; nếu chưa thì chuyển tiến độ sang.
-    DELETE lp
-    FROM dbo.Learning_Progress lp
-    JOIN @duplicate_materials map ON map.duplicate_id=lp.material_id
-    WHERE EXISTS (
-        SELECT 1 FROM dbo.Learning_Progress canonical_progress
-        WHERE canonical_progress.user_id=lp.user_id
-          AND canonical_progress.material_id=map.canonical_id
-          AND (canonical_progress.class_id=lp.class_id
-               OR (canonical_progress.class_id IS NULL AND lp.class_id IS NULL))
-    );
-
-    UPDATE lp
-    SET lp.material_id=map.canonical_id
-    FROM dbo.Learning_Progress lp
-    JOIN @duplicate_materials map ON map.duplicate_id=lp.material_id;
-
-    UPDATE vc
-    SET vc.material_id=map.canonical_id
-    FROM dbo.Video_Checkpoints vc
-    JOIN @duplicate_materials map ON map.duplicate_id=vc.material_id;
-
-    -- Xóa hẳn bộ đề seed trùng chưa từng được giao; chỉ giữ soft-delete nếu đã có lịch sử làm bài.
-    DECLARE @removable_duplicate_contents TABLE (content_id INT PRIMARY KEY);
-    INSERT INTO @removable_duplicate_contents(content_id)
-    SELECT duplicate_content.id
-    FROM dbo.Test_Content duplicate_content
-    JOIN @duplicate_materials map ON map.duplicate_id=duplicate_content.learning_material_id
-    WHERE NOT EXISTS (SELECT 1 FROM dbo.Test_Assignments a WHERE a.content_id=duplicate_content.id)
-      AND NOT EXISTS (SELECT 1 FROM dbo.Test_Templates t WHERE t.default_content_id=duplicate_content.id)
-      AND NOT EXISTS (
-          SELECT 1 FROM dbo.Test_Answer_Options answer
-          JOIN dbo.Test_Questions question ON question.id=answer.question_id
-          WHERE question.content_id=duplicate_content.id
-      );
-
-    DELETE option_row
-    FROM dbo.Test_Question_Options option_row
-    JOIN dbo.Test_Questions question ON question.id=option_row.question_id
-    JOIN @removable_duplicate_contents removable ON removable.content_id=question.content_id;
-
-    DELETE question
-    FROM dbo.Test_Questions question
-    JOIN @removable_duplicate_contents removable ON removable.content_id=question.content_id;
-
-    DELETE duplicate_content
-    FROM dbo.Test_Content duplicate_content
-    JOIN @removable_duplicate_contents removable ON removable.content_id=duplicate_content.id;
-
-    -- Khi bản chuẩn đã có bộ đề, ẩn bộ đề trùng; nếu chưa có thì chuyển nguyên bộ đề sang bản chuẩn.
-    UPDATE duplicate_content
-    SET duplicate_content.is_deleted=1,
-        duplicate_content.learning_material_id=map.canonical_id
-    FROM dbo.Test_Content duplicate_content
-    JOIN @duplicate_materials map ON map.duplicate_id=duplicate_content.learning_material_id
-    WHERE EXISTS (
-        SELECT 1 FROM dbo.Test_Content canonical_content
-        WHERE canonical_content.learning_material_id=map.canonical_id
-          AND canonical_content.is_deleted=0
-    );
-
-    UPDATE duplicate_content
-    SET duplicate_content.learning_material_id=map.canonical_id
-    FROM dbo.Test_Content duplicate_content
-    JOIN @duplicate_materials map ON map.duplicate_id=duplicate_content.learning_material_id
-    WHERE duplicate_content.is_deleted=0;
-
-    DELETE material
-    FROM dbo.Learning_Materials material
-    JOIN @duplicate_materials map ON map.duplicate_id=material.material_id;
-END;
-
--- Dọn nốt các bộ đề trùng đã được soft-delete ở lần sửa trước và không có lịch sử sử dụng.
-DECLARE @unused_deleted_contents TABLE (content_id INT PRIMARY KEY);
-INSERT INTO @unused_deleted_contents(content_id)
-SELECT deleted_content.id
-FROM dbo.Test_Content deleted_content
-WHERE deleted_content.type='learning' AND deleted_content.is_deleted=1
-  AND deleted_content.learning_material_id IS NOT NULL
-  AND EXISTS (
-      SELECT 1 FROM dbo.Test_Content active_content
-      WHERE active_content.learning_material_id=deleted_content.learning_material_id
-        AND active_content.is_deleted=0
-  )
-  AND NOT EXISTS (SELECT 1 FROM dbo.Test_Assignments a WHERE a.content_id=deleted_content.id)
-  AND NOT EXISTS (SELECT 1 FROM dbo.Test_Templates t WHERE t.default_content_id=deleted_content.id)
-  AND NOT EXISTS (
-      SELECT 1 FROM dbo.Test_Answer_Options answer
-      JOIN dbo.Test_Questions question ON question.id=answer.question_id
-      WHERE question.content_id=deleted_content.id
-  );
-
-DELETE option_row
-FROM dbo.Test_Question_Options option_row
-JOIN dbo.Test_Questions question ON question.id=option_row.question_id
-JOIN @unused_deleted_contents unused ON unused.content_id=question.content_id;
-
-DELETE question
-FROM dbo.Test_Questions question
-JOIN @unused_deleted_contents unused ON unused.content_id=question.content_id;
-
-DELETE deleted_content
-FROM dbo.Test_Content deleted_content
-JOIN @unused_deleted_contents unused ON unused.content_id=deleted_content.id;
-
-IF NOT EXISTS (
-    SELECT 1 FROM sys.indexes
-    WHERE object_id=OBJECT_ID('dbo.Learning_Materials')
-      AND name='UX_Learning_Materials_Active_Department_Title'
-)
-    CREATE UNIQUE INDEX UX_Learning_Materials_Active_Department_Title
-        ON dbo.Learning_Materials(title,scope_type,department_id)
-        WHERE is_deleted=0;
+(2, N'API là gì?', N'API là giao diện cho phép các ứng dụng hoặc hệ thống giao tiếp và trao đổi dữ liệu với nhau.');
 GO
 
 -- =======================================================
--- 8. SEED DATA: KHO ĐỀ THI VĂN HÓA & CHUYÊN MÔN & HỌC LIỆU
+-- 8. SEED DATA: KHO ĐỀ THI VĂN HÓA & CHUYÊN MÔN
 -- Câu hỏi chỉ được nạp từ database, không tạo thủ công trên giao diện.
 -- Hỗ trợ: đúng/sai, một đáp án, nhiều đáp án đúng và hơn 4 lựa chọn.
 -- =======================================================
@@ -537,12 +321,6 @@ BEGIN
             N'Đánh giá kiến thức về bảo mật, giao tiếp, hợp tác và quy định làm việc.',
             'quiz','culture',NULL,@culture_creator_id,'ready',0);
     SET @culture_content_id = SCOPE_IDENTITY();
-END;
-ELSE
-BEGIN
-    UPDATE dbo.Test_Content
-    SET created_by = @culture_creator_id
-    WHERE id = @culture_content_id AND created_by <> @culture_creator_id;
 END;
 
 IF NOT EXISTS (SELECT 1 FROM dbo.Test_Questions WHERE content_id = @culture_content_id)
@@ -757,897 +535,87 @@ END;
 COMMIT;
 GO
 
--- BEGIN LEARNING TEST BANK SEED
--- 15 câu / học liệu. Dựa trên mô tả và checkpoint hiện có, chưa đối chiếu toàn bộ file gốc.
--- Chạy khối BEGIN/END TEST MODULE trong file schema trước. Không sửa/xóa đề đã có khi chạy lại.
-SET XACT_ABORT ON;
-SET NOCOUNT ON;
-SET QUOTED_IDENTIFIER ON;
-SET ANSI_NULLS ON;
-SET ANSI_PADDING ON;
-SET ANSI_WARNINGS ON;
-SET ARITHABORT ON;
-SET CONCAT_NULL_YIELDS_NULL ON;
-SET NUMERIC_ROUNDABORT OFF;
-BEGIN TRANSACTION;
-DECLARE @material INT, @content INT, @question INT;
+-- =======================================================
+-- 9. SEED DATA: HỌC LIỆU & LỚP ĐÀO TẠO (LEARNING MATERIALS & TRAINING CLASSES)
+-- =======================================================
+INSERT INTO dbo.Learning_Materials 
+(title, description, material_type, scope_type, department_id, position_id, level_id, material_url, video_url, duration_minutes, status, created_by, created_at)
+VALUES 
+-- 1. Slide đào tạo Agile/Scrum (CULTURE)
+(N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum', 
+ N'Trình chiếu bài giảng chi tiết về quy trình vận hành Sprint, các buổi lễ Scrum (Planning, Daily Standup, Review, Retrospective), cách quản lý Task trên Jira và văn hóa phối hợp đội ngũ.', 
+ 'SLIDE', 'CULTURE', NULL, NULL, NULL, 'https://docs.google.com/presentation/d/1WX3Lvh6A8TqQBmbr4XyRN8SaWSsxIoQo/edit?slide=id.p1#slide=id.p1', 'https://docs.google.com/presentation/d/1WX3Lvh6A8TqQBmbr4XyRN8SaWSsxIoQo/edit?slide=id.p1#slide=id.p1', 0, 1, 3, '2026-09-01 08:05:00'),
 
-SET @material = NULL;
-SELECT TOP (1) @material=material_id FROM dbo.Learning_Materials
-WHERE title=N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty' AND is_deleted=0 AND status=1 ORDER BY material_id;
-IF @material IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM dbo.Test_Content WITH (UPDLOCK,HOLDLOCK)
-    WHERE learning_material_id=@material AND is_deleted=0)
-BEGIN
-    INSERT INTO dbo.Test_Content(title,prompt,kind,type,department_id,created_by,status,learning_material_id)
-    SELECT LEFT(N'Học liệu: '+title,200),
-        N'Bộ đề 15 câu ôn tập theo chủ đề học liệu. Nội dung được biên soạn từ mô tả và checkpoint trong hệ thống; cần đối chiếu tài liệu gốc trước khi dùng đánh giá chính thức. '+COALESCE(description,N''),
-        'quiz','learning',department_id,created_by,'ready',material_id
-    FROM dbo.Learning_Materials WHERE material_id=@material;
-    SET @content=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Tầm nhìn doanh nghiệp mô tả điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Trạng thái tương lai doanh nghiệp hướng tới',1,1),
-        (@question,N'Lịch chấm công từng ngày',0,2),
-        (@question,N'Mật khẩu hệ thống',0,3),
-        (@question,N'Danh sách thiết bị cá nhân',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Sứ mệnh doanh nghiệp trả lời câu hỏi nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Nhân viên dùng điện thoại hãng nào?',0,1),
-        (@question,N'Doanh nghiệp tồn tại để tạo giá trị gì và cho ai?',1,2),
-        (@question,N'Màu áo yêu thích của từng người?',0,3),
-        (@question,N'Ai đến văn phòng sớm nhất?',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Giá trị cốt lõi có vai trò gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Thay thế mọi quy định pháp luật',0,1),
-        (@question,N'Chỉ dùng trang trí văn phòng',0,2),
-        (@question,N'Định hướng hành vi và quyết định trong công việc',1,3),
-        (@question,N'Chỉ áp dụng cho nhân sự mới',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi chưa rõ một nội quy, nhân viên nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Tự suy đoán rồi phổ biến cho cả nhóm',0,1),
-        (@question,N'Bỏ qua nội quy',0,2),
-        (@question,N'Làm theo tin đồn',0,3),
-        (@question,N'Tra cứu sổ tay và hỏi bộ phận phụ trách',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Hành vi nào thể hiện tác phong chuyên nghiệp?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Đúng giờ và chuẩn bị nội dung trước cuộc họp',1,1),
-        (@question,N'Thường xuyên trễ hẹn không báo',0,2),
-        (@question,N'Ngắt lời mọi người',0,3),
-        (@question,N'Bỏ qua cam kết đã nhận',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi nhận thấy có nguy cơ trễ hạn, nên xử lý thế nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Giấu thông tin đến ngày cuối',0,1),
-        (@question,N'Báo sớm và thống nhất phương án xử lý',1,2),
-        (@question,N'Đổi hạn mà không thông báo',0,3),
-        (@question,N'Đổ lỗi cho đồng nghiệp',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Cách trao đổi nào phù hợp trong môi trường làm việc?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Công kích cá nhân',0,1),
-        (@question,N'Phát tán tin chưa kiểm chứng',0,2),
-        (@question,N'Tôn trọng và góp ý dựa trên sự việc cụ thể',1,3),
-        (@question,N'Dùng lời lẽ xúc phạm',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi cần nghỉ phép, nhân viên nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Tự nghỉ không báo',0,1),
-        (@question,N'Nhờ người khác chấm công hộ',0,2),
-        (@question,N'Xóa lịch làm việc',0,3),
-        (@question,N'Thực hiện quy trình xin phép và bàn giao công việc',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Nguồn nào phù hợp để kiểm tra chính sách phúc lợi?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Văn bản chính thức và bộ phận nhân sự',1,1),
-        (@question,N'Bình luận ẩn danh',0,2),
-        (@question,N'Tin nhắn quảng cáo',0,3),
-        (@question,N'Tin truyền miệng ngoài công ty',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi có bất đồng trong nhóm, cách xử lý phù hợp là gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Né tránh mọi trao đổi',0,1),
-        (@question,N'Trao đổi dựa trên mục tiêu chung và dữ kiện',1,2),
-        (@question,N'Đưa chuyện cá nhân lên mạng',0,3),
-        (@question,N'Giữ thông tin để gây khó dễ',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Trách nhiệm với tài sản công ty thể hiện ở đâu?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Tự ý mang về cho người thân',0,1),
-        (@question,N'Cho mượn không kiểm soát',0,2),
-        (@question,N'Sử dụng đúng mục đích và báo hỏng kịp thời',1,3),
-        (@question,N'Che giấu việc làm mất',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi tiếp nhận công việc từ đồng nghiệp, cần làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Chỉ nhận tên công việc',0,1),
-        (@question,N'Không hỏi dù chưa hiểu',0,2),
-        (@question,N'Tự bỏ các yêu cầu chưa thích',0,3),
-        (@question,N'Xác nhận phạm vi, thời hạn và đầu mối phối hợp',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Văn hóa phản hồi tích cực hướng đến điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Cải thiện công việc bằng góp ý cụ thể và tôn trọng',1,1),
-        (@question,N'Tìm người để đổ lỗi',0,2),
-        (@question,N'Chỉ trích trước đám đông',0,3),
-        (@question,N'Tránh nêu mọi vấn đề',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi thấy hành vi vi phạm nội quy, nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Đăng thông tin cá nhân lên mạng',0,1),
-        (@question,N'Phản ánh qua kênh phù hợp với thông tin xác thực',1,2),
-        (@question,N'Bao che vô điều kiện',0,3),
-        (@question,N'Tự áp dụng hình phạt',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Để áp dụng sổ tay vào công việc hằng ngày, nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Chỉ đọc tiêu đề một lần',0,1),
-        (@question,N'Chỉ nhớ tên tài liệu',0,2),
-        (@question,N'Đối chiếu hành vi và quy trình với hướng dẫn chính thức',1,3),
-        (@question,N'Coi mọi quy định là tùy chọn',0,4);
-END;
+-- 2. Video kiến trúc Java Backend & Servlet Jakarta EE (CULTURE)
+(N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE', 
+ N'Khóa học video cô đọng chuẩn kiến trúc phần mềm MVC, vòng đời Servlet, Bộ lọc Filter, quản lý Session và tương tác cơ sở dữ liệu qua JDBC Transaction trong dự án doanh nghiệp thực tế.', 
+ 'VIDEO', 'CULTURE', NULL, NULL, NULL, 'https://www.youtube.com/watch?v=X5nt9_11Ozg&list=PLW1k06REn7HsHn6D6e27gtFm-HXrZDLPX', 'https://www.youtube.com/watch?v=X5nt9_11Ozg&list=PLW1k06REn7HsHn6D6e27gtFm-HXrZDLPX', 15, 1, 3, '2026-09-01 08:10:00'),
 
-SET @material = NULL;
-SELECT TOP (1) @material=material_id FROM dbo.Learning_Materials
-WHERE title=N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum' AND is_deleted=0 AND status=1 ORDER BY material_id;
-IF @material IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM dbo.Test_Content WITH (UPDLOCK,HOLDLOCK)
-    WHERE learning_material_id=@material AND is_deleted=0)
-BEGIN
-    INSERT INTO dbo.Test_Content(title,prompt,kind,type,department_id,created_by,status,learning_material_id)
-    SELECT LEFT(N'Học liệu: '+title,200),
-        N'Bộ đề 15 câu ôn tập theo chủ đề học liệu. Nội dung được biên soạn từ mô tả và checkpoint trong hệ thống; cần đối chiếu tài liệu gốc trước khi dùng đánh giá chính thức. '+COALESCE(description,N''),
-        'quiz','learning',department_id,created_by,'ready',material_id
-    FROM dbo.Learning_Materials WHERE material_id=@material;
-    SET @content=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Sprint trong Scrum là gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Khoảng thời gian cố định để tạo giá trị hướng tới Sprint Goal',1,1),
-        (@question,N'Một cuộc họp không giới hạn thời gian',0,2),
-        (@question,N'Toàn bộ vòng đời công ty',0,3),
-        (@question,N'Một danh sách lỗi bất kỳ',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Sprint Planning nhằm mục đích gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Chỉ báo cáo giờ làm tháng trước',0,1),
-        (@question,N'Thống nhất mục tiêu Sprint và kế hoạch thực hiện',1,2),
-        (@question,N'Đánh giá lương từng người',0,3),
-        (@question,N'Đóng dự án ngay lập tức',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Daily Scrum chủ yếu giúp Developers làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Báo cáo cá nhân để quản lý chấm điểm',0,1),
-        (@question,N'Thay thế mọi trao đổi kỹ thuật',0,2),
-        (@question,N'Kiểm tra tiến độ tới Sprint Goal và điều chỉnh kế hoạch',1,3),
-        (@question,N'Duyệt ngân sách công ty',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Thời lượng timebox của Daily Scrum là bao lâu?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'2 giờ',0,1),
-        (@question,N'Một ngày',0,2),
-        (@question,N'Không giới hạn',0,3),
-        (@question,N'15 phút',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Sprint Review tập trung vào điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Kiểm tra kết quả Sprint với bên liên quan và thích ứng hướng đi',1,1),
-        (@question,N'Chỉ tìm lỗi tác phong cá nhân',0,2),
-        (@question,N'Chỉ phân công nghỉ phép',0,3),
-        (@question,N'Chỉ đọc lại toàn bộ mã nguồn',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Sprint Retrospective nhằm cải thiện điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Logo sản phẩm',0,1),
-        (@question,N'Chất lượng và hiệu quả cách nhóm làm việc',1,2),
-        (@question,N'Số lượng chức danh',0,3),
-        (@question,N'Mật khẩu Jira',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Ai chịu trách nhiệm quản lý Product Backlog hiệu quả?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Mọi khách hàng tự sửa độc lập',0,1),
-        (@question,N'Bất kỳ người ngoài nhóm',0,2),
-        (@question,N'Product Owner',1,3),
-        (@question,N'Chỉ bộ phận kế toán',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Scrum Master có trách nhiệm nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Giao từng task bắt buộc cho Developers',0,1),
-        (@question,N'Thay Product Owner quyết định mọi ưu tiên',0,2),
-        (@question,N'Chấm công thay cả nhóm',0,3),
-        (@question,N'Giúp thiết lập Scrum và nâng cao hiệu quả Scrum Team',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Product Backlog là gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Danh sách được sắp thứ tự về những gì cần để cải thiện sản phẩm',1,1),
-        (@question,N'Danh sách riêng không ai được xem',0,2),
-        (@question,N'Chỉ là các lỗi đã đóng',0,3),
-        (@question,N'Biên bản nghỉ phép',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Sprint Backlog thể hiện điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Toàn bộ ý tưởng tương lai không chọn lọc',0,1),
-        (@question,N'Sprint Goal, các hạng mục được chọn và kế hoạch thực hiện',1,2),
-        (@question,N'Chỉ tên người quản lý',0,3),
-        (@question,N'Mọi tài liệu của công ty',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Definition of Done giúp nhóm làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Tự coi mọi task đang làm là xong',0,1),
-        (@question,N'Loại bỏ kiểm thử',0,2),
-        (@question,N'Thống nhất tiêu chuẩn chất lượng để xác định Increment hoàn thành',1,3),
-        (@question,N'Thay đổi mục tiêu công ty',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi task bị chặn trên Jira, nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Giữ trạng thái Done dù chưa xong',0,1),
-        (@question,N'Xóa mọi bình luận',0,2),
-        (@question,N'Để im đến hết Sprint',0,3),
-        (@question,N'Ghi rõ trở ngại và trao đổi để tháo gỡ',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Cập nhật trạng thái task đúng thực tế mang lại lợi ích gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Giúp nhóm nhìn thấy tiến độ và phối hợp kịp thời',1,1),
-        (@question,N'Bảo đảm không cần họp hay trao đổi',0,2),
-        (@question,N'Tự động loại bỏ mọi lỗi',0,3),
-        (@question,N'Thay thế toàn bộ kiểm thử',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi phát hiện yêu cầu chưa rõ, Developers nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Tự đoán rồi giấu quyết định',0,1),
-        (@question,N'Trao đổi với Product Owner để làm rõ và cùng thống nhất',1,2),
-        (@question,N'Bỏ mọi tiêu chí chấp nhận',0,3),
-        (@question,N'Chờ đến ngày bàn giao mới hỏi',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Một cải tiến từ Retrospective nên được thực hiện thế nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Chỉ ghi biên bản rồi bỏ qua',0,1),
-        (@question,N'Luôn thay toàn bộ thành viên',0,2),
-        (@question,N'Chọn hành động cụ thể và theo dõi hiệu quả',1,3),
-        (@question,N'Chỉ tăng số cuộc họp',0,4);
-END;
-
-SET @material = NULL;
-SELECT TOP (1) @material=material_id FROM dbo.Learning_Materials
-WHERE title=N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE' AND is_deleted=0 AND status=1 ORDER BY material_id;
-IF @material IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM dbo.Test_Content WITH (UPDLOCK,HOLDLOCK)
-    WHERE learning_material_id=@material AND is_deleted=0)
-BEGIN
-    INSERT INTO dbo.Test_Content(title,prompt,kind,type,department_id,created_by,status,learning_material_id)
-    SELECT LEFT(N'Học liệu: '+title,200),
-        N'Bộ đề 15 câu ôn tập theo chủ đề học liệu. Nội dung được biên soạn từ mô tả và checkpoint trong hệ thống; cần đối chiếu tài liệu gốc trước khi dùng đánh giá chính thức. '+COALESCE(description,N''),
-        'quiz','learning',department_id,created_by,'ready',material_id
-    FROM dbo.Learning_Materials WHERE material_id=@material;
-    SET @content=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Trong MVC, Servlet thường đóng vai trò gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Controller tiếp nhận và điều phối request',1,1),
-        (@question,N'View trình bày HTML',0,2),
-        (@question,N'Máy chủ cơ sở dữ liệu',0,3),
-        (@question,N'Công cụ biên dịch CSS',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Trong MVC, JSP thường đảm nhận nhiệm vụ nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Quản lý transaction trực tiếp cho mọi request',0,1),
-        (@question,N'Hiển thị dữ liệu cho người dùng',1,2),
-        (@question,N'Thay thế JDBC driver',0,3),
-        (@question,N'Lưu mật khẩu database trong HTML',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Tầng DAO chịu trách nhiệm chính về việc gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Thiết kế màu giao diện',0,1),
-        (@question,N'Quản lý cookie của trình duyệt',0,2),
-        (@question,N'Truy cập và ánh xạ dữ liệu từ database',1,3),
-        (@question,N'Biên dịch Servlet',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Phương thức init của Servlet thường chạy khi nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Trước mọi câu SQL',0,1),
-        (@question,N'Sau mỗi lần render một thẻ HTML',0,2),
-        (@question,N'Chỉ khi người dùng đăng xuất',0,3),
-        (@question,N'Khi container khởi tạo Servlet',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Phương thức nào xử lý HTTP GET trong HttpServlet?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'doGet',1,1),
-        (@question,N'doPostOnly',0,2),
-        (@question,N'renderDatabase',0,3),
-        (@question,N'startSession',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Phương thức destroy của Servlet dùng để làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Xóa toàn bộ database',0,1),
-        (@question,N'Giải phóng tài nguyên khi Servlet bị đưa khỏi phục vụ',1,2),
-        (@question,N'Xóa tài khoản người truy cập',0,3),
-        (@question,N'Tạo session mới',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Vì sao không nên lưu dữ liệu riêng từng người dùng trong field Servlet?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Mỗi field luôn tự mã hóa',0,1),
-        (@question,N'Servlet chỉ có thể xử lý một người dùng',0,2),
-        (@question,N'Nhiều request có thể dùng chung một Servlet đồng thời',1,3),
-        (@question,N'Field không tồn tại trong Java',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Filter có thể được dùng cho công việc nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Thay thế toàn bộ database',0,1),
-        (@question,N'Tạo khóa ngoại trên HTML',0,2),
-        (@question,N'Biên dịch JSP bằng SQL',0,3),
-        (@question,N'Kiểm tra đăng nhập trước khi request tới Servlet',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Trong Filter, chain.doFilter có tác dụng gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Chuyển tiếp request tới bước xử lý tiếp theo',1,1),
-        (@question,N'Luôn đóng ứng dụng',0,2),
-        (@question,N'Xóa session của mọi người',0,3),
-        (@question,N'Commit mọi transaction',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'HttpSession thường dùng để lưu thông tin gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Mọi dữ liệu bí mật trong URL công khai',0,1),
-        (@question,N'Trạng thái gắn với phiên người dùng phía server',1,2),
-        (@question,N'Toàn bộ database trên trình duyệt',0,3),
-        (@question,N'Chỉ CSS của trang',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi đăng xuất, thao tác nào giúp kết thúc session hiện tại?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'session.toString()',0,1),
-        (@question,N'request.getMethod()',0,2),
-        (@question,N'session.invalidate()',1,3),
-        (@question,N'response.getStatus()',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'PreparedStatement với tham số ràng buộc giúp giảm nguy cơ gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Mất điện máy chủ',0,1),
-        (@question,N'Trình duyệt không hỗ trợ CSS',0,2),
-        (@question,N'Ổ đĩa đầy',0,3),
-        (@question,N'SQL Injection do nối dữ liệu đầu vào vào SQL',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Để bắt đầu quản lý transaction JDBC thủ công, cần làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Gọi setAutoCommit(false)',1,1),
-        (@question,N'Gọi setAutoCommit(true) sau mỗi câu lệnh',0,2),
-        (@question,N'Đóng connection trước khi ghi',0,3),
-        (@question,N'Chuyển SQL thành HTML',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi một bước trong transaction thất bại, nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Commit phần đã chạy bất kể lỗi',0,1),
-        (@question,N'Rollback các thay đổi của transaction',1,2),
-        (@question,N'Bỏ qua SQLException',0,3),
-        (@question,N'Tạo session khác',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Try-with-resources giúp ích gì khi làm việc với JDBC?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Tự sửa mọi câu SQL sai',0,1),
-        (@question,N'Bảo đảm không bao giờ mất kết nối',0,2),
-        (@question,N'Đóng tài nguyên như ResultSet và Statement đúng cách',1,3),
-        (@question,N'Thay thế hoàn toàn transaction',0,4);
-END;
-
-SET @material = NULL;
-SELECT TOP (1) @material=material_id FROM dbo.Learning_Materials
-WHERE title=N'Bộ Tiêu Chuẩn Lập Trình Java & Quy Định Đặt Mã Nguồn (Clean Code)' AND is_deleted=0 AND status=1 ORDER BY material_id;
-IF @material IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM dbo.Test_Content WITH (UPDLOCK,HOLDLOCK)
-    WHERE learning_material_id=@material AND is_deleted=0)
-BEGIN
-    INSERT INTO dbo.Test_Content(title,prompt,kind,type,department_id,created_by,status,learning_material_id)
-    SELECT LEFT(N'Học liệu: '+title,200),
-        N'Bộ đề 15 câu ôn tập theo chủ đề học liệu. Nội dung được biên soạn từ mô tả và checkpoint trong hệ thống; cần đối chiếu tài liệu gốc trước khi dùng đánh giá chính thức. '+COALESCE(description,N''),
-        'quiz','learning',department_id,created_by,'ready',material_id
-    FROM dbo.Learning_Materials WHERE material_id=@material;
-    SET @content=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Tên biến tốt nên thể hiện điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Ý nghĩa của dữ liệu trong ngữ cảnh sử dụng',1,1),
-        (@question,N'Chỉ một ký tự cho mọi biến',0,2),
-        (@question,N'Tên người viết mã',0,3),
-        (@question,N'Số dòng trong file',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Quy ước thông dụng cho tên lớp Java là gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'snake_case như employee_service',0,1),
-        (@question,N'PascalCase như EmployeeService',1,2),
-        (@question,N'Toàn chữ thường có dấu cách',0,3),
-        (@question,N'Tên bắt đầu bằng chữ số',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Quy ước thông dụng cho tên phương thức Java là gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'PascalCase cho mọi phương thức',0,1),
-        (@question,N'Tên có dấu cách',0,2),
-        (@question,N'camelCase như calculateScore',1,3),
-        (@question,N'Chỉ dùng dấu gạch ngang',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Một hàm dễ bảo trì thường có đặc điểm nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Gộp giao diện, SQL và gửi mail vào cùng một hàm',0,1),
-        (@question,N'Luôn có hàng nghìn dòng',0,2),
-        (@question,N'Không có tên mô tả',0,3),
-        (@question,N'Thực hiện một nhiệm vụ rõ ràng',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Single Responsibility Principle đề cập điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Một mô-đun nên có một lý do chính để thay đổi',1,1),
-        (@question,N'Một lớp phải xử lý mọi chức năng',0,2),
-        (@question,N'Mỗi dự án chỉ có một lớp',0,3),
-        (@question,N'Không được tạo interface',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Open/Closed Principle khuyến khích điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Mọi thay đổi đều sửa tất cả lớp',0,1),
-        (@question,N'Mở cho mở rộng và hạn chế sửa đổi mã ổn định',1,2),
-        (@question,N'Không được thêm chức năng',0,3),
-        (@question,N'Chỉ dùng biến public',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Liskov Substitution Principle yêu cầu điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Kiểu con luôn ném lỗi cho mọi hàm kế thừa',0,1),
-        (@question,N'Mọi lớp con phải bỏ kiểm thử',0,2),
-        (@question,N'Kiểu con có thể thay kiểu cha mà vẫn giữ hợp đồng hành vi',1,3),
-        (@question,N'Lớp cha phải biết mọi lớp con',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Interface Segregation Principle khuyến khích điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Một interface khổng lồ cho mọi client',0,1),
-        (@question,N'Không được chia interface',0,2),
-        (@question,N'Mọi interface đều phải có một trăm hàm',0,3),
-        (@question,N'Interface chuyên biệt để client không phụ thuộc hàm không dùng',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Dependency Inversion Principle hướng tới điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Mô-đun cấp cao và cấp thấp phụ thuộc abstraction',1,1),
-        (@question,N'Service luôn tự tạo mọi dependency cụ thể',0,2),
-        (@question,N'UI phải biết mật khẩu database',0,3),
-        (@question,N'Mọi lớp chỉ dùng static',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi bắt exception, cách xử lý phù hợp là gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Để catch rỗng cho mọi lỗi',0,1),
-        (@question,N'Xử lý có ý nghĩa hoặc chuyển tiếp với ngữ cảnh phù hợp',1,2),
-        (@question,N'Luôn trả thành công bất kể lỗi',0,3),
-        (@question,N'Xóa stack trace và không ghi nhận',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Vì sao nên tránh lặp lại cùng một quy tắc nghiệp vụ ở nhiều nơi?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Để loại bỏ mọi phương thức',0,1),
-        (@question,N'Để không cần review code',0,2),
-        (@question,N'Giảm nguy cơ sửa thiếu và hành vi không nhất quán',1,3),
-        (@question,N'Để mọi biến thành global',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Unit test tốt nên kiểm tra điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Chỉ số lượng dòng mã',0,1),
-        (@question,N'Tên tác giả commit',0,2),
-        (@question,N'Thứ tự ngẫu nhiên của các test khác',0,3),
-        (@question,N'Hành vi có thể quan sát của đơn vị được kiểm thử',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Mẫu Arrange–Act–Assert gồm những bước nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Chuẩn bị, thực hiện, kiểm tra kết quả',1,1),
-        (@question,N'Commit, push, merge',0,2),
-        (@question,N'Đăng nhập, đăng xuất, xóa user',0,3),
-        (@question,N'Tải file, đổi tên, đóng máy',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi kiểm thử đầu vào, trường hợp nào cần được cân nhắc?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Chỉ một giá trị đẹp nhất',0,1),
-        (@question,N'Giá trị hợp lệ, biên và không hợp lệ',1,2),
-        (@question,N'Chỉ dữ liệu production',0,3),
-        (@question,N'Chỉ chuỗi rỗng cho mọi hàm',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Review mã nguồn nên ưu tiên điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Sở thích cá nhân không giải thích',0,1),
-        (@question,N'Chỉ đếm số ký tự',0,2),
-        (@question,N'Tính đúng, khả năng đọc, bảo trì và tuân thủ quy ước',1,3),
-        (@question,N'Bỏ qua logic nếu tên file đẹp',0,4);
-END;
-
-SET @material = NULL;
-SELECT TOP (1) @material=material_id FROM dbo.Learning_Materials
-WHERE title=N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026' AND is_deleted=0 AND status=1 ORDER BY material_id;
-IF @material IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM dbo.Test_Content WITH (UPDLOCK,HOLDLOCK)
-    WHERE learning_material_id=@material AND is_deleted=0)
-BEGIN
-    INSERT INTO dbo.Test_Content(title,prompt,kind,type,department_id,created_by,status,learning_material_id)
-    SELECT LEFT(N'Học liệu: '+title,200),
-        N'Bộ đề 15 câu ôn tập theo chủ đề học liệu. Nội dung được biên soạn từ mô tả và checkpoint trong hệ thống; cần đối chiếu tài liệu gốc trước khi dùng đánh giá chính thức. '+COALESCE(description,N''),
-        'quiz','learning',department_id,created_by,'ready',material_id
-    FROM dbo.Learning_Materials WHERE material_id=@material;
-    SET @content=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khẩu hiệu hành động trong checkpoint của video là gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Tối ưu quy trình - Nâng tầm giải pháp công nghệ',1,1),
-        (@question,N'Chấp nhận mọi rủi ro để tăng trưởng bằng mọi giá',0,2),
-        (@question,N'Giữ nguyên hiện trạng, không thay đổi công nghệ cũ',0,3),
-        (@question,N'Tập trung cá nhân, hạn chế tinh thần làm việc nhóm',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Tìm hiểu lịch sử hình thành công ty giúp nhân viên hiểu điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Mật khẩu tài khoản đồng nghiệp',0,1),
-        (@question,N'Bối cảnh phát triển và những giá trị được xây dựng',1,2),
-        (@question,N'Đáp án mọi bài kiểm tra kỹ thuật',0,3),
-        (@question,N'Lịch nghỉ riêng của lãnh đạo',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Tầm nhìn hỗ trợ việc ra quyết định như thế nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Thay thế mọi dữ liệu thực tế',0,1),
-        (@question,N'Chỉ quyết định màu đồng phục',0,2),
-        (@question,N'Tạo định hướng dài hạn cho lựa chọn và ưu tiên',1,3),
-        (@question,N'Loại bỏ trách nhiệm cá nhân',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Sứ mệnh giúp nhân viên liên hệ công việc với điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Sở thích giải trí của đồng nghiệp',0,1),
-        (@question,N'Kích thước văn phòng',0,2),
-        (@question,N'Số lượng email quảng cáo',0,3),
-        (@question,N'Giá trị doanh nghiệp tạo ra cho khách hàng và cộng đồng',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Định hướng phát triển bền vững cần cân nhắc điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Kết quả lâu dài cùng trách nhiệm với con người và môi trường',1,1),
-        (@question,N'Lợi ích ngắn hạn bằng mọi giá',0,2),
-        (@question,N'Che giấu mọi tác động tiêu cực',0,3),
-        (@question,N'Chỉ tăng giờ làm liên tục',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Môi trường làm việc tôn trọng con người thể hiện qua hành vi nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Phân biệt đối xử',0,1),
-        (@question,N'Lắng nghe và đối xử công bằng',1,2),
-        (@question,N'Công kích khi người khác góp ý',0,3),
-        (@question,N'Ngăn mọi trao đổi giữa các nhóm',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Đổi mới sáng tạo trong công việc nên được thực hiện thế nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Thay đổi tùy tiện không trao đổi',0,1),
-        (@question,N'Luôn từ chối ý tưởng mới',0,2),
-        (@question,N'Đề xuất cải tiến có mục tiêu và đánh giá kết quả',1,3),
-        (@question,N'Bỏ mọi quy trình kiểm soát',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Tối ưu quy trình nên bắt đầu từ đâu?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Tăng bước duyệt mà không đánh giá',0,1),
-        (@question,N'Đổi tên mọi biểu mẫu',0,2),
-        (@question,N'Xóa toàn bộ tài liệu hướng dẫn',0,3),
-        (@question,N'Xác định điểm nghẽn và nhu cầu thực tế',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Nâng tầm giải pháp công nghệ hướng tới điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Cải thiện giá trị và chất lượng giải pháp cho người dùng',1,1),
-        (@question,N'Chọn công nghệ chỉ vì đang nổi tiếng',0,2),
-        (@question,N'Tăng độ phức tạp bất kể nhu cầu',0,3),
-        (@question,N'Loại bỏ mọi phản hồi khách hàng',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi mục tiêu cá nhân chưa phù hợp định hướng chung, nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Tự bỏ mục tiêu của nhóm',0,1),
-        (@question,N'Trao đổi để điều chỉnh mục tiêu và cách đóng góp',1,2),
-        (@question,N'Giấu tiến độ',0,3),
-        (@question,N'Ngừng phối hợp với đồng nghiệp',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Tinh thần phối hợp giữa các bộ phận được thể hiện thế nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Giữ mọi thông tin để tạo lợi thế cá nhân',0,1),
-        (@question,N'Đổ lỗi qua lại',0,2),
-        (@question,N'Chia sẻ thông tin cần thiết qua kênh phù hợp',1,3),
-        (@question,N'Chỉ hỗ trợ người quen',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Phản hồi của nhân viên có thể đóng góp gì cho môi trường làm việc?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Tự động thay thế mọi quyết định quản lý',0,1),
-        (@question,N'Bảo đảm mọi ý kiến đều phải được áp dụng',0,2),
-        (@question,N'Chỉ dùng để so sánh cá nhân',0,3),
-        (@question,N'Giúp phát hiện vấn đề và đề xuất cải tiến',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi truyền đạt thông tin về công ty, nên ưu tiên nguồn nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Nội dung chính thức đã được xác nhận',1,1),
-        (@question,N'Tin đồn chưa kiểm chứng',0,2),
-        (@question,N'Bình luận ẩn danh',0,3),
-        (@question,N'Thông tin tự suy diễn',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Hành động nào thể hiện trách nhiệm với định hướng chung?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Chỉ hoàn thành việc dễ nhìn thấy',0,1),
-        (@question,N'Thực hiện cam kết và chủ động báo cáo trở ngại',1,2),
-        (@question,N'Bỏ qua chất lượng để báo xong sớm',0,3),
-        (@question,N'Đẩy trách nhiệm cho người khác',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Sau khi xem video định hướng, nhân viên nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Chỉ ghi nhớ độ dài video',0,1),
-        (@question,N'Bỏ qua các kênh trao đổi chính thức',0,2),
-        (@question,N'Liên hệ giá trị và mục tiêu chung với công việc của mình',1,3),
-        (@question,N'Coi định hướng là trách nhiệm riêng của lãnh đạo',0,4);
-END;
-
-SET @material = NULL;
-SELECT TOP (1) @material=material_id FROM dbo.Learning_Materials
-WHERE title=N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp' AND is_deleted=0 AND status=1 ORDER BY material_id;
-IF @material IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM dbo.Test_Content WITH (UPDLOCK,HOLDLOCK)
-    WHERE learning_material_id=@material AND is_deleted=0)
-BEGIN
-    INSERT INTO dbo.Test_Content(title,prompt,kind,type,department_id,created_by,status,learning_material_id)
-    SELECT LEFT(N'Học liệu: '+title,200),
-        N'Bộ đề 15 câu ôn tập theo chủ đề học liệu. Nội dung được biên soạn từ mô tả và checkpoint trong hệ thống; cần đối chiếu tài liệu gốc trước khi dùng đánh giá chính thức. '+COALESCE(description,N''),
-        'quiz','learning',department_id,created_by,'ready',material_id
-    FROM dbo.Learning_Materials WHERE material_id=@material;
-    SET @content=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Mật khẩu nào có đặc điểm an toàn hơn?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Dài, khó đoán và riêng cho từng tài khoản',1,1),
-        (@question,N'Tên công ty kèm 123',0,2),
-        (@question,N'Ngày sinh công khai',0,3),
-        (@question,N'Một mật khẩu dùng cho mọi dịch vụ',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Xác thực đa yếu tố có tác dụng gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Cho phép chia sẻ tài khoản an toàn',0,1),
-        (@question,N'Bổ sung lớp xác minh ngoài mật khẩu',1,2),
-        (@question,N'Thay thế mọi biện pháp bảo mật',0,3),
-        (@question,N'Công khai mã OTP cho đồng nghiệp',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi nhận email yêu cầu đăng nhập khẩn cấp qua link lạ, nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Bấm link và nhập mật khẩu ngay',0,1),
-        (@question,N'Chuyển tiếp cho mọi người làm theo',0,2),
-        (@question,N'Kiểm tra qua kênh chính thức và báo bộ phận phụ trách',1,3),
-        (@question,N'Gửi kèm mã OTP để xác nhận',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Phishing thường nhằm mục đích gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Tăng tốc đường truyền',0,1),
-        (@question,N'Sửa lỗi giao diện tự động',0,2),
-        (@question,N'Nén file an toàn',0,3),
-        (@question,N'Lừa người dùng cung cấp thông tin hoặc thực hiện hành động nguy hiểm',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Trước khi mở tệp đính kèm bất ngờ, cần làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Xác minh người gửi và mức độ tin cậy của tệp',1,1),
-        (@question,N'Tắt phần mềm bảo vệ',0,2),
-        (@question,N'Mở ngay vì có logo công ty',0,3),
-        (@question,N'Đổi đuôi file rồi chạy',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Nguyên tắc đặc quyền tối thiểu nghĩa là gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Cấp quyền admin cho mọi người',0,1),
-        (@question,N'Chỉ cấp quyền cần thiết cho nhiệm vụ',1,2),
-        (@question,N'Chia sẻ tài khoản quản trị',0,3),
-        (@question,N'Giữ quyền cũ vĩnh viễn',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'API key và mật khẩu database nên được lưu thế nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Trong repository public',0,1),
-        (@question,N'Trong bình luận của mã JavaScript gửi xuống client',0,2),
-        (@question,N'Trong cơ chế quản lý bí mật phù hợp, ngoài mã nguồn công khai',1,3),
-        (@question,N'Trong ảnh chụp đăng lên mạng',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Nếu đã commit nhầm secret vào repository, nên làm gì trước hết?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Chỉ xóa dòng ở commit mới rồi coi như an toàn',0,1),
-        (@question,N'Đổi tên repository',0,2),
-        (@question,N'Tắt máy cá nhân',0,3),
-        (@question,N'Thu hồi hoặc thay secret bị lộ và báo sự cố',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi rời máy làm việc, nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Khóa màn hình',1,1),
-        (@question,N'Để session quản trị mở sẵn',0,2),
-        (@question,N'Gửi mật khẩu cho người ngồi cạnh',0,3),
-        (@question,N'Tắt mọi kiểm soát truy cập',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Chia sẻ dữ liệu nội bộ cần tuân thủ điều gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Bất kỳ link công khai nào cũng phù hợp',0,1),
-        (@question,N'Đúng người nhận, quyền truy cập và kênh được phép',1,2),
-        (@question,N'Gửi toàn bộ dữ liệu để tiết kiệm thời gian',0,3),
-        (@question,N'Dùng tài khoản người khác',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi nghi ngờ tài khoản bị chiếm quyền, nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Giấu sự việc',0,1),
-        (@question,N'Tiếp tục dùng rồi chờ tự hết',0,2),
-        (@question,N'Báo ngay qua kênh xử lý sự cố và thực hiện hướng dẫn bảo vệ tài khoản',1,3),
-        (@question,N'Gửi mật khẩu lên nhóm chat',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Sao lưu dữ liệu có ý nghĩa gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Thay thế hoàn toàn kiểm soát truy cập',0,1),
-        (@question,N'Cho phép bỏ qua mọi cập nhật bảo mật',0,2),
-        (@question,N'Bảo đảm không bao giờ có sự cố',0,3),
-        (@question,N'Hỗ trợ khôi phục khi dữ liệu bị mất hoặc hỏng',1,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Vì sao cần cập nhật bản vá bảo mật?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Giảm nguy cơ bị khai thác lỗ hổng đã biết',1,1),
-        (@question,N'Để công khai mọi dữ liệu',0,2),
-        (@question,N'Để không cần mật khẩu',0,3),
-        (@question,N'Để tự động cấp quyền quản trị',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Dữ liệu nhạy cảm trong log nên được xử lý thế nào?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Ghi đầy đủ mật khẩu để dễ debug',0,1),
-        (@question,N'Hạn chế ghi và che thông tin theo quy định',1,2),
-        (@question,N'Gửi log công khai cho mọi người',0,3),
-        (@question,N'Luôn ghi mã OTP rõ ràng',0,4);
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type) VALUES (@content,N'Khi nhận yêu cầu chuyển dữ liệu từ người tự xưng là lãnh đạo, nên làm gì?','single');
-    SET @question=SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question,N'Làm ngay chỉ vì lời nhắn khẩn',0,1),
-        (@question,N'Bỏ qua quy định bảo mật',0,2),
-        (@question,N'Xác minh danh tính và thẩm quyền qua kênh độc lập',1,3),
-        (@question,N'Gửi cả thông tin không được yêu cầu',0,4);
-END;
-COMMIT;
--- END LEARNING TEST BANK SEED
+-- 3. Bộ tiêu chuẩn lập trình Java (CULTURE)
+(N'Bộ Tiêu Chuẩn Lập Trình Java', 
+ N'Tài liệu quy định chi tiết về cấu trúc mã nguồn, quy chuẩn đặt tên biến/hàm/lớp, nguyên tắc SOLID, kỹ thuật xử lý ngoại lệ và viết Unit Test theo chuẩn dự án doanh nghiệp.', 
+ 'PDF', 'CULTURE', NULL, NULL, NULL, '/hrm-career-path/assets/docs/java-clean-code-conventions.pdf', '/hrm-career-path/assets/docs/java-clean-code-conventions.pdf', 0, 1, 3, '2026-09-01 08:15:00');
 GO
 
--- =======================================================
--- 9. SEED DATA: CHECKPOINT VIDEO & LỚP ĐÀO TẠO (VIDEO CHECKPOINTS & TRAINING CLASSES)
--- =======================================================
-
-
 -- Checkpoint câu hỏi dừng tương tác cho Video Bài Giảng Java Backend
-DECLARE @video_mat_id INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE' ORDER BY material_id);
+DECLARE @video_mat_id INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Video Bài Giảng: Kiến Trúc Java Backend%');
 
 IF @video_mat_id IS NOT NULL
 BEGIN
-    INSERT INTO dbo.Video_Checkpoints (material_id, stop_time_seconds, question_prompt, option_a, option_b, option_c, option_d, correct_option, explanation)
-SELECT src.material_id, src.stop_time_seconds, src.question_prompt, src.option_a, src.option_b, src.option_c, src.option_d, src.correct_option, src.explanation
-FROM (
-    SELECT s.material_id AS material_id,
-        s.stop_time_seconds AS stop_time_seconds,
-        s.question_prompt AS question_prompt,
-        s.option_a AS option_a,
-        s.option_b AS option_b,
-        s.option_c AS option_c,
-        s.option_d AS option_d,
-        s.correct_option AS correct_option,
-        s.explanation AS explanation
-    FROM (VALUES
-(@video_mat_id, 45,
-     N'Theo mô hình kiến trúc MVC trong Jakarta EE, tầng nào trực tiếp nhận và điều phối HTTP Request từ phía người dùng?',
+    INSERT INTO dbo.Video_Checkpoints 
+    (material_id, stop_time_seconds, question_prompt, option_a, option_b, option_c, option_d, correct_option, explanation)
+    VALUES 
+    (@video_mat_id, 15, 
+     N'Theo mô hình MVC trong Jakarta EE, thành phần nào chịu trách nhiệm tiếp nhận HTTP Request từ người dùng và chuyển tiếp yêu cầu đến các thành phần xử lý phù hợp?',
      N'Model (Java Bean / Entity)',
      N'Controller (Servlet)',
      N'View (JSP / JSTL)',
      N'DAL (Data Access Object)',
-     1,
-     N'Chính xác! Servlet đóng vai trò Controller, trực tiếp đón nhận HTTP Request, xử lý điều phối và chuyển tiếp dữ liệu đến View.'),
+     1, 
+     N'Trong mô hình MVC, Controller (thường được triển khai bằng Servlet trong Jakarta EE) tiếp nhận HTTP Request từ người dùng, điều phối quá trình xử lý và chuyển dữ liệu đến View để hiển thị kết quả.'),
 
-    (@video_mat_id, 120,
+    (@video_mat_id, 30, 
      N'Để đảm bảo tính toàn vẹn dữ liệu (ACID) khi thực hiện nhiều thao tác INSERT/UPDATE liên quan mật thiết với nhau, kỹ thuật nào bắt buộc phải áp dụng?',
      N'Bật chế độ tự động lưu (AutoCommit = true)',
      N'Chỉ dùng câu lệnh Statement thông thường',
      N'Quản lý giao dịch Database Transaction (setAutoCommit(false), commit() và rollback())',
      N'Bỏ qua việc bắt lỗi ngoại lệ SQLException',
-     2,
+     2, 
      N'Chính xác! Database Transaction bảo đảm tính nguyên tử (Atomicity) và nhất quán, rollback lại toàn bộ nếu có bất kỳ bước nào thất bại.'),
 
-    (@video_mat_id, 240,
+    (@video_mat_id, 45, 
      N'Để ngăn chặn triệt để lỗ hổng tấn công SQL Injection nguy hiểm trong ứng dụng Java Web, lập trình viên cần sử dụng đối tượng nào?',
      N'Statement và nối chuỗi trực tiếp (String concatenation)',
      N'PreparedStatement kết hợp cơ chế Parameterized Query',
      N'Đổi tên bảng trong cơ sở dữ liệu',
      N'Không cần xử lý nếu chỉ chạy trên môi trường nội bộ (localhost)',
-     1,
-     N'Chính xác! PreparedStatement tự động xử lý ký tự đặc biệt và ngăn chặn kẻ tấn công chèn mã SQL độc hại.')
-    ) AS s (material_id, stop_time_seconds, question_prompt, option_a, option_b, option_c, option_d, correct_option, explanation)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Video_Checkpoints existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.material_id=src.material_id OR (existing.material_id IS NULL AND src.material_id IS NULL)) AND (existing.stop_time_seconds=src.stop_time_seconds OR (existing.stop_time_seconds IS NULL AND src.stop_time_seconds IS NULL)));
-END;
-GO
-
--- Checkpoint câu hỏi dừng tương tác cho Video Giới Thiệu Tầm Nhìn & Môi Trường Làm Việc
-DECLARE @video_culture_id INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026' ORDER BY material_id);
-
-IF @video_culture_id IS NOT NULL
-BEGIN
-    INSERT INTO dbo.Video_Checkpoints (material_id, stop_time_seconds, question_prompt, option_a, option_b, option_c, option_d, correct_option, explanation)
-SELECT src.material_id, src.stop_time_seconds, src.question_prompt, src.option_a, src.option_b, src.option_c, src.option_d, src.correct_option, src.explanation
-FROM (
-    SELECT s.material_id AS material_id,
-        s.stop_time_seconds AS stop_time_seconds,
-        s.question_prompt AS question_prompt,
-        s.option_a AS option_a,
-        s.option_b AS option_b,
-        s.option_c AS option_c,
-        s.option_d AS option_d,
-        s.correct_option AS correct_option,
-        s.explanation AS explanation
-    FROM (VALUES
-(@video_culture_id, 30,
-     N'Đâu là khẩu hiệu (Slogan) hành động gắn liền với giá trị cốt lõi của công ty công nghệ chúng ta?',
-     N'Tối ưu quy trình - Nâng tầm giải pháp công nghệ',
-     N'Chấp nhận mọi rủi ro để tăng trưởng bằng mọi giá',
-     N'Giữ nguyên hiện trạng, không thay đổi công nghệ cũ',
-     N'Tập trung cá nhân, hạn chế tinh thần làm việc nhóm',
-     0,
-     N'Chính xác! Công ty luôn hướng tới đổi mới sáng tạo, tối ưu giải pháp và hỗ trợ khách hàng bằng các công nghệ tiên tiến nhất.'),
-
-    (@video_culture_id, 90,
-     N'Kênh liên lạc chính thức nào được ưu tiên để cập nhật thông báo nội bộ và trao đổi công việc hàng ngày?',
-     N'Nhắn tin qua các hội nhóm mạng xã hội tự do',
-     N'Hệ thống Email công vụ và phần mềm giao tiếp nội bộ đã được cấp quyền',
-     N'Chỉ trao đổi truyền miệng không lưu vết',
-     N'Gửi tài liệu mật qua các dịch vụ lưu trữ bên ngoài',
-     1,
-     N'Chính xác! Mọi trao đổi và tài liệu dự án phải được thực hiện trên kênh chính thức để đảm bảo tính minh bạch và an toàn dữ liệu.')
-    ) AS s (material_id, stop_time_seconds, question_prompt, option_a, option_b, option_c, option_d, correct_option, explanation)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Video_Checkpoints existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.material_id=src.material_id OR (existing.material_id IS NULL AND src.material_id IS NULL)) AND (existing.stop_time_seconds=src.stop_time_seconds OR (existing.stop_time_seconds IS NULL AND src.stop_time_seconds IS NULL)));
+     1, 
+     N'Chính xác! PreparedStatement tự động xử lý ký tự đặc biệt và ngăn chặn kẻ tấn công chèn mã SQL độc hại.');
 END;
 GO
 
 -- Lớp đào tạo mẫu
-INSERT INTO dbo.Training_Classes (class_code, class_name, description, department_id, target_position_id, target_level_id, mentor_id, start_date, end_date, status, created_by)
-SELECT src.class_code, src.class_name, src.description, src.department_id, src.target_position_id, src.target_level_id, src.mentor_id, src.start_date, src.end_date, src.status, src.created_by
-FROM (
-    SELECT s.class_code AS class_code,
-        s.class_name AS class_name,
-        s.description AS description,
-        (SELECT TOP (1) department_id FROM dbo.Departments WHERE department_name=CASE s.department_id WHEN 1 THEN N'Phòng Kỹ Thuật (IT)' WHEN 2 THEN N'Phòng Nhân Sự (HR)' WHEN 3 THEN N'Phòng Kinh Doanh (Sales)' WHEN 4 THEN N'Phòng Marketing & Truyền Thông' WHEN 5 THEN N'Phòng Kế Toán - Tài Chính' END ORDER BY department_id) AS department_id,
-        (SELECT TOP (1) position_id FROM dbo.Positions WHERE position_name=CASE s.target_position_id WHEN 1 THEN N'Java Developer' WHEN 2 THEN N'Frontend Developer' WHEN 3 THEN N'QA / Software Tester' WHEN 4 THEN N'HR Officer' WHEN 5 THEN N'Sales Executive' END ORDER BY position_id) AS target_position_id,
-        (SELECT TOP (1) level_id FROM dbo.Job_Levels WHERE level_name=CASE s.target_level_id WHEN 1 THEN N'Intern' WHEN 2 THEN N'Fresher' WHEN 3 THEN N'Junior' WHEN 4 THEN N'Middle' WHEN 5 THEN N'Senior' WHEN 6 THEN N'Lead' END ORDER BY level_id) AS target_level_id,
-        (SELECT TOP (1) user_id FROM dbo.Users WHERE username=CASE s.mentor_id WHEN 1 THEN N'admin' WHEN 2 THEN N'hr_manager' WHEN 3 THEN N'manager_it' WHEN 4 THEN N'dev_fresher' WHEN 5 THEN N'dev_tester' WHEN 6 THEN N'mentor_java' WHEN 7 THEN N'locked_user' END ORDER BY user_id) AS mentor_id,
-        s.start_date AS start_date,
-        s.end_date AS end_date,
-        s.status AS status,
-        (SELECT TOP (1) user_id FROM dbo.Users WHERE username=CASE s.created_by WHEN 1 THEN N'admin' WHEN 2 THEN N'hr_manager' WHEN 3 THEN N'manager_it' WHEN 4 THEN N'dev_fresher' WHEN 5 THEN N'dev_tester' WHEN 6 THEN N'mentor_java' WHEN 7 THEN N'locked_user' END ORDER BY user_id) AS created_by
-    FROM (VALUES
-('CLS-IT-FRESHER-2026',
- N'Khóa Đào Tạo Onboarding Kỹ Thuật Cho Fresher 2026',
- N'Lớp đào tạo nền tảng kiến thức công nghệ, văn hóa làm việc và quy trình kỹ thuật dành cho các bạn Fresher/Junior mới gia nhập phòng IT.',
- 1, 1, 2, 3, CAST(GETDATE() AS DATE), DATEADD(DAY, 30, CAST(GETDATE() AS DATE)), 'OPEN', 2)
-    ) AS s (class_code, class_name, description, department_id, target_position_id, target_level_id, mentor_id, start_date, end_date, status, created_by)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Training_Classes existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.class_code=src.class_code OR (existing.class_code IS NULL AND src.class_code IS NULL)));
+INSERT INTO dbo.Training_Classes 
+(class_code, class_name, description, department_id, target_position_id, target_level_id, mentor_id, start_date, end_date, status, is_deleted, created_by)
+VALUES 
+('CLS-IT-FRESHER-2026', 
+ N'Khóa Đào Tạo Onboarding Kỹ Thuật Cho Fresher 2026', 
+ N'Lớp đào tạo nền tảng kiến thức công nghệ, văn hóa làm việc và quy trình kỹ thuật dành cho các bạn Fresher/Junior mới gia nhập phòng IT.', 
+ 1, 1, 2, 3, CAST(GETDATE() AS DATE), DATEADD(DAY, 30, CAST(GETDATE() AS DATE)), 'OPEN', 0, 2);
 GO
 
 -- Gắn học liệu chuẩn công nghệ vào lớp đào tạo
 DECLARE @class_id INT = (SELECT TOP 1 class_id FROM dbo.Training_Classes WHERE class_code = 'CLS-IT-FRESHER-2026');
-DECLARE @id_culture INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty' ORDER BY material_id);
-DECLARE @id_video_culture INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026' ORDER BY material_id);
-DECLARE @id_security INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp' ORDER BY material_id);
-DECLARE @id_agile INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum' ORDER BY material_id);
-DECLARE @id_cleancode INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Bộ Tiêu Chuẩn Lập Trình Java & Quy Định Đặt Mã Nguồn (Clean Code)' ORDER BY material_id);
-DECLARE @id_backend INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE' ORDER BY material_id);
+DECLARE @id_agile INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Slide Đào Tạo Quy Trình%');
+DECLARE @id_backend INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Video Bài Giảng: Kiến Trúc Java Backend%');
+DECLARE @id_cleancode INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Bộ Tiêu Chuẩn Lập Trình Java%');
 
 IF @class_id IS NOT NULL
 BEGIN
-    -- Lớp IT mẫu chỉ dùng học liệu thuộc phòng IT, không trộn bộ đề văn hóa của HR.
-    DELETE cm
-    FROM dbo.Class_Materials cm
-    JOIN dbo.Learning_Materials lm ON lm.material_id=cm.material_id
-    JOIN dbo.Training_Classes tc ON tc.class_id=cm.class_id
-    WHERE cm.class_id=@class_id AND lm.department_id<>tc.department_id;
-
-    INSERT INTO dbo.Class_Materials (class_id, material_id, order_index, is_mandatory)
-SELECT src.class_id, src.material_id, src.order_index, src.is_mandatory
-FROM (
-    SELECT s.class_id AS class_id,
-        s.material_id AS material_id,
-        s.order_index AS order_index,
-        s.is_mandatory AS is_mandatory
-    FROM (VALUES
+    INSERT INTO dbo.Class_Materials (class_id, material_id, order_index, is_mandatory) VALUES
     (@class_id, @id_agile, 1, 1),
-    (@class_id, @id_cleancode, 2, 1),
-    (@class_id, @id_backend, 3, 1)
-    ) AS s (class_id, material_id, order_index, is_mandatory)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Class_Materials existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.class_id=src.class_id OR (existing.class_id IS NULL AND src.class_id IS NULL)) AND (existing.material_id=src.material_id OR (existing.material_id IS NULL AND src.material_id IS NULL)));
+    (@class_id, @id_backend, 2, 1),
+    (@class_id, @id_cleancode, 3, 1);
 END;
 GO
 
@@ -1655,83 +623,75 @@ GO
 DECLARE @class_id INT = (SELECT TOP 1 class_id FROM dbo.Training_Classes WHERE class_code = 'CLS-IT-FRESHER-2026');
 IF @class_id IS NOT NULL
 BEGIN
-    DELETE lp
-    FROM dbo.Learning_Progress lp
-    JOIN dbo.Learning_Materials lm ON lm.material_id=lp.material_id
-    JOIN dbo.Training_Classes tc ON tc.class_id=lp.class_id
-    WHERE lp.class_id=@class_id AND lm.department_id<>tc.department_id;
-
     INSERT INTO dbo.Class_Enrollments (class_id, user_id, enrolled_by, enrollment_type, assigned_reason, status, progress_percent)
-SELECT src.class_id, src.user_id, src.enrolled_by, src.enrollment_type, src.assigned_reason, src.status, src.progress_percent
-FROM (
-    SELECT s.class_id AS class_id,
-        (SELECT TOP (1) user_id FROM dbo.Users WHERE username=CASE s.user_id WHEN 1 THEN N'admin' WHEN 2 THEN N'hr_manager' WHEN 3 THEN N'manager_it' WHEN 4 THEN N'dev_fresher' WHEN 5 THEN N'dev_tester' WHEN 6 THEN N'mentor_java' WHEN 7 THEN N'locked_user' END ORDER BY user_id) AS user_id,
-        (SELECT TOP (1) user_id FROM dbo.Users WHERE username=CASE s.enrolled_by WHEN 1 THEN N'admin' WHEN 2 THEN N'hr_manager' WHEN 3 THEN N'manager_it' WHEN 4 THEN N'dev_fresher' WHEN 5 THEN N'dev_tester' WHEN 6 THEN N'mentor_java' WHEN 7 THEN N'locked_user' END ORDER BY user_id) AS enrolled_by,
-        s.enrollment_type AS enrollment_type,
-        s.assigned_reason AS assigned_reason,
-        s.status AS status,
-        s.progress_percent AS progress_percent
-    FROM (VALUES
-(@class_id, 4, 3, 'SMART_ASSIGN', N'Phân bổ tự động theo lộ trình vị trí Fresher Java Developer', 'IN_PROGRESS', 33)
-    ) AS s (class_id, user_id, enrolled_by, enrollment_type, assigned_reason, status, progress_percent)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Class_Enrollments existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.class_id=src.class_id OR (existing.class_id IS NULL AND src.class_id IS NULL)) AND (existing.user_id=src.user_id OR (existing.user_id IS NULL AND src.user_id IS NULL)));
+    VALUES (@class_id, 4, 3, 'SMART_ASSIGN', N'Phân bổ tự động theo lộ trình vị trí Fresher Java Developer', 'IN_PROGRESS', 33);
 
-    DECLARE @id_agile INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum' ORDER BY material_id);
-    DECLARE @id_backend INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE' ORDER BY material_id);
-    DECLARE @id_cleancode INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title = N'Bộ Tiêu Chuẩn Lập Trình Java & Quy Định Đặt Mã Nguồn (Clean Code)' ORDER BY material_id);
+    DECLARE @id_agile INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Slide Đào Tạo Quy Trình%');
+    DECLARE @id_backend INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Video Bài Giảng: Kiến Trúc Java Backend%');
+    DECLARE @id_cleancode INT = (SELECT TOP 1 material_id FROM dbo.Learning_Materials WHERE title LIKE N'Bộ Tiêu Chuẩn Lập Trình Java%');
 
     IF @id_agile IS NOT NULL
         INSERT INTO dbo.Learning_Progress (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
-SELECT src.user_id, src.material_id, src.class_id, src.status, src.last_accessed_at, src.completed_at, src.notes
-FROM (
-    SELECT (SELECT TOP (1) user_id FROM dbo.Users WHERE username=CASE s.user_id WHEN 1 THEN N'admin' WHEN 2 THEN N'hr_manager' WHEN 3 THEN N'manager_it' WHEN 4 THEN N'dev_fresher' WHEN 5 THEN N'dev_tester' WHEN 6 THEN N'mentor_java' WHEN 7 THEN N'locked_user' END ORDER BY user_id) AS user_id,
-        s.material_id AS material_id,
-        s.class_id AS class_id,
-        s.status AS status,
-        s.last_accessed_at AS last_accessed_at,
-        s.completed_at AS completed_at,
-        s.notes AS notes
-    FROM (VALUES
-(4, @id_agile, @class_id, 'COMPLETED', DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, -2, GETDATE()), N'Đã hoàn thành học liệu quy trình Agile/Scrum')
-    ) AS s (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Learning_Progress existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.user_id=src.user_id OR (existing.user_id IS NULL AND src.user_id IS NULL)) AND (existing.material_id=src.material_id OR (existing.material_id IS NULL AND src.material_id IS NULL)) AND (existing.class_id=src.class_id OR (existing.class_id IS NULL AND src.class_id IS NULL)));
+        VALUES (4, @id_agile, @class_id, 'COMPLETED', DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, -2, GETDATE()), N'Đã hoàn thành slide quy trình Agile/Scrum');
 
     IF @id_backend IS NOT NULL
         INSERT INTO dbo.Learning_Progress (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
-SELECT src.user_id, src.material_id, src.class_id, src.status, src.last_accessed_at, src.completed_at, src.notes
-FROM (
-    SELECT (SELECT TOP (1) user_id FROM dbo.Users WHERE username=CASE s.user_id WHEN 1 THEN N'admin' WHEN 2 THEN N'hr_manager' WHEN 3 THEN N'manager_it' WHEN 4 THEN N'dev_fresher' WHEN 5 THEN N'dev_tester' WHEN 6 THEN N'mentor_java' WHEN 7 THEN N'locked_user' END ORDER BY user_id) AS user_id,
-        s.material_id AS material_id,
-        s.class_id AS class_id,
-        s.status AS status,
-        s.last_accessed_at AS last_accessed_at,
-        s.completed_at AS completed_at,
-        s.notes AS notes
-    FROM (VALUES
-(4, @id_backend, @class_id, 'COMPLETED', DATEADD(DAY, -1, GETDATE()), DATEADD(DAY, -1, GETDATE()), N'Đã xem xong video kiến trúc Java Backend')
-    ) AS s (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Learning_Progress existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.user_id=src.user_id OR (existing.user_id IS NULL AND src.user_id IS NULL)) AND (existing.material_id=src.material_id OR (existing.material_id IS NULL AND src.material_id IS NULL)) AND (existing.class_id=src.class_id OR (existing.class_id IS NULL AND src.class_id IS NULL)));
+        VALUES (4, @id_backend, @class_id, 'IN_PROGRESS', DATEADD(DAY, -1, GETDATE()), NULL, N'Đang xem video kiến trúc Java Backend và làm câu hỏi dừng');
 
     IF @id_cleancode IS NOT NULL
         INSERT INTO dbo.Learning_Progress (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
-SELECT src.user_id, src.material_id, src.class_id, src.status, src.last_accessed_at, src.completed_at, src.notes
-FROM (
-    SELECT (SELECT TOP (1) user_id FROM dbo.Users WHERE username=CASE s.user_id WHEN 1 THEN N'admin' WHEN 2 THEN N'hr_manager' WHEN 3 THEN N'manager_it' WHEN 4 THEN N'dev_fresher' WHEN 5 THEN N'dev_tester' WHEN 6 THEN N'mentor_java' WHEN 7 THEN N'locked_user' END ORDER BY user_id) AS user_id,
-        s.material_id AS material_id,
-        s.class_id AS class_id,
-        s.status AS status,
-        s.last_accessed_at AS last_accessed_at,
-        s.completed_at AS completed_at,
-        s.notes AS notes
-    FROM (VALUES
-(4, @id_cleancode, @class_id, 'IN_PROGRESS', GETDATE(), NULL, N'Đang nghiên cứu quy chuẩn Java Clean Code')
-    ) AS s (user_id, material_id, class_id, status, last_accessed_at, completed_at, notes)
-) AS src
-WHERE NOT EXISTS (SELECT 1 FROM dbo.Learning_Progress existing WITH (UPDLOCK,HOLDLOCK) WHERE (existing.user_id=src.user_id OR (existing.user_id IS NULL AND src.user_id IS NULL)) AND (existing.material_id=src.material_id OR (existing.material_id IS NULL AND src.material_id IS NULL)) AND (existing.class_id=src.class_id OR (existing.class_id IS NULL AND src.class_id IS NULL)));
+        VALUES (4, @id_cleancode, @class_id, 'NOT_STARTED', GETDATE(), NULL, N'Chuẩn bị nghiên cứu quy chuẩn Clean Code');
 END;
+GO
+
+-- =======================================================
+-- 8. SEED DATA: GHÉP NỐI MENTOR & ĐÁNH GIÁ (MENTOR_ASSIGNMENTS & MENTOR_EVALUATIONS)
+-- =======================================================
+-- Ghép nối Mentor Lê Hữu Mentor (Senior - User 6) cho Mentee Phạm Đức Trọng (Fresher - User 4)
+INSERT INTO dbo.MentorAssignments (mentee_id, mentor_id, position_id, status, assigned_by, created_at) VALUES
+(4, 6, 1, 'ACTIVE', 2, DATEADD(DAY, -15, GETDATE()));
+GO
+
+-- Tạo đánh giá mẫu của Mentor dành cho Mentee (Phân biệt Công khai Non-anonymous và Nội bộ Anonymous)
+DECLARE @assign_id INT = (SELECT TOP 1 assignment_id FROM dbo.MentorAssignments WHERE mentee_id = 4 AND mentor_id = 6);
+IF @assign_id IS NOT NULL
+BEGIN
+    INSERT INTO dbo.MentorEvaluations (assignment_id, evaluator_id, performance_score, feedback, public_feedback, private_feedback, approval_status, evaluation_date) VALUES
+    (@assign_id, 6, 9, 
+     N'Nhân sự nắm bắt nhanh quy trình phát triển Java backend, tiếp thu tốt các tài liệu và có tinh thần tự học cao.',
+     N'Kỹ năng chuyên môn tốt, hoàn thành đúng hạn các task CRUD cơ bản, chủ động học hỏi các module Spring Boot.',
+     N'Thái độ làm việc hòa đồng, tiếp thu nhanh khi được góp ý 1-on-1. Đề xuất: Đủ điều kiện kết thúc thử việc sớm để bổ nhiệm Junior chính thức.',
+     'APPROVED', DATEADD(DAY, -2, GETDATE()));
+END;
+GO
+
+-- =======================================================
+-- 8.1. SEED DATA: ĐỀ XUẤT VỊ TRÍ CỦA TRƯỞNG PHÒNG (POSITION_REQUESTS)
+-- =======================================================
+-- Đề xuất 1: Đang chờ duyệt (PENDING) từ Trưởng phòng IT (User 3)
+INSERT INTO dbo.Position_Requests (manager_id, department_id, position_name, description, reason, status, created_at)
+VALUES (3, 1, N'AI / Machine Learning Engineer', N'Nghiên cứu và triển khai mô hình học máy cho các sản phẩm nội bộ', N'Dự án quý mới cần bổ sung nhân sự chuyên sâu về xử lý dữ liệu và AI phục vụ khách hàng doanh nghiệp.', 'PENDING', DATEADD(DAY, -3, GETDATE()));
+
+-- Đề xuất 2: Đã được Admin phê duyệt (APPROVED)
+INSERT INTO dbo.Position_Requests (manager_id, department_id, position_name, description, reason, status, decision_note, reviewed_by, created_at, reviewed_at)
+VALUES (3, 1, N'DevOps Engineer', N'Vận hành hệ thống CI/CD, Docker, Kubernetes', N'Đội ngũ backend cần tự động hóa quy trình deploy để giảm tải thời gian release.', 'APPROVED', N'Đồng ý phê duyệt bổ sung vị trí này vào cơ cấu Phòng Công nghệ thông tin.', 1, DATEADD(DAY, -10, GETDATE()), DATEADD(DAY, -8, GETDATE()));
+
+-- Đề xuất 3: Bị từ chối có giải trình lý do (REJECTED kèm Explain Decision)
+INSERT INTO dbo.Position_Requests (manager_id, department_id, position_name, description, reason, status, decision_note, reviewed_by, created_at, reviewed_at)
+VALUES (3, 1, N'Scrum Master Fulltime', N'Điều phối quy trình Agile Scrum cho phòng IT', N'Phòng IT muốn có một nhân sự chuyên trách Scrum Master riêng biệt.', 'REJECTED', N'Ngân sách quý này chưa cho phép tuyển riêng Scrum Master độc lập. Đề xuất Trưởng nhóm Lead kiêm nhiệm vai trò này.', 1, DATEADD(DAY, -20, GETDATE()), DATEADD(DAY, -18, GETDATE()));
+GO
+
+-- =======================================================
+-- 8.2. SEED DATA: ĐỀ XUẤT ĐIỀU CHUYỂN VỊ TRÍ CỦA NHÂN VIÊN (TRANSFER_REQUESTS)
+-- Luồng: Employee gửi -> Manager duyệt -> HR thực thi
+-- =======================================================
+-- Đơn 1: Nhân viên gửi lên, đang chờ Trưởng phòng duyệt
+INSERT INTO dbo.Transfer_Requests (employee_id, current_department_id, current_position_id, target_department_id, target_position_id, reason, manager_status, hr_status, created_at)
+VALUES (4, 1, 1, 1, 2, N'Em đã hoàn thành các khóa đào tạo nâng cao về React và UI/UX, mong muốn được thử sức ở vị trí Frontend Developer.', 'PENDING', 'WAITING_MANAGER', DATEADD(DAY, -2, GETDATE()));
+
+-- Đơn 2: Trưởng phòng đã duyệt đồng ý, đang chờ HR xử lý điều chuyển
+INSERT INTO dbo.Transfer_Requests (employee_id, current_department_id, current_position_id, target_department_id, target_position_id, reason, manager_status, manager_note, manager_reviewed_by, manager_reviewed_at, hr_status, created_at)
+VALUES (5, 1, 1, 1, 2, N'Nguyện vọng chuyển sang mảng Frontend sau khi đạt kết quả tốt bài test Onboarding.', 'APPROVED', N'Đồng ý với nguyện vọng của nhân sự. Kỹ năng JavaScript và React rất tốt.', 3, DATEADD(DAY, -1, GETDATE()), 'PENDING', DATEADD(DAY, -5, GETDATE()));
 GO
 
 -- =======================================================
@@ -1741,10 +701,14 @@ SELECT * FROM dbo.Roles;
 SELECT * FROM dbo.Job_Levels;
 SELECT * FROM dbo.Departments;
 SELECT * FROM dbo.Positions;
+SELECT * FROM dbo.Position_Requests;
+SELECT * FROM dbo.Transfer_Requests;
 SELECT * FROM dbo.Users;
 SELECT * FROM dbo.Employee_History;
 SELECT * FROM dbo.FlashcardDecks;
 SELECT * FROM dbo.Flashcards;
+SELECT * FROM dbo.MentorAssignments;
+SELECT * FROM dbo.MentorEvaluations;
 SELECT * FROM dbo.Learning_Materials;
 SELECT * FROM dbo.Training_Classes;
 SELECT * FROM dbo.Class_Materials;
