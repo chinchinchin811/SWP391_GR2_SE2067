@@ -274,60 +274,206 @@ public class PositionDAO {
     }
 
     public int addJobLevel(JobLevel level) {
-        String sql = """
+        String countSql = "SELECT ISNULL(MAX(rank_order), 0) FROM Job_Levels WHERE position_id = ?";
+        String shiftSql = "UPDATE Job_Levels SET rank_order = rank_order + 1 WHERE position_id = ? AND rank_order >= ?";
+        String insertSql = """
             INSERT INTO Job_Levels (position_id, level_name, rank_order, description)
             VALUES (?, ?, ?, ?)
             """;
-        try (Connection conn = DBContext.getInstance().getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
-            if (level.getPositionId() != null) {
-                ps.setInt(1, level.getPositionId());
-            } else {
-                ps.setNull(1, Types.INTEGER);
-            }
-            ps.setString(2, level.getLevelName());
-            ps.setInt(3, level.getRankOrder());
-            ps.setString(4, level.getDescription());
 
-            int affected = ps.executeUpdate();
-            if (affected > 0) {
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        return rs.getInt(1);
+        Connection conn = null;
+        try {
+            conn = DBContext.getInstance().getConnection();
+            conn.setAutoCommit(false);
+
+            int targetRank = level.getRankOrder();
+            if (level.getPositionId() != null) {
+                int posId = level.getPositionId();
+                int maxRank = 0;
+                try (PreparedStatement psCount = conn.prepareStatement(countSql)) {
+                    psCount.setInt(1, posId);
+                    try (ResultSet rs = psCount.executeQuery()) {
+                        if (rs.next()) {
+                            maxRank = rs.getInt(1);
+                        }
+                    }
+                }
+
+                if (targetRank <= 0) {
+                    targetRank = 1;
+                } else if (targetRank > maxRank + 1) {
+                    targetRank = maxRank + 1;
+                }
+
+                // Nếu chèn vào vị trí rank đã có -> Tự động đẩy các bậc từ targetRank trở đi lên 1 bậc
+                if (targetRank <= maxRank) {
+                    try (PreparedStatement psShift = conn.prepareStatement(shiftSql)) {
+                        psShift.setInt(1, posId);
+                        psShift.setInt(2, targetRank);
+                        psShift.executeUpdate();
+                    }
+                }
+            } else {
+                if (targetRank <= 0) targetRank = 1;
+            }
+
+            int newId = -1;
+            try (PreparedStatement ps = conn.prepareStatement(insertSql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+                if (level.getPositionId() != null) {
+                    ps.setInt(1, level.getPositionId());
+                } else {
+                    ps.setNull(1, Types.INTEGER);
+                }
+                ps.setString(2, level.getLevelName());
+                ps.setInt(3, targetRank);
+                ps.setString(4, level.getDescription());
+
+                int affected = ps.executeUpdate();
+                if (affected > 0) {
+                    try (ResultSet rs = ps.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            newId = rs.getInt(1);
+                        }
                     }
                 }
             }
+
+            conn.commit();
+            return newId;
         } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
             e.printStackTrace();
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+            }
         }
         return -1;
     }
 
     public boolean updateJobLevel(JobLevel level) {
-        String sql = """
-            UPDATE Job_Levels 
-            SET level_name = ?, rank_order = ?, description = ?
-            WHERE level_id = ?
-            """;
-        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, level.getLevelName());
-            ps.setInt(2, level.getRankOrder());
-            ps.setString(3, level.getDescription());
-            ps.setInt(4, level.getLevelId());
-            return ps.executeUpdate() > 0;
+        JobLevel existing = getJobLevelById(level.getLevelId());
+        if (existing == null) {
+            return false;
+        }
+
+        Connection conn = null;
+        try {
+            conn = DBContext.getInstance().getConnection();
+            conn.setAutoCommit(false);
+
+            int oldRank = existing.getRankOrder();
+            int newRank = level.getRankOrder();
+            Integer posId = existing.getPositionId();
+
+            if (posId != null && oldRank != newRank) {
+                int maxRank = 0;
+                String countSql = "SELECT ISNULL(MAX(rank_order), 0) FROM Job_Levels WHERE position_id = ?";
+                try (PreparedStatement psCount = conn.prepareStatement(countSql)) {
+                    psCount.setInt(1, posId);
+                    try (ResultSet rs = psCount.executeQuery()) {
+                        if (rs.next()) {
+                            maxRank = rs.getInt(1);
+                        }
+                    }
+                }
+
+                if (newRank <= 0) newRank = 1;
+                if (newRank > maxRank) newRank = maxRank;
+
+                if (newRank > oldRank) {
+                    // Chuyển lên bậc cao hơn: Các bậc ở giữa giảm 1
+                    String shiftDown = "UPDATE Job_Levels SET rank_order = rank_order - 1 WHERE position_id = ? AND rank_order > ? AND rank_order <= ?";
+                    try (PreparedStatement psShift = conn.prepareStatement(shiftDown)) {
+                        psShift.setInt(1, posId);
+                        psShift.setInt(2, oldRank);
+                        psShift.setInt(3, newRank);
+                        psShift.executeUpdate();
+                    }
+                } else if (newRank < oldRank) {
+                    // Chuyển xuống bậc thấp hơn: Các bậc ở giữa tăng 1
+                    String shiftUp = "UPDATE Job_Levels SET rank_order = rank_order + 1 WHERE position_id = ? AND rank_order >= ? AND rank_order < ?";
+                    try (PreparedStatement psShift = conn.prepareStatement(shiftUp)) {
+                        psShift.setInt(1, posId);
+                        psShift.setInt(2, newRank);
+                        psShift.setInt(3, oldRank);
+                        psShift.executeUpdate();
+                    }
+                }
+            }
+
+            String updateSql = """
+                UPDATE Job_Levels 
+                SET level_name = ?, rank_order = ?, description = ?
+                WHERE level_id = ?
+                """;
+            try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
+                ps.setString(1, level.getLevelName());
+                ps.setInt(2, newRank);
+                ps.setString(3, level.getDescription());
+                ps.setInt(4, level.getLevelId());
+                ps.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
         } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
             e.printStackTrace();
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+            }
         }
         return false;
     }
 
     public boolean deleteJobLevel(int levelId) {
-        String sql = "DELETE FROM Job_Levels WHERE level_id = ?";
-        try (Connection conn = DBContext.getInstance().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, levelId);
-            return ps.executeUpdate() > 0;
+        JobLevel existing = getJobLevelById(levelId);
+        if (existing == null) {
+            return false;
+        }
+
+        Connection conn = null;
+        try {
+            conn = DBContext.getInstance().getConnection();
+            conn.setAutoCommit(false);
+
+            String delSql = "DELETE FROM Job_Levels WHERE level_id = ?";
+            try (PreparedStatement ps = conn.prepareStatement(delSql)) {
+                ps.setInt(1, levelId);
+                int affected = ps.executeUpdate();
+                if (affected == 0) {
+                    conn.rollback();
+                    return false;
+                }
+            }
+
+            // Tự động dồn các bậc phía sau giảm 1
+            if (existing.getPositionId() != null) {
+                String shiftSql = "UPDATE Job_Levels SET rank_order = rank_order - 1 WHERE position_id = ? AND rank_order > ?";
+                try (PreparedStatement ps = conn.prepareStatement(shiftSql)) {
+                    ps.setInt(1, existing.getPositionId());
+                    ps.setInt(2, existing.getRankOrder());
+                    ps.executeUpdate();
+                }
+            }
+
+            conn.commit();
+            return true;
         } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ignored) {}
+            }
             e.printStackTrace();
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ignored) {}
+            }
         }
         return false;
     }
