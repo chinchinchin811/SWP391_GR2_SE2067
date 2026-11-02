@@ -74,7 +74,7 @@
     <servlet><servlet-name>MaterialServlet</servlet-name><servlet-class>controller.MaterialServlet</servlet-class></servlet>
     <servlet-mapping><servlet-name>MaterialServlet</servlet-name><url-pattern>/materials</url-pattern></servlet-mapping>
 
-    
+
     <!-- Session Configuration -->
     <servlet-mapping>
         <servlet-name>FlashcardServlet</servlet-name>

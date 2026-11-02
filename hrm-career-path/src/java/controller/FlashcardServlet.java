@@ -227,11 +227,6 @@ public class FlashcardServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login");
             return null;
         }
-        if (currentUser.getRoleId() == 2) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN,
-                    "HR chỉ quản lý tổ chức và nhân sự, không truy cập Học liệu & Đào tạo.");
-            return null;
-        }
         return currentUser;
     }
 

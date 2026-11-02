@@ -165,7 +165,7 @@
         <div>
             <h1>Báo Cáo Tổng Quan Nhân Sự</h1>            
         </div>
-<!--        <div style="display: flex; gap: 10px; align-items: center;">
+        <div style="display: flex; gap: 10px; align-items: center;">
             <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
                 <i class="fa-solid fa-user-plus"></i> + Khai Báo Nhân Viên Mới
             </a>
@@ -178,8 +178,17 @@
                 %>
                     <span class="badge" style="background-color: #ef4444; color: #fff; margin-left: 5px;"><%= pendingTransferCount %></span>
                 <% } %>
-            </a>            
-        </div>-->
+            </a>
+            <a href="<%= request.getContextPath() %>/mentors?action=pair" class="btn btn-secondary">
+                <i class="fa-solid fa-handshake"></i> Ghép Nối Mentor
+            </a>
+            <a href="<%= request.getContextPath() %>/materials" class="btn btn-secondary">
+                <i class="fa-solid fa-graduation-cap"></i> Học liệu &amp; Đào tạo
+            </a>
+            <a href="<%= request.getContextPath() %>/tests?action=bank" class="btn btn-secondary">
+                <i class="fa-solid fa-file-lines"></i> Bộ đề Văn hóa
+            </a>
+        </div>
     </div>
 
     <div class="content-body">

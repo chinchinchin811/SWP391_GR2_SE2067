@@ -186,8 +186,20 @@ public class MaterialDAO {
 
     public boolean checkUserCanAccessMaterial(int materialId, int userId, int roleId) {
         if (roleId == 2 || roleId == 3) {
-            // HR (2) và MANAGER (3) tạo được học liệu và xem được tất cả
-            return true;
+            String managed = "SELECT COUNT(*) FROM Learning_Materials m JOIN Users u ON u.user_id=? "
+                    + "WHERE m.material_id=? AND m.is_deleted=0 AND (m.department_id=u.department_id "
+                    + "OR (?=2 AND m.scope_type='CULTURE' AND m.department_id IS NULL))";
+            try (Connection c = DBContext.getInstance().getConnection(); PreparedStatement p = c.prepareStatement(managed)) {
+                p.setInt(1, userId);
+                p.setInt(2, materialId);
+                p.setInt(3, roleId);
+                try (ResultSet r = p.executeQuery()) {
+                    return r.next() && r.getInt(1) > 0;
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return false;
+            }
         }
         // Mentor hoặc Mentee (học viên) chỉ xem được học liệu trong lớp của mình
         String sql = "SELECT COUNT(*) FROM Class_Materials cm "
