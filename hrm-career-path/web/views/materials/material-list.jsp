@@ -16,8 +16,7 @@
 <main class="main-content">
     <div class="topbar">
         <h1>Học Liệu &amp; Đào Tạo</h1>
-        <div class="topbar-actions">
-            <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials?action=classList">Quản lý lớp đào tạo</a>
+        <div class="topbar-actions">            
             <% if (canManage) { %>
             <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=create">+ Thêm học liệu</a>
             <% } %>
