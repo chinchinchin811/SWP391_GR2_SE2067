@@ -164,31 +164,7 @@
     <div class="topbar">
         <div>
             <h1>Báo Cáo Tổng Quan Nhân Sự</h1>            
-        </div>
-        <div style="display: flex; gap: 10px; align-items: center;">
-            <a href="<%= request.getContextPath() %>/employees?action=create" class="btn btn-primary">
-                <i class="fa-solid fa-user-plus"></i> + Khai Báo Nhân Viên Mới
-            </a>
-            <a href="<%= request.getContextPath() %>/transfer?action=hrRequests" class="btn btn-secondary">
-                <i class="fa-solid fa-people-arrows"></i> Điều Chuyển Nhân Sự
-                <% 
-                    Object pendingTransferCountObj = request.getAttribute("countPendingTransfers");
-                    int pendingTransferCount = (pendingTransferCountObj != null) ? (Integer) pendingTransferCountObj : 0;
-                    if (pendingTransferCount > 0) { 
-                %>
-                    <span class="badge" style="background-color: #ef4444; color: #fff; margin-left: 5px;"><%= pendingTransferCount %></span>
-                <% } %>
-            </a>
-            <a href="<%= request.getContextPath() %>/mentors?action=pair" class="btn btn-secondary">
-                <i class="fa-solid fa-handshake"></i> Ghép Nối Mentor
-            </a>
-            <a href="<%= request.getContextPath() %>/materials" class="btn btn-secondary">
-                <i class="fa-solid fa-graduation-cap"></i> Học liệu &amp; Đào tạo
-            </a>
-            <a href="<%= request.getContextPath() %>/tests?action=bank" class="btn btn-secondary">
-                <i class="fa-solid fa-file-lines"></i> Bộ đề Văn hóa
-            </a>
-        </div>
+        </div>        
     </div>
 
     <div class="content-body">
@@ -207,7 +183,7 @@
                 <p>Mới đổi chuyên môn/ngạch</p>
             </div>
             <div class="stat-box">
-                <h3 style="color: #d97706;"><%= pendingTransferCountObj != null ? pendingTransferCountObj : 0 %></h3>
+                <h3 style="color: #d97706;"><%= request.getAttribute("countPendingTransfers") != null ? request.getAttribute("countPendingTransfers") : 0 %></h3>
                 <p>Yêu cầu điều chuyển chờ xử lý</p>
             </div>
             <div class="stat-box">
