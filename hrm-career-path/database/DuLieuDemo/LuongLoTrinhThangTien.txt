@@ -40,7 +40,6 @@ Bước thực hiện:
    - Bấm nút: "Lưu Minh Chứng".
    - Kết quả mong đợi: Dòng chữ màu đỏ xuất hiện ngay dưới textarea:
      "Vui lòng nhập tóm tắt nội dung minh chứng."
-     (Trình duyệt không bật popup tooltip mặc định).
 
 5. Thử nghiệm lỗi 2 (Đường dẫn URL sai định dạng):
    - Ô "Tóm tắt kết quả minh chứng": Nhập "Tham gia dự án Backend".

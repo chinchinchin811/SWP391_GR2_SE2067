@@ -344,11 +344,11 @@
                                     <span style="background: #f1f5f9; color: #475569; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Đánh giá quản lý</span>
                                 </td>
                                 <td style="padding: 12px; color: #334155;">
-                                    Điểm đánh giá sàn: <strong>&gt;= <%= criteria.getMinManagerRating() %>/10đ</strong>
+                                    Điểm đánh giá sàn: <strong>&gt;= <%= criteria.getMinManagerRating() %>/10</strong>
                                 </td>
                                 <td style="padding: 12px;">
                                     <% if (hasRating) { %>
-                                        Điểm Trưởng phòng chấm: <strong><%= existingRequest.getManagerRating() %>/10đ</strong>
+                                        Điểm Trưởng phòng chấm: <strong><%= existingRequest.getManagerRating() %>/10</strong>
                                     <% } else { %>
                                         <span style="color: #94a3b8;">Đang chờ Trưởng phòng đánh giá</span>
                                     <% } %>

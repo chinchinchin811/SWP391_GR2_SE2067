@@ -400,7 +400,15 @@ public class CareerProgressionDAO {
             LEFT JOIN Users m ON pr.manager_id = m.user_id
             LEFT JOIN Users h ON pr.hr_id = h.user_id
             WHERE u.department_id = ?
-            ORDER BY pr.created_at DESC
+            ORDER BY 
+                CASE 
+                    WHEN pr.status IN ('IN_PROGRESS', 'PENDING', 'SUBMITTED') THEN 1
+                    WHEN pr.status = 'MANAGER_REVIEWED' THEN 2
+                    WHEN pr.status = 'REJECTED' THEN 3
+                    WHEN pr.status = 'APPROVED' THEN 4
+                    ELSE 5
+                END ASC,
+                pr.created_at DESC
             """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -434,7 +442,15 @@ public class CareerProgressionDAO {
             JOIN Job_Levels tl ON pr.target_level_id = tl.level_id
             LEFT JOIN Users m ON pr.manager_id = m.user_id
             LEFT JOIN Users h ON pr.hr_id = h.user_id
-            ORDER BY pr.created_at DESC
+            ORDER BY 
+                CASE 
+                    WHEN pr.status IN ('IN_PROGRESS', 'PENDING', 'SUBMITTED') THEN 1
+                    WHEN pr.status = 'MANAGER_REVIEWED' THEN 2
+                    WHEN pr.status = 'REJECTED' THEN 3
+                    WHEN pr.status = 'APPROVED' THEN 4
+                    ELSE 5
+                END ASC,
+                pr.created_at DESC
             """;
         try (Connection conn = DBContext.getInstance().getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);

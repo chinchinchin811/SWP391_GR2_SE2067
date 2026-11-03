@@ -169,6 +169,7 @@ public class CareerPathServlet extends HttpServlet {
             return;
         }
 
+        sortPromotionRequests(list);
         request.setAttribute("requests", list);
         request.getRequestDispatcher("/views/career/promotion-list.jsp").forward(request, response);
     }
@@ -421,6 +422,39 @@ public class CareerPathServlet extends HttpServlet {
         } catch (Exception e) {
             e.printStackTrace();
             response.sendRedirect(request.getContextPath() + "/promotions");
+        }
+    }
+
+    private void sortPromotionRequests(List<PromotionRequest> list) {
+        if (list == null || list.size() <= 1) return;
+        list.sort((a, b) -> {
+            int rankA = getStatusOrderRank(a.getStatus());
+            int rankB = getStatusOrderRank(b.getStatus());
+            if (rankA != rankB) {
+                return Integer.compare(rankA, rankB);
+            }
+            if (a.getCreatedAt() != null && b.getCreatedAt() != null) {
+                return b.getCreatedAt().compareTo(a.getCreatedAt());
+            }
+            return Integer.compare(b.getRequestId(), a.getRequestId());
+        });
+    }
+
+    private int getStatusOrderRank(String status) {
+        if (status == null) return 1;
+        switch (status.trim().toUpperCase()) {
+            case "IN_PROGRESS":
+            case "PENDING":
+            case "SUBMITTED":
+                return 1; // Chưa xử lý (lên đầu danh sách)
+            case "MANAGER_REVIEWED":
+                return 2; // Đang xử lý / Chờ HR
+            case "REJECTED":
+                return 3; // Đã xử lý (Từ chối)
+            case "APPROVED":
+                return 4; // Đã xử lý (Đã bổ nhiệm)
+            default:
+                return 5;
         }
     }
 }
