@@ -70,6 +70,10 @@ public class MentorDAO {
     }
 
     public List<User> getAllMentorsWithSpecialty() {
+        return getAllMentorsWithSpecialty(null);
+    }
+
+    public List<User> getAllMentorsWithSpecialty(Integer departmentId) {
         List<User> list = new ArrayList<>();
         String sql = "SELECT u.user_id, u.full_name, u.position_id, p.position_name, d.department_name, jl.level_name "
                 + "FROM Users u "
@@ -81,25 +85,31 @@ public class MentorDAO {
                 + "AND (jl.rank_order >= 3 OR jl.rank_order IS NULL) "
                 + "AND (u.is_deleted = 0 OR u.is_deleted IS NULL) "
                 + "AND (u.status = 1 OR u.status IS NULL) "
+                + (departmentId != null && departmentId > 0 ? "AND u.department_id = ? " : "")
                 + "ORDER BY d.department_id ASC, jl.rank_order DESC, u.full_name ASC";
 
-        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-
-            while (rs.next()) {
-                User u = new User();
-                u.setUserId(rs.getInt("user_id"));
-                u.setFullName(rs.getString("full_name"));
-                u.setPositionId(rs.getInt("position_id"));
-                u.setPositionName(rs.getString("position_name"));
-                u.setDepartmentName(rs.getString("department_name"));
-                u.setLevelName(rs.getString("level_name"));
-                list.add(u);
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (departmentId != null && departmentId > 0) {
+                ps.setInt(1, departmentId);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    User u = new User();
+                    u.setUserId(rs.getInt("user_id"));
+                    u.setFullName(rs.getString("full_name"));
+                    u.setPositionId(rs.getInt("position_id"));
+                    u.setPositionName(rs.getString("position_name"));
+                    u.setDepartmentName(rs.getString("department_name"));
+                    u.setLevelName(rs.getString("level_name"));
+                    list.add(u);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         return list;
     }
+
 
     public List<MentorEvaluation> getAllEvaluations() {
         return getEvaluationsForScope("", 0);
@@ -289,9 +299,14 @@ public class MentorDAO {
     }
 
     public boolean isMentor(int userId) {
-        String sql = "SELECT COUNT(*) FROM MentorAssignments WHERE mentor_id = ? AND class_id IS NOT NULL AND status = 'ACTIVE'";
+        String sql = "SELECT COUNT(*) FROM ("
+                + "SELECT mentor_id FROM MentorAssignments WHERE mentor_id = ? AND class_id IS NOT NULL AND status = 'ACTIVE' "
+                + "UNION ALL "
+                + "SELECT mentor_id FROM Training_Classes WHERE mentor_id = ? AND is_deleted = 0"
+                + ") t";
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
+            ps.setInt(2, userId);
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 return rs.getInt(1) > 0;
@@ -301,7 +316,6 @@ public class MentorDAO {
         }
         return false;
     }
-
     public boolean hasMentor(int userId) {
         String sql = "SELECT COUNT(*) FROM MentorAssignments WHERE mentee_id = ? AND class_id IS NOT NULL AND status = 'ACTIVE'";
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {

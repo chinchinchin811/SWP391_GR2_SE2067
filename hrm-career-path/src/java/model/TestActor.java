@@ -25,7 +25,7 @@ public record TestActor(int id, String name, String role, Integer departmentId, 
 
     /** HR quản lý toàn bộ bài kiểm tra và bộ đề văn hóa của công ty. */
     public boolean cultureManager() {
-        return "HR".equals(role);
+        return "HR".equals(role) || "MANAGER".equals(role);
     }
 
     /**
@@ -33,7 +33,7 @@ public record TestActor(int id, String name, String role, Integer departmentId, 
      * MANAGER dùng đúng phòng đang được giao quản lý.
      */
     public Integer learningDepartmentId() {
-        return cultureManager() ? departmentId : managedDepartmentId;
+        return "HR".equals(role) ? departmentId : managedDepartmentId;
     }
 
     public boolean learningManager() {

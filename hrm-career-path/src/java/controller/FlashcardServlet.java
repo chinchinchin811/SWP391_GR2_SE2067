@@ -33,7 +33,7 @@ public class FlashcardServlet extends HttpServlet {
         }
 
         FlashcardDAO dao = new FlashcardDAO();
-        boolean canManageCulture = user.getRoleId() == 2;
+        boolean canManageCulture = user.getRoleId() == 3;
         boolean canManageProfessional = user.getRoleId() == 3 || dao.isActiveMentor(user.getUserId());
         request.setAttribute("canManageCulture", canManageCulture);
         request.setAttribute("canManageProfessional", canManageProfessional);
@@ -102,7 +102,7 @@ public class FlashcardServlet extends HttpServlet {
         }
 
         FlashcardDAO dao = new FlashcardDAO();
-        boolean canManageCulture = user.getRoleId() == 2;
+        boolean canManageCulture = user.getRoleId() == 3;
         boolean canManageProfessional = user.getRoleId() == 3 || dao.isActiveMentor(user.getUserId());
         String action = request.getParameter("action");
         try {

@@ -83,7 +83,12 @@ public class MentorServlet extends HttpServlet {
         if (action == null) {
             // Tự động chọn action mặc định theo quyền và trạng thái phân công
             if (currentUser.getRoleId() == 3) {
-                action = "managerWorkspace";
+                if (mentorDAO.isMentor(currentUser.getUserId())) {
+                    action = "myMentees";
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
             } else if (mentorDAO.isMentor(currentUser.getUserId())) {
                 action = "myMentees";
             } else if (currentUser.getRoleId() == 2) {
@@ -127,7 +132,7 @@ public class MentorServlet extends HttpServlet {
                 break;
 
             case "evaluations":
-                if (currentUser.getRoleId() == 4 && !mentorDAO.isMentor(currentUser.getUserId())) {
+                if ((currentUser.getRoleId() == 3 || currentUser.getRoleId() == 4) && !mentorDAO.isMentor(currentUser.getUserId())) {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }
@@ -145,7 +150,7 @@ public class MentorServlet extends HttpServlet {
                 break;
 
             case "myMentees":
-                if (currentUser.getRoleId() != 4 || !mentorDAO.isMentor(currentUser.getUserId())) {
+                if (!mentorDAO.isMentor(currentUser.getUserId())) {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }

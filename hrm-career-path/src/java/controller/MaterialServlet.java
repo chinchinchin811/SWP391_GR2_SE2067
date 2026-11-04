@@ -113,7 +113,7 @@ public class MaterialServlet extends HttpServlet {
             q.setAttribute("trainingClass", c);
             q.setAttribute("enrollments", dao.getEnrollments(c.getClassId()));
             if (canManage(u)) {
-                q.setAttribute("classMentors", new MentorDAO().getAllMentorsWithSpecialty());
+                // classMentors removed
                 List<LearningMaterial> available = new ArrayList<>();
                 for (LearningMaterial m : dao.getMaterials(null)) {
                     if (canManageMaterial(u, m)) available.add(m);
@@ -140,7 +140,7 @@ public class MaterialServlet extends HttpServlet {
                 deny(s, q);
                 return;
             }
-            formData(q);
+            formData(q, u.getDepartmentId());
             LearningMaterial material = "edit".equals(a) ? dao.getMaterial(num(q, "id")) : new LearningMaterial();
             if ("edit".equals(a) && !canManageMaterial(u, material)) {
                 forbidden(s, "Bạn chỉ được quản lý học liệu thuộc phạm vi phòng ban của mình.");
@@ -156,7 +156,7 @@ public class MaterialServlet extends HttpServlet {
                 deny(s, q);
                 return;
             }
-            formData(q);
+            formData(q, u.getDepartmentId());
             List<LearningMaterial> materials = new ArrayList<>();
             for (LearningMaterial m : dao.getMaterials(null)) {
                 if (canManageMaterial(u, m)) materials.add(m);
@@ -272,7 +272,7 @@ public class MaterialServlet extends HttpServlet {
             c.setTargetPositionId(opt(q, "positionId"));
             c.setTargetLevelId(opt(q, "levelId"));
             c.setMentorId(opt(q, "mentorId"));
-            if (c.getMentorId() == null || !isEligibleClassMentor(c.getMentorId())) {
+            if (c.getMentorId() == null || !isEligibleClassMentor(c.getMentorId(), u.getDepartmentId())) {
                 error(q, "Vui lòng chọn mentor hợp lệ cho lớp. Nhân viên được ghi danh sẽ tự động ghép với mentor này.");
                 s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
                 return;
@@ -345,18 +345,7 @@ public class MaterialServlet extends HttpServlet {
             return;
         }
         if ("setClassMentor".equals(a)) {
-            int classId = num(q, "classId");
-            TrainingClass target = dao.getClassById(classId);
-            int mentorId = num(q, "mentorId");
-            if (!canManageClass(u, target) || !isEligibleClassMentor(mentorId)) {
-                forbidden(s, "Bạn không thể gán mentor cho lớp này.");
-                return;
-            }
-            if (dao.updateClassMentor(classId, mentorId)) {
-                dao.syncClassMentorAssignments(classId, u.getUserId());
-                flash(q, "Đã cập nhật mentor đứng lớp và đồng bộ mentee trong lớp.");
-            }
-            s.sendRedirect(q.getContextPath() + "/materials?action=classDetail&id=" + classId);
+            forbidden(s, "Mentor chỉ có thể chọn khi tạo lớp và không thể thay đổi sau đó.");
             return;
         }
         if ("deleteEnrollment".equals(a)) {
@@ -543,15 +532,15 @@ public class MaterialServlet extends HttpServlet {
         return m;
     }
 
-    private void formData(HttpServletRequest q) {
+    private void formData(HttpServletRequest q, Integer departmentId) {
         q.setAttribute("departments", departments.getAllDepartments());
         q.setAttribute("positions", positions.getAllPositions());
         q.setAttribute("levels", positions.getAllJobLevels());
-        q.setAttribute("mentors", new MentorDAO().getAllMentorsWithSpecialty());
+        q.setAttribute("mentors", new MentorDAO().getAllMentorsWithSpecialty(departmentId));
     }
 
-    private boolean isEligibleClassMentor(int mentorId) {
-        for (User mentor : new MentorDAO().getAllMentorsWithSpecialty()) {
+    private boolean isEligibleClassMentor(int mentorId, Integer departmentId) {
+        for (User mentor : new MentorDAO().getAllMentorsWithSpecialty(departmentId)) {
             if (mentor.getUserId() == mentorId) return true;
         }
         return false;
@@ -583,8 +572,8 @@ public class MaterialServlet extends HttpServlet {
         if (!canManage(u) || material == null) return false;
         Integer userDepartment = u.getDepartmentId();
         if (userDepartment != null && userDepartment.equals(material.getDepartmentId())) return true;
-        return false;
-
+        if (material.getDepartmentId() == null || "CULTURE".equalsIgnoreCase(material.getScopeType())) return true;
+        return material.getCreatedBy() == u.getUserId();
     }
 
     private boolean canManageClass(User u, TrainingClass trainingClass) {
