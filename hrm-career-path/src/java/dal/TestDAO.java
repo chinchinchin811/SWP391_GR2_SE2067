@@ -339,11 +339,23 @@ public final class TestDAO {
             }
         }
         if (actor.departmentManager()) {
-            scopes.add("(t.type='department' AND t.department_id=?)");
+            scopes.add("(t.type='department' AND (t.department_id=? OR t.department_id IS NULL))");
             args.add(actor.managedDepartmentId());
             scopes.add("(t.type='learning' AND t.department_id=?)");
             args.add(actor.managedDepartmentId());
+        } else if ("MANAGER".equals(actor.role()) && actor.departmentId() != null) {
+            scopes.add("(t.type='department' AND (t.department_id=? OR t.department_id IS NULL))");
+            args.add(actor.departmentId());
+            scopes.add("(t.type='learning' AND (t.department_id=? OR t.department_id IS NULL))");
+            args.add(actor.departmentId());
         } else if (actor.classMentor()) {
+            scopes.add("t.type='culture'");
+            if (actor.departmentId() != null) {
+                scopes.add("(t.type='department' AND (t.department_id=? OR t.department_id IS NULL))");
+                args.add(actor.departmentId());
+            } else {
+                scopes.add("t.type='department'");
+            }
             scopes.add("(t.type='learning' AND EXISTS (SELECT 1 FROM Class_Materials cm"
                     + " JOIN Training_Classes tc ON tc.class_id=cm.class_id JOIN Learning_Materials lm ON lm.material_id=cm.material_id"
                     + " WHERE cm.material_id=t.learning_material_id AND tc.mentor_id=? AND tc.is_deleted=0"

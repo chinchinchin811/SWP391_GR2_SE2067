@@ -305,9 +305,9 @@ public class EmployeeServlet extends HttpServlet {
         user.setPositionId(parseInteger(posIdStr));
         user.setLevelId(parseInteger(levelIdStr));
 
+        LocalDate dobLocal = null;
         try {
-            Date dob = Date.valueOf(dobStr.trim());
-            LocalDate dobLocal = dob.toLocalDate();
+            dobLocal = parseLocalDate(dobStr);
             LocalDate today = LocalDate.now();
             if (dobLocal.isAfter(today)) {
                 request.setAttribute("error", "Ngày sinh không được ở thời điểm tương lai!");
@@ -323,24 +323,50 @@ public class EmployeeServlet extends HttpServlet {
                 request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
                 return;
             }
-            user.setDob(dob);
-        } catch (IllegalArgumentException ex) {
-            request.setAttribute("error", "Định dạng Ngày sinh không hợp lệ!");
+            user.setDob(Date.valueOf(dobLocal));
+        } catch (Exception ex) {
+            request.setAttribute("error", "Định dạng Ngày sinh không hợp lệ (hỗ trợ dd/mm/yyyy)!");
             request.setAttribute("employee", user);
             loadFormData(request);
             request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
             return;
         }
 
-        if (hireDateStr != null && !hireDateStr.isEmpty()) {
+        LocalDate hireDateLocal = null;
+        if (hireDateStr != null && !hireDateStr.trim().isEmpty()) {
             try {
-                user.setHireDate(Date.valueOf(hireDateStr));
-            } catch (IllegalArgumentException ignored) {
-                user.setHireDate(new Date(System.currentTimeMillis()));
+                hireDateLocal = parseLocalDate(hireDateStr);
+            } catch (Exception ex) {
+                request.setAttribute("error", "Định dạng Ngày bắt đầu làm việc không hợp lệ (hỗ trợ dd/mm/yyyy)!");
+                request.setAttribute("employee", user);
+                loadFormData(request);
+                request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                return;
             }
         } else {
-            user.setHireDate(new Date(System.currentTimeMillis()));
+            request.setAttribute("error", "Vui lòng nhập Ngày bắt đầu làm việc!");
+            request.setAttribute("employee", user);
+            loadFormData(request);
+            request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+            return;
         }
+        if (dobLocal != null && hireDateLocal != null) {
+            if (dobLocal.getYear() == hireDateLocal.getYear()) {
+                request.setAttribute("error", "Năm bắt đầu làm việc không được trùng với năm sinh!");
+                request.setAttribute("employee", user);
+                loadFormData(request);
+                request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                return;
+            }
+            if (dobLocal.plusYears(18).isAfter(hireDateLocal)) {
+                request.setAttribute("error", "Tính từ ngày sinh đến khi bắt đầu làm việc phải từ đủ 18 tuổi trở lên!");
+                request.setAttribute("employee", user);
+                loadFormData(request);
+                request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                return;
+            }
+        }
+        user.setHireDate(Date.valueOf(hireDateLocal));
 
         // 1. RÀNG BUỘC ADMIN: Chỉ duy nhất 1 Admin trên toàn hệ thống
         if (roleId == 1) {
@@ -482,8 +508,7 @@ public class EmployeeServlet extends HttpServlet {
             user.setGender(gender);
             if (dobStr != null && !dobStr.trim().isEmpty()) {
                 try {
-                    Date dob = Date.valueOf(dobStr.trim());
-                    LocalDate dobLocal = dob.toLocalDate();
+                    LocalDate dobLocal = parseLocalDate(dobStr);
                     LocalDate today = LocalDate.now();
                     if (dobLocal.isAfter(today)) {
                         request.setAttribute("error", "Ngày sinh không được ở thời điểm tương lai!");
@@ -499,9 +524,9 @@ public class EmployeeServlet extends HttpServlet {
                         request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
                         return;
                     }
-                    user.setDob(dob);
-                } catch (IllegalArgumentException ex) {
-                    request.setAttribute("error", "Định dạng Ngày sinh không hợp lệ!");
+                    user.setDob(Date.valueOf(dobLocal));
+                } catch (Exception ex) {
+                    request.setAttribute("error", "Định dạng Ngày sinh không hợp lệ (hỗ trợ dd/mm/yyyy)!");
                     request.setAttribute("employee", user);
                     loadFormData(request);
                     request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
@@ -716,5 +741,31 @@ public class EmployeeServlet extends HttpServlet {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private LocalDate parseLocalDate(String str) {
+        if (str == null || str.trim().isEmpty()) {
+            return null;
+        }
+        str = str.trim().replaceAll("\\s+", "");
+        String[] parts = str.split("[-/.]");
+        if (parts.length == 3) {
+            try {
+                if (parts[0].length() == 4) {
+                    int y = Integer.parseInt(parts[0]);
+                    int m = Integer.parseInt(parts[1]);
+                    int d = Integer.parseInt(parts[2]);
+                    return LocalDate.of(y, m, d);
+                } else {
+                    int d = Integer.parseInt(parts[0]);
+                    int m = Integer.parseInt(parts[1]);
+                    int y = Integer.parseInt(parts[2]); if (y < 100) { y = (y > 30) ? 1900 + y : 2000 + y; }
+                    return LocalDate.of(y, m, d);
+                }
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Ngày tháng không hợp lệ");
+            }
+        }
+        return LocalDate.parse(str);
     }
 }

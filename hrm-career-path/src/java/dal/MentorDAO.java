@@ -246,6 +246,38 @@ public class MentorDAO {
         return null;
     }
 
+    public MentorAssignment getAssignmentById(int assignmentId) {
+        String sql = "SELECT ma.assignment_id, ma.mentee_id, ma.mentor_id, ma.status, u.full_name AS mentee_name, jl.level_name AS mentee_level, "
+                + "COALESCE(p.position_name, pm.position_name) AS position_name, d.department_name "
+                + "FROM MentorAssignments ma "
+                + "JOIN Users u ON ma.mentee_id = u.user_id "
+                + "LEFT JOIN Job_Levels jl ON u.level_id = jl.level_id "
+                + "LEFT JOIN Positions p ON ma.position_id = p.position_id "
+                + "LEFT JOIN Positions pm ON u.position_id = pm.position_id "
+                + "LEFT JOIN Departments d ON u.department_id = d.department_id "
+                + "WHERE ma.assignment_id = ?";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, assignmentId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    MentorAssignment a = new MentorAssignment();
+                    a.setAssignmentId(rs.getInt("assignment_id"));
+                    a.setMenteeId(rs.getInt("mentee_id"));
+                    a.setMentorId(rs.getInt("mentor_id"));
+                    a.setMenteeName(rs.getString("mentee_name"));
+                    a.setMenteeLevel(rs.getString("mentee_level"));
+                    a.setPositionName(rs.getString("position_name"));
+                    a.setDepartmentName(rs.getString("department_name"));
+                    a.setStatus(rs.getString("status"));
+                    return a;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public boolean saveEvaluation(int assignmentId, int evaluatorId, int score, String publicFeedback, String privateFeedback) {
         String sql = "INSERT INTO MentorEvaluations (assignment_id, evaluator_id, performance_score, feedback, public_feedback, private_feedback, approval_status, evaluation_date) "
                 + "VALUES (?, ?, ?, ?, ?, ?, 'PENDING', GETDATE())";

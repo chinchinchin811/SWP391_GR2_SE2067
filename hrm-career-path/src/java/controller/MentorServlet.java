@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.ArrayList;
 import model.Mentor.MentorAssignment;
 import model.Mentor.MentorEvaluation;
+import model.Mentor.EvaluationCriteria;
 import model.User;
 import model.TrainingClass;
 import model.ClassEnrollment;
@@ -193,11 +194,16 @@ public class MentorServlet extends HttpServlet {
                     request.setAttribute("classId", classId);
                     request.setAttribute("menteeId", menteeId);
                     request.setAttribute("managerEvaluation", true);
+                    request.setAttribute("mentee", mentorDAO.getMenteeDetail(menteeId));
                 } else if (currentUser.getRoleId() == 4) {
                     if (!mentorDAO.ownsAssignment(parseInt(request.getParameter("assignmentId")), currentUser.getUserId())) {
                         response.sendRedirect(request.getContextPath() + "/mentors?action=myMentees");
                         return;
                     }
+                }
+                int aid = parseInt(request.getParameter("assignmentId"));
+                if (aid > 0) {
+                    request.setAttribute("assignment", mentorDAO.getAssignmentById(aid));
                 }
                 request.setAttribute("assignmentId", request.getParameter("assignmentId"));
                 request.getRequestDispatcher("mentor-evaluate-form.jsp").forward(request, response);
@@ -237,17 +243,72 @@ public class MentorServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/dashboard");
                 return;
             }
-            String[] visible = request.getParameterValues("visibleCriteria");
-            String[] internal = request.getParameterValues("internalCriteria");
+            // Evaluate with comprehensive criteria
             String comment = request.getParameter("comment");
-            String publicFeedback = criteriaText(visible, false) + (comment == null || comment.trim().isEmpty() ? "" : "\n\nNhận xét: " + comment.trim());
-            String privateFeedback = criteriaText(internal, true);
-            int score = criteriaCount(visible) * 2;
-            if (score == 0) {
-                session.setAttribute("errorMessage", "Hãy chọn ít nhất một tiêu chí công khai để tính điểm.");
+
+            double totalScore = 0.0;
+            int answeredPublicCount = 0;
+            StringBuilder pubFb = new StringBuilder();
+            pubFb.append("【KẾT QUẢ ĐÁNH GIÁ NĂNG LỰC HỌC VIÊN】\n");
+
+            for (EvaluationCriteria.Question q : EvaluationCriteria.PUBLIC_QUESTIONS) {
+                String optCode = request.getParameter(q.getCode());
+                EvaluationCriteria.Option opt = q.findOption(optCode);
+                if (opt != null) {
+                    totalScore += opt.getScore();
+                    answeredPublicCount++;
+                    pubFb.append("• ").append(q.getTitle()).append(":\n")
+                         .append("  ➜ ").append(opt.getLabel()).append(" - ").append(opt.getDescription()).append("\n");
+                }
+            }
+
+            // Fallback nếu dùng form cũ (checkboxes)
+            if (answeredPublicCount == 0) {
+                String[] visible = request.getParameterValues("visibleCriteria");
+                if (visible != null && visible.length > 0) {
+                    totalScore = criteriaCount(visible) * 2;
+                    pubFb.append(criteriaText(visible, false)).append("\n");
+                    answeredPublicCount = visible.length;
+                }
+            }
+
+            if (comment != null && !comment.trim().isEmpty()) {
+                pubFb.append("\n【NHẬN XÉT CỦA MENTOR】\n").append(comment.trim());
+            }
+
+            StringBuilder privFb = new StringBuilder();
+            privFb.append("【ĐÁNH GIÁ NỘI BỘ (MENTOR / MANAGER / HR)】\n");
+            int answeredInternalCount = 0;
+            for (EvaluationCriteria.Question q : EvaluationCriteria.INTERNAL_QUESTIONS) {
+                String optCode = request.getParameter(q.getCode());
+                EvaluationCriteria.Option opt = q.findOption(optCode);
+                if (opt != null) {
+                    answeredInternalCount++;
+                    privFb.append("• ").append(q.getTitle()).append(":\n")
+                          .append("  ➜ ").append(opt.getLabel()).append(" - ").append(opt.getDescription()).append("\n");
+                }
+            }
+
+            // Fallback nếu dùng form cũ (checkboxes)
+            if (answeredInternalCount == 0) {
+                String[] internal = request.getParameterValues("internalCriteria");
+                if (internal != null && internal.length > 0) {
+                    privFb.append(criteriaText(internal, true));
+                    answeredInternalCount = internal.length;
+                }
+            }
+
+            if (answeredPublicCount == 0) {
+                session.setAttribute("errorMessage", "Vui lòng chọn các câu hỏi đánh giá công khai để tính điểm.");
                 response.sendRedirect(request.getContextPath() + (currentUser.getRoleId() == 3 ? "/mentors?action=managerWorkspace" : "/mentors?action=myMentees"));
                 return;
             }
+
+            int score = Math.max(1, Math.min(10, (int) Math.round(totalScore)));
+            String publicFeedback = pubFb.toString().trim();
+            String privateFeedback = privFb.toString().trim();
+
+
             if (currentUser.getRoleId() == 3) {
                 int classId = parseInt(request.getParameter("classId"));
                 int menteeId = parseInt(request.getParameter("menteeId"));

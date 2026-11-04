@@ -269,7 +269,15 @@ public class MaterialServlet extends HttpServlet {
             c.setClassName(q.getParameter("className"));
             c.setDescription(q.getParameter("description"));
             c.setDepartmentId(u.getDepartmentId());
-            c.setTargetPositionId(opt(q, "positionId"));
+                        c.setTargetPositionId(opt(q, "positionId"));
+            if (c.getTargetPositionId() != null && u.getDepartmentId() != null) {
+                Position targetPos = positions.getPositionById(c.getTargetPositionId());
+                if (targetPos != null && !u.getDepartmentId().equals(targetPos.getDepartmentId())) {
+                    error(q, "Vị trí mục tiêu phải thuộc phòng ban bạn đang quản lý.");
+                    s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
+                    return;
+                }
+            }
             c.setTargetLevelId(opt(q, "levelId"));
             c.setMentorId(opt(q, "mentorId"));
             if (c.getMentorId() == null || !isEligibleClassMentor(c.getMentorId(), u.getDepartmentId())) {
@@ -290,10 +298,10 @@ public class MaterialServlet extends HttpServlet {
                     s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
                     return;
                 }
-                Date startDate = Date.valueOf(startStr.trim());
-                Date endDate = Date.valueOf(endStr.trim());
-                LocalDate startLocal = startDate.toLocalDate();
-                LocalDate endLocal = endDate.toLocalDate();
+                LocalDate startLocal = parseLocalDate(startStr);
+                LocalDate endLocal = parseLocalDate(endStr); if (startLocal == null || endLocal == null) throw new IllegalArgumentException("Ngày không hợp lệ");
+                Date startDate = Date.valueOf(startLocal);
+                Date endDate = Date.valueOf(endLocal);
 
                 if (startLocal.isBefore(LocalDate.now())) {
                     error(q, "Ngày bắt đầu không được nằm trong quá khứ.");
@@ -307,7 +315,7 @@ public class MaterialServlet extends HttpServlet {
                 }
                 c.setStartDate(startDate);
                 c.setEndDate(endDate);
-            } catch (IllegalArgumentException ex) {
+            } catch (Exception ex) {
                 error(q, "Ngày bắt đầu và ngày kết thúc không hợp lệ.");
                 s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
                 return;
@@ -534,7 +542,11 @@ public class MaterialServlet extends HttpServlet {
 
     private void formData(HttpServletRequest q, Integer departmentId) {
         q.setAttribute("departments", departments.getAllDepartments());
-        q.setAttribute("positions", positions.getAllPositions());
+        if (departmentId != null && departmentId > 0) {
+            q.setAttribute("positions", positions.getPositionsByDepartment(departmentId));
+        } else {
+            q.setAttribute("positions", positions.getAllPositions());
+        }
         q.setAttribute("levels", positions.getAllJobLevels());
         q.setAttribute("mentors", new MentorDAO().getAllMentorsWithSpecialty(departmentId));
     }
@@ -625,6 +637,8 @@ public class MaterialServlet extends HttpServlet {
     private void error(HttpServletRequest q, String v) {
         q.getSession().setAttribute("errorMessage", v);
     }
+
+    private LocalDate parseLocalDate(String str) { if (str == null || str.trim().isEmpty()) return null; str = str.trim().replaceAll("\\s+", ""); String[] parts = str.split("[-/.]"); if (parts.length == 3) { try { if (parts[0].length() == 4) { int y = Integer.parseInt(parts[0]); int m = Integer.parseInt(parts[1]); int d = Integer.parseInt(parts[2]); return LocalDate.of(y, m, d); } else { int d = Integer.parseInt(parts[0]); int m = Integer.parseInt(parts[1]); int y = Integer.parseInt(parts[2]); if (y < 100) { y = (y > 30) ? 1900 + y : 2000 + y; } return LocalDate.of(y, m, d); } } catch (Exception e) { throw new IllegalArgumentException("Ngày tháng không hợp lệ"); } } return LocalDate.parse(str); }
 
     private String json(String x) {
         return x == null ? "" : x.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", " ").replace("\r", " ");
