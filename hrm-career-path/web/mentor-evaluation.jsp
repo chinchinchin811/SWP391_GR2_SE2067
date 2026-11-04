@@ -26,8 +26,7 @@
     <div class="content-body">
         <div class="card" style="border: 1px solid #000; background: #fff; padding: 20px;">
             <div class="card-header" style="border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; font-size: 18px;">Danh Sách Đánh Giá Từ Mentor</h2>
-                <span style="font-size: 12px; font-style: italic; color: #555;">(HR xem toàn hệ thống; Manager xem phòng ban; Mentor xem mentee phụ trách)</span>
+                <h2 style="margin: 0; font-size: 18px;">Danh Sách Đánh Giá Từ Mentor</h2>                
             </div>
             <div class="card-body">
                 <table class="data-table" style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
