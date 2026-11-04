@@ -20,14 +20,14 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1>Phê Duyệt & Đánh Giá Nhân Viên Mới</h1>
+        <h1>Tổng Hợp Đánh Giá Mentee</h1>
     </div>
 
     <div class="content-body">
         <div class="card" style="border: 1px solid #000; background: #fff; padding: 20px;">
             <div class="card-header" style="border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
                 <h2 style="margin: 0; font-size: 18px;">Danh Sách Đánh Giá Từ Mentor</h2>
-                <span style="font-size: 12px; font-style: italic; color: #555;">(Chỉ hiển thị cho HR, Quản lý, Admin & Mentor)</span>
+                <span style="font-size: 12px; font-style: italic; color: #555;">(HR xem toàn hệ thống; Manager xem phòng ban; Mentor xem mentee phụ trách)</span>
             </div>
             <div class="card-body">
                 <table class="data-table" style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
@@ -35,7 +35,7 @@
                         <tr style="background: #f0f0f0; border-bottom: 1px solid #000; text-align: left;">
                             <th style="padding: 10px; border: 1px solid #000;">STT</th>
                             <th style="padding: 10px; border: 1px solid #000;">Mentee (Nhân viên)</th>
-                            <th style="padding: 10px; border: 1px solid #000;">Mentor Hướng dẫn</th>
+                            <th style="padding: 10px; border: 1px solid #000;">Mentor Đứng Lớp</th>
                             <th style="padding: 10px; border: 1px solid #000;">Điểm Đánh giá</th>
                             <th style="padding: 10px; border: 1px solid #000;">Nhận xét Chuyên môn</th>
                             <th style="padding: 10px; border: 1px solid #000;">Trạng thái Phê duyệt</th>
@@ -67,7 +67,7 @@
                                     </div>
                                     <% if (eval.getPrivateFeedback() != null && !eval.getPrivateFeedback().trim().isEmpty()) { %>
                                     <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed #e57373;">
-                                        <b style="color: #c62828;"><i class="fa-solid fa-user-shield"></i> Nội bộ HR/Manager (Ẩn với Mentee):</b><br>
+                                        <b style="color: #c62828;"><i class="fa-solid fa-user-shield"></i> Nội bộ Mentor/HR/Manager (Ẩn với Mentee):</b><br>
                                         <span style="color: #555; font-style: italic;"><%= eval.getPrivateFeedback() %></span>
                                     </div>
                                     <% } %>

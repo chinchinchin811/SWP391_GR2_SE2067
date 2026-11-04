@@ -434,27 +434,77 @@ public class MaterialDAO {
     }
 
     public int enrollBatch(int classId, String[] ids, int actor) {
-        if (ids == null) {
-            return 0;
-        }
+        if (ids == null) return 0;
         int n = 0;
-        String sql = "INSERT INTO Class_Enrollments(class_id,user_id,enrolled_by,enrollment_type,assigned_reason) SELECT ?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM Class_Enrollments WHERE class_id=? AND user_id=?)";
-        try (Connection c = DBContext.getInstance().getConnection(); PreparedStatement p = c.prepareStatement(sql)) {
-            for (String s : ids) {
-                int uid = Integer.parseInt(s);
+        try (Connection c = DBContext.getInstance().getConnection()) {
+            c.setAutoCommit(false);
+            Integer mentorId = null, positionId = null;
+            try (PreparedStatement p = c.prepareStatement("SELECT mentor_id,target_position_id FROM Training_Classes WHERE class_id=? AND is_deleted=0")) {
                 p.setInt(1, classId);
-                p.setInt(2, uid);
-                p.setInt(3, actor);
-                p.setString(4, "SMART_ASSIGN");
-                p.setString(5, "Được gợi ý bởi Smart Match");
-                p.setInt(6, classId);
-                p.setInt(7, uid);
-                n += p.executeUpdate();
+                try (ResultSet r = p.executeQuery()) {
+                    if (r.next()) { mentorId = (Integer) r.getObject("mentor_id"); positionId = (Integer) r.getObject("target_position_id"); }
+                }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            if (mentorId == null) { c.rollback(); return 0; }
+            String enroll = "INSERT INTO Class_Enrollments(class_id,user_id,enrolled_by,enrollment_type,assigned_reason) SELECT ?,?,?,?,? WHERE NOT EXISTS(SELECT 1 FROM Class_Enrollments WHERE class_id=? AND user_id=?)";
+            try (PreparedStatement p = c.prepareStatement(enroll)) {
+                for (String id : ids) {
+                    int menteeId = Integer.parseInt(id);
+                    p.setInt(1, classId); p.setInt(2, menteeId); p.setInt(3, actor);
+                    p.setString(4, "MANUAL"); p.setString(5, "Được ghi danh vào lớp; mentor là mentor đứng lớp");
+                    p.setInt(6, classId); p.setInt(7, menteeId);
+                    n += p.executeUpdate();
+                    upsertClassMentorAssignment(c, classId, menteeId, mentorId, positionId, actor);
+                }
+            }
+            c.commit();
+        } catch (Exception e) { e.printStackTrace(); return 0; }
         return n;
+    }
+
+    public boolean syncClassMentorAssignments(int classId, int actor) {
+        try (Connection c = DBContext.getInstance().getConnection()) {
+            c.setAutoCommit(false);
+            Integer mentorId = null, positionId = null;
+            try (PreparedStatement p = c.prepareStatement("SELECT mentor_id,target_position_id FROM Training_Classes WHERE class_id=? AND is_deleted=0")) {
+                p.setInt(1, classId);
+                try (ResultSet r = p.executeQuery()) {
+                    if (r.next()) { mentorId = (Integer) r.getObject("mentor_id"); positionId = (Integer) r.getObject("target_position_id"); }
+                }
+            }
+            if (mentorId == null) { c.rollback(); return false; }
+            List<Integer> mentees = new ArrayList<Integer>();
+            try (PreparedStatement p = c.prepareStatement("SELECT user_id FROM Class_Enrollments WHERE class_id=?")) {
+                p.setInt(1, classId);
+                try (ResultSet r = p.executeQuery()) {
+                    while (r.next()) mentees.add(r.getInt(1));
+                }
+            }
+            for (Integer menteeId : mentees) upsertClassMentorAssignment(c, classId, menteeId, mentorId, positionId, actor);
+            c.commit(); return true;
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    private void upsertClassMentorAssignment(Connection c, int classId, int menteeId, int mentorId, Integer positionId, int actor) throws SQLException {
+        String update = "UPDATE MentorAssignments SET position_id=?,assigned_by=? WHERE class_id=? AND mentee_id=? AND mentor_id=? AND status='ACTIVE'";
+        try (PreparedStatement p = c.prepareStatement(update)) {
+            if (positionId == null) p.setNull(1, Types.INTEGER); else p.setInt(1, positionId);
+            p.setInt(2, actor); p.setInt(3, classId); p.setInt(4, menteeId); p.setInt(5, mentorId);
+            if (p.executeUpdate() > 0) return;
+        }
+        try (PreparedStatement p = c.prepareStatement("UPDATE MentorAssignments SET status='INACTIVE' WHERE class_id=? AND mentee_id=? AND status='ACTIVE'")) {
+            p.setInt(1, classId); p.setInt(2, menteeId); p.executeUpdate();
+        }
+        String insert = "INSERT INTO MentorAssignments(class_id,mentee_id,mentor_id,position_id,status,assigned_by) VALUES(?,?,?,?, 'ACTIVE',?)";
+        try (PreparedStatement p = c.prepareStatement(insert)) {
+            p.setInt(1, classId); p.setInt(2, menteeId); p.setInt(3, mentorId);
+            if (positionId == null) p.setNull(4, Types.INTEGER); else p.setInt(4, positionId);
+            p.setInt(5, actor); p.executeUpdate();
+        }
+    }
+
+    public boolean updateClassMentor(int classId, int mentorId) {
+        return exec("UPDATE Training_Classes SET mentor_id=? WHERE class_id=? AND is_deleted=0", mentorId, classId);
     }
 
     public List<ClassEnrollment> getEnrollments(int classId) {
@@ -484,7 +534,16 @@ public class MaterialDAO {
     }
 
     public boolean deleteEnrollment(int enrollmentId) {
-        return exec("DELETE FROM Class_Enrollments WHERE enrollment_id=?", enrollmentId);
+        try (Connection c = DBContext.getInstance().getConnection()) {
+            c.setAutoCommit(false);
+            try (PreparedStatement p = c.prepareStatement("UPDATE MentorAssignments SET status='INACTIVE' WHERE status='ACTIVE' AND EXISTS (SELECT 1 FROM Class_Enrollments e WHERE e.class_id=MentorAssignments.class_id AND e.user_id=MentorAssignments.mentee_id AND e.enrollment_id=?)")) {
+                p.setInt(1, enrollmentId); p.executeUpdate();
+            }
+            try (PreparedStatement p = c.prepareStatement("DELETE FROM Class_Enrollments WHERE enrollment_id=?")) {
+                p.setInt(1, enrollmentId); p.executeUpdate();
+            }
+            c.commit(); return true;
+        } catch (SQLException e) { e.printStackTrace(); return false; }
     }
 
     public List<VideoCheckpoint> getCheckpoints(int materialId) {
@@ -613,6 +672,13 @@ public class MaterialDAO {
         } catch (SQLException e) {
             return false;
         }
+    }
+
+    private boolean exec(String s, int first, int second) {
+        try (Connection c = DBContext.getInstance().getConnection(); PreparedStatement p = c.prepareStatement(s)) {
+            p.setInt(1, first); p.setInt(2, second);
+            return p.executeUpdate() > 0;
+        } catch (SQLException e) { return false; }
     }
 
     private void setInt(PreparedStatement p, int i, Integer v) throws SQLException {

@@ -24,6 +24,10 @@
                 <span class="badge-count">Nhân sự chưa ghi danh: <%= candidates != null ? candidates.size() : 0 %> người</span>
             </div>
             <div class="card-body">
+                <% if (trainingClass.getMentorId() == null) { %>
+                <div class="alert alert-danger">Lớp chưa có mentor đứng lớp nên chưa thể ghép mentee. <a href="<%= request.getContextPath() %>/materials?action=classDetail&amp;id=<%= trainingClass.getClassId() %>">Chọn mentor tại chi tiết lớp</a>.</div>
+                <% } else { %>
+                <p><b>Mentor đứng lớp:</b> <%= trainingClass.getMentorName() %>. Nhân viên được ghi danh sẽ tự động được ghép làm mentee của mentor này.</p>
                 <p style="font-size:12.5px;color:#555;margin-bottom:14px;line-height:1.6">
                     Nhân sự có điểm từ 60 trở lên là nhóm được hệ thống gợi ý.
                     Nút <strong>Chọn gợi ý</strong> sẽ tự động tích chọn nhóm này.
@@ -77,6 +81,7 @@
                         </tbody>
                     </table>
                 </form>
+                <% } %>
             </div>
         </div>
         <% } %>

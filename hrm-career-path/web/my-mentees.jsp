@@ -21,7 +21,9 @@
                     <td style="padding: 8px; border: 1px solid #000;"><b><%= a.getMenteeName() %></b> (<%= a.getMenteeLevel() != null ? a.getMenteeLevel() : "Chưa có cấp" %>)</td>
                     <td style="padding: 8px; border: 1px solid #000;"><%= a.getPositionName() != null ? a.getPositionName() : "" %></td>
                     <td style="padding: 8px; border: 1px solid #000; text-align: center;">
+                        <% if ("ACTIVE".equalsIgnoreCase(a.getStatus())) { %>
                         <a href="<%= request.getContextPath() %>/mentors?action=evaluateForm&assignmentId=<%= a.getAssignmentId() %>" class="btn btn-sm btn-primary" style="background: #000; color: #fff; padding: 5px 10px; text-decoration: none;">Viết Đánh Giá</a>
+                        <% } else { %><span style="color:#777">Phân công đã kết thúc</span><% } %>
                     </td>
                 </tr>
                 <% }} else { %>

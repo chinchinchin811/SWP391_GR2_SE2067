@@ -109,6 +109,7 @@ public class MaterialServlet extends HttpServlet {
             q.setAttribute("trainingClass", c);
             q.setAttribute("enrollments", dao.getEnrollments(c.getClassId()));
             if (canManage(u)) {
+                q.setAttribute("classMentors", new MentorDAO().getAllMentorsWithSpecialty());
                 List<LearningMaterial> available = new ArrayList<>();
                 for (LearningMaterial m : dao.getMaterials(null)) {
                     if (canManageMaterial(u, m)) available.add(m);
@@ -263,6 +264,11 @@ public class MaterialServlet extends HttpServlet {
             c.setTargetPositionId(opt(q, "positionId"));
             c.setTargetLevelId(opt(q, "levelId"));
             c.setMentorId(opt(q, "mentorId"));
+            if (c.getMentorId() == null || !isEligibleClassMentor(c.getMentorId())) {
+                error(q, "Vui lòng chọn mentor hợp lệ cho lớp. Nhân viên được ghi danh sẽ tự động ghép với mentor này.");
+                s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
+                return;
+            }
             try {
                 String startStr = q.getParameter("startDate");
                 String endStr = q.getParameter("endDate");
@@ -322,8 +328,27 @@ public class MaterialServlet extends HttpServlet {
                 return;
             }
             int n = dao.enrollBatch(classId, q.getParameterValues("userIds"), u.getUserId());
-            flash(q, "Đã ghi danh " + n + " nhân sự.");
+            if (n == 0 && dao.getClassById(classId).getMentorId() == null) {
+                error(q, "Lớp chưa có mentor đứng lớp. Hãy chọn mentor tại Chi tiết lớp trước khi ghi danh nhân viên.");
+            } else {
+                flash(q, "Đã ghi danh " + n + " nhân sự và ghép với mentor đứng lớp.");
+            }
             s.sendRedirect(q.getContextPath() + "/materials?action=classAssign&id=" + num(q, "classId"));
+            return;
+        }
+        if ("setClassMentor".equals(a)) {
+            int classId = num(q, "classId");
+            TrainingClass target = dao.getClassById(classId);
+            int mentorId = num(q, "mentorId");
+            if (!canManageClass(u, target) || !isEligibleClassMentor(mentorId)) {
+                forbidden(s, "Bạn không thể gán mentor cho lớp này.");
+                return;
+            }
+            if (dao.updateClassMentor(classId, mentorId)) {
+                dao.syncClassMentorAssignments(classId, u.getUserId());
+                flash(q, "Đã cập nhật mentor đứng lớp và đồng bộ mentee trong lớp.");
+            }
+            s.sendRedirect(q.getContextPath() + "/materials?action=classDetail&id=" + classId);
             return;
         }
         if ("deleteEnrollment".equals(a)) {
@@ -514,7 +539,14 @@ public class MaterialServlet extends HttpServlet {
         q.setAttribute("departments", departments.getAllDepartments());
         q.setAttribute("positions", positions.getAllPositions());
         q.setAttribute("levels", positions.getAllJobLevels());
-        q.setAttribute("mentors", users.getManagersCandidates());
+        q.setAttribute("mentors", new MentorDAO().getAllMentorsWithSpecialty());
+    }
+
+    private boolean isEligibleClassMentor(int mentorId) {
+        for (User mentor : new MentorDAO().getAllMentorsWithSpecialty()) {
+            if (mentor.getUserId() == mentorId) return true;
+        }
+        return false;
     }
 
     private User current(HttpServletRequest q, HttpServletResponse s) throws IOException {
