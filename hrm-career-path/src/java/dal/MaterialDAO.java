@@ -28,7 +28,7 @@ public class MaterialDAO {
             try (ResultSet r = ps.executeQuery()) {
                 while (r.next()) {
                     LearningMaterial m = mapMaterial(r);
-                    if (roleId != null && (roleId == 2 || roleId == 3)) {
+                    if (roleId != null && roleId == 3) {
                         m.setUserHasAccess(true);
                     } else if (userId != null) {
                         m.setUserHasAccess(m.getEnrolledClassCount() > 0);
@@ -185,7 +185,7 @@ public class MaterialDAO {
     }
 
     public boolean checkUserCanAccessMaterial(int materialId, int userId, int roleId) {
-        if (roleId == 2 || roleId == 3) {
+        if (roleId == 3) {
             String managed = "SELECT COUNT(*) FROM Learning_Materials m JOIN Users u ON u.user_id=? "
                     + "WHERE m.material_id=? AND m.is_deleted=0 AND (m.department_id=u.department_id "
                     + "OR (?=2 AND m.scope_type='CULTURE' AND m.department_id IS NULL))";

@@ -27,6 +27,10 @@ public class MaterialServlet extends HttpServlet {
             s.sendRedirect(q.getContextPath() + "/departments");
             return;
         }
+        if (u.getRoleId() == 2) {
+            forbidden(s, "HR chỉ quản lý tổ chức và nhân sự, không truy cập Học liệu & Đào tạo.");
+            return;
+        }
         String a = param(q, "action", "list");
         if ("download".equals(a) || "preview".equals(a)) {
             stream(q, s);
@@ -201,6 +205,10 @@ public class MaterialServlet extends HttpServlet {
         }
         if (u.getRoleId() == 1) {
             s.sendRedirect(q.getContextPath() + "/departments");
+            return;
+        }
+        if (u.getRoleId() == 2) {
+            forbidden(s, "HR không có quyền quản lý Học liệu & Đào tạo.");
             return;
         }
         String a = param(q, "action", "");
@@ -568,15 +576,15 @@ public class MaterialServlet extends HttpServlet {
     private boolean canManage(User u) {
         if (u == null) return false;
         int r = u.getRoleId();
-        return r == 2 || r == 3;
+        return r == 3;
     }
 
     private boolean canManageMaterial(User u, LearningMaterial material) {
         if (!canManage(u) || material == null) return false;
         Integer userDepartment = u.getDepartmentId();
         if (userDepartment != null && userDepartment.equals(material.getDepartmentId())) return true;
-        return u.getRoleId() == 2 && "CULTURE".equalsIgnoreCase(material.getScopeType())
-                && material.getDepartmentId() == null;
+        return false;
+
     }
 
     private boolean canManageClass(User u, TrainingClass trainingClass) {

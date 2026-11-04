@@ -27,8 +27,8 @@ public class FlashcardServlet extends HttpServlet {
         if (user == null) {
             return;
         }
-        if (user.getRoleId() == 1) {
-            response.sendRedirect(request.getContextPath() + "/departments");
+        if (user.getRoleId() == 1 || user.getRoleId() == 2) {
+            response.sendRedirect(request.getContextPath() + (user.getRoleId() == 1 ? "/departments" : "/dashboard"));
             return;
         }
 
@@ -96,7 +96,7 @@ public class FlashcardServlet extends HttpServlet {
         if (user == null) {
             return;
         }
-        if (user.getRoleId() == 1) {
+        if (user.getRoleId() == 1 || user.getRoleId() == 2) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }

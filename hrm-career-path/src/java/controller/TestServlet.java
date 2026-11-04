@@ -39,6 +39,11 @@ public class TestServlet extends HttpServlet {
             res.sendRedirect(req.getContextPath() + "/login");
             return null;
         }
+        User currentUser = (User) session.getAttribute("currentUser");
+        if (currentUser.getRoleId() == 1 || currentUser.getRoleId() == 2) {
+            res.sendRedirect(req.getContextPath() + "/dashboard");
+            return null;
+        }
         res.setHeader("Cache-Control", "no-store");
         res.setHeader("X-Content-Type-Options", "nosniff");
         synchronized (session) {
