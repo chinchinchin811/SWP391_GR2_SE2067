@@ -75,7 +75,6 @@
                                 <div class="action-btn-group" style="display:flex;gap:4px;justify-content:center;align-items:center;">
                                     <a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=classDetail&id=<%= c.getClassId() %>">Chi tiết</a>
                                     <% if (canManage) { %>
-                                    <a class="btn btn-sm btn-secondary" href="<%= request.getContextPath() %>/materials?action=classAssign&id=<%= c.getClassId() %>">Gán NV</a>
                                     <form method="post" action="<%= request.getContextPath() %>/materials" style="display:inline;margin:0;" onsubmit="return confirm('Bạn có chắc chắn muốn xóa lớp đào tạo này không?');">
                                         <input type="hidden" name="action" value="deleteClass">
                                         <input type="hidden" name="id" value="<%= c.getClassId() %>">
