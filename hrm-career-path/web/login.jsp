@@ -63,6 +63,7 @@
                             </form>
         </div>
 
+        <script src="<%= request.getContextPath() %>/assets/js/form-validator.js"></script>
     </body>
 
     </html>

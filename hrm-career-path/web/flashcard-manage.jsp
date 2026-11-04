@@ -56,7 +56,7 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1><i class="fa-solid fa-clone" style="color: var(--primary);"></i> <span>Quản lý Flashcard</span></h1>
+        <h1> <span>Quản lý Flashcard</span></h1>
     </div>
     <div class="content-body flashcard-manage">
         <div class="manage-top">

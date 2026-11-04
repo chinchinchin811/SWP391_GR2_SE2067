@@ -149,14 +149,14 @@
             <% } %>
 
             <%-- Mentor Workspace: Hiển thị cho nhân sự đang phụ trách kèm cặp Mentee --%>
-            <% if (isUserMentor || roleId == 3) { %>
+            <% if (isUserMentor) { %>
             <li class="sidebar-section <%= mentorWorkspaceActive ? "has-active" : "" %>" data-sidebar-section="mentor-workspace">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-mentor-workspace">
                     <span><i class="fa-solid fa-user-tie nav-cat-icon"></i> Mentor Workspace</span>
                     <span class="sidebar-menu-category-icon" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
                 </button>
                 <ul class="sidebar-submenu" id="sidebar-mentor-workspace">
-                    <% if (roleId == 3) { %>
+                    <% if (false) { %>
                     <li class="<%= currentURI.contains("/mentors") && "managerWorkspace".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/mentors?action=managerWorkspace"><i class="fa-solid fa-users-viewfinder nav-icon"></i> <span>Mentee trong lớp của tôi</span></a>
                     </li>

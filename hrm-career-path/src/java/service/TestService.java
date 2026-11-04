@@ -165,7 +165,7 @@ public final class TestService {
     private Integer templateDepartment(TestActor actor, String type) {
         if ("culture".equals(type)) {
             if (!actor.cultureManager()) {
-                throw new TestException(403, "Chỉ HR tạo bài văn hóa.");
+                throw new TestException(403, "Chỉ HR hoặc Quản lý được tạo bài văn hóa.");
             }
             return null;
         }
