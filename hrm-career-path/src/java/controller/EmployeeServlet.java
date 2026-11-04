@@ -6,7 +6,6 @@ import dal.RoleDAO;
 import dal.UserDAO;
 import model.Department;
 import model.EmployeeHistory;
-import model.JobLevel;
 import model.Position;
 import model.Role;
 import model.User;

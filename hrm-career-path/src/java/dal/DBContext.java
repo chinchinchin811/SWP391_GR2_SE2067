@@ -27,16 +27,6 @@ public class DBContext {
         return instance;
     }
 
-    public void checkAndReconnect() {
-        try (Connection conn = getConnection()) {
-            if (!conn.isValid(3)) {
-                throw new SQLException("Kết nối không hợp lệ");
-            }
-        } catch (SQLException e) {
-            System.out.println("Lỗi khi kết nối lại: " + e.getMessage());
-        }
-    }
-
     public static void main(String[] args) {
         System.out.println("Đang kiểm tra kết nối database.");
         try (Connection conn = DBContext.getInstance().getConnection()) {
