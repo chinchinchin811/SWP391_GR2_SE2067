@@ -87,11 +87,6 @@
                     <% } %>
                 </div>
             </div>
-            <% if (isEdit) { %>
-            <span class="badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a; font-size: 12px; padding: 6px 12px; border-radius: var(--radius-sm); font-weight: 600;">
-                <i class="fa-regular fa-clock"></i> Chờ phê duyệt (Có thể chỉnh sửa)
-            </span>
-            <% } %>
         </div>
         <% } %>
 

@@ -14,10 +14,10 @@ import java.util.List;
 import java.util.ArrayList;
 import model.Mentor.MentorAssignment;
 import model.Mentor.MentorEvaluation;
+import model.Mentor.ClassMenteeEvaluation;
 import model.Mentor.EvaluationCriteria;
 import model.User;
 import model.TrainingClass;
-import model.ClassEnrollment;
 import java.util.Map;
 import java.util.LinkedHashMap;
 
@@ -82,12 +82,7 @@ public class MentorServlet extends HttpServlet {
         if (action == null) {
             // Tự động chọn action mặc định theo quyền và trạng thái phân công
             if (currentUser.getRoleId() == 3) {
-                if (mentorDAO.isMentor(currentUser.getUserId())) {
-                    action = "myMentees";
-                } else {
-                    response.sendRedirect(request.getContextPath() + "/dashboard");
-                    return;
-                }
+                action = "managerWorkspace";
             } else if (mentorDAO.isMentor(currentUser.getUserId())) {
                 action = "myMentees";
             } else if (currentUser.getRoleId() == 2) {
@@ -115,18 +110,17 @@ public class MentorServlet extends HttpServlet {
                     return;
                 }
                 List<TrainingClass> managerClasses = new ArrayList<>();
-                Map<Integer, List<ClassEnrollment>> classMentees = new LinkedHashMap<>();
+                Map<Integer, List<ClassMenteeEvaluation>> classMentees = new LinkedHashMap<>();
                 MaterialDAO materialDAO = new MaterialDAO();
                 for (TrainingClass trainingClass : materialDAO.getClasses(currentUser.getUserId(), false)) {
                     if (currentUser.getDepartmentId().equals(trainingClass.getDepartmentId())) {
                         materialDAO.syncClassMentorAssignments(trainingClass.getClassId(), currentUser.getUserId());
                         managerClasses.add(trainingClass);
-                        classMentees.put(trainingClass.getClassId(), materialDAO.getEnrollments(trainingClass.getClassId()));
+                        classMentees.put(trainingClass.getClassId(), mentorDAO.getClassMenteeEvaluations(trainingClass.getClassId()));
                     }
                 }
                 request.setAttribute("managerClasses", managerClasses);
                 request.setAttribute("classMentees", classMentees);
-                request.setAttribute("managerEvaluations", mentorDAO.getEvaluationsByDepartment(currentUser.getDepartmentId()));
                 request.getRequestDispatcher("mentor-manager-workspace.jsp").forward(request, response);
                 break;
 
@@ -140,7 +134,14 @@ public class MentorServlet extends HttpServlet {
                 } else if (currentUser.getRoleId() == 3) {
                     request.setAttribute("evaluations", currentUser.getDepartmentId() == null ? new ArrayList<>() : mentorDAO.getEvaluationsByDepartment(currentUser.getDepartmentId()));
                 } else if (currentUser.getRoleId() == 2) {
-                    request.setAttribute("evaluations", mentorDAO.getAllEvaluations());
+                    MaterialDAO hrMaterialDAO = new MaterialDAO();
+                    List<TrainingClass> hrClasses = hrMaterialDAO.getClasses(null, false);
+                    Map<Integer, List<ClassMenteeEvaluation>> hrClassEvaluations = new LinkedHashMap<>();
+                    for (TrainingClass trainingClass : hrClasses) {
+                        hrClassEvaluations.put(trainingClass.getClassId(), mentorDAO.getClassMenteeEvaluations(trainingClass.getClassId()));
+                    }
+                    request.setAttribute("hrClasses", hrClasses);
+                    request.setAttribute("hrClassEvaluations", hrClassEvaluations);
                 } else {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
@@ -268,6 +269,16 @@ public class MentorServlet extends HttpServlet {
 
         if ("assign".equals(action)) {
             response.sendRedirect(request.getContextPath() + "/materials?action=classList");
+        } else if ("approveEvaluation".equals(action)) {
+            if (currentUser.getRoleId() != 3 || currentUser.getDepartmentId() == null) {
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
+            }
+            int evaluationId = parseInt(request.getParameter("evaluationId"));
+            boolean approved = evaluationId > 0 && new MentorDAO().approveDepartmentEvaluation(evaluationId, currentUser.getUserId());
+            session.setAttribute(approved ? "successMessage" : "errorMessage",
+                    approved ? "Đã duyệt đánh giá thành công." : "Đánh giá không tồn tại, đã được duyệt hoặc không thuộc phòng ban của bạn.");
+            response.sendRedirect(request.getContextPath() + "/mentors?action=managerWorkspace");
         } else if ("saveEvaluation".equals(action)) {
             if (currentUser.getRoleId() != 3 && currentUser.getRoleId() != 4) {
                 response.sendRedirect(request.getContextPath() + "/dashboard");

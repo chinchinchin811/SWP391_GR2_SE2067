@@ -2,20 +2,12 @@
 <%@ page import="model.Mentor.MentorAssignment" %>
 <%@ page import="model.Mentor.MentorEvaluation" %>
 <%@ page import="java.util.List" %>
-<%@ page import="java.util.ArrayList" %>
 <% 
     request.setAttribute("pageTitle", "Mentor Hướng Dẫn Của Tôi | CPMS");
     MentorAssignment myMentor = (MentorAssignment) request.getAttribute("myMentor"); 
     List<MentorEvaluation> myEvaluations = (List<MentorEvaluation>) request.getAttribute("myEvaluations");
    
-    List<MentorEvaluation> approvedEvaluations = new ArrayList<>();
-    if (myEvaluations != null) {
-        for (MentorEvaluation e : myEvaluations) {
-            if ("APPROVED".equalsIgnoreCase(e.getApprovalStatus())) {
-                approvedEvaluations.add(e);
-            }
-        }
-    }
+    int evaluationCount = myEvaluations == null ? 0 : myEvaluations.size();
 %>
 <jsp:include page="/views/common/header.jsp" />
 <jsp:include page="/views/common/sidebar.jsp" />
@@ -71,31 +63,30 @@
             </div>
         </div>
 
-        <%-- ĐÁNH GIÁ NĂNG LỰC TỪ MENTOR (CHỈ HIỂN THỊ KHI ĐÃ ĐƯỢC DUYỆT, KHÔNG HIỂN THỊ ĐIỂM SỐ) --%>
+        <%-- Hiển thị phản hồi công khai từ mentor và manager ngay sau khi lưu --%>
         <% if (myMentor != null) { %>
         <div class="card">
             <div class="card-header" style="border-bottom: 1px solid var(--border-color); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;">
                 <h3 style="margin: 0; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: #1e293b;">
-                    <i class="fa-solid fa-clipboard-check" style="color: var(--primary);"></i> Đánh Giá Năng Lực &amp; Phản Hồi Từ Mentor
+                    <i class="fa-solid fa-clipboard-check" style="color: var(--primary);"></i> Đánh Giá Năng Lực &amp; Phản Hồi
                 </h3>
-                <span class="text-secondary" style="font-size: 13px;">Đã duyệt: <%= approvedEvaluations.size() %></span>
+                <span class="badge-count"><%= evaluationCount %> phiếu đánh giá</span>
             </div>
             <div class="card-body" style="padding: 20px;">
-                <% if (!approvedEvaluations.isEmpty()) { 
-                    for (MentorEvaluation eval : approvedEvaluations) { 
+                <% if (myEvaluations != null && !myEvaluations.isEmpty()) {
+                    for (MentorEvaluation eval : myEvaluations) {
+                        boolean managerReview = eval.getEvaluatorId() != myMentor.getMentorId();
                         // Làm sạch nội dung phản hồi công khai: loại bỏ hoàn toàn các điểm số trong ngoặc (2.0đ), (1.6đ)...
                         String rawPub = (eval.getPublicFeedback() != null && !eval.getPublicFeedback().trim().isEmpty()) 
                                         ? eval.getPublicFeedback() : (eval.getFeedback() != null ? eval.getFeedback() : "");
                         String cleanPub = rawPub.replaceAll("\\s*\\([0-9]+(?:[.,][0-9]+)?\\s*(?:đ|điểm|pts)?\\)", "").trim();
                 %>
-                <div style="border: 1px solid #e0e7ff; background: #ffffff; padding: 18px 20px; border-radius: 8px; margin-bottom: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <div style="border: 1px solid var(--border-color); background: var(--bg-surface); padding: 18px 20px; border-radius: var(--radius-md); margin-bottom: 16px; box-shadow: var(--shadow-sm);">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;">
                         <span style="font-weight: 700; font-size: 14.5px; color: #1e293b; display: flex; align-items: center; gap: 8px;">
-                            <i class="fa-solid fa-file-signature" style="color: var(--primary);"></i> Phiếu Đánh Giá Chuyên Môn
+                            <i class="fa-solid fa-file-signature" style="color: var(--primary);"></i> <%= managerReview ? "Đánh giá từ Manager" : "Đánh giá từ Mentor" %>
                         </span>
-                        <span class="badge badge-status-active">
-                            <i class="fa-solid fa-circle-check"></i> Đã phê duyệt
-                        </span>
+                        <span class="badge <%= managerReview ? "badge-manager" : "badge-mentor" %>"><%= managerReview ? "Quản lý phòng ban" : myMentor.getMentorName() %></span>
                     </div>
                     <div style="font-size: 14px; line-height: 1.6; color: #334155;">
                         <div style="font-weight: 600; margin-bottom: 8px; color: #1e293b; font-size: 13.5px;">
@@ -106,10 +97,12 @@
                         </div>
                     </div>
                 </div>
-                <%  } 
+                <%  }
                    } else { %>
                 <div style="text-align: center; padding: 36px 16px; color: var(--text-secondary);">                    
-                    <p style="font-size: 14px; margin: 0 0 4px 0; color: #1e293b; font-weight: 600;">Chưa có đánh giá nào</p>                    
+                    <i class="fa-regular fa-clipboard" style="font-size:24px;color:var(--text-muted);margin-bottom:10px"></i>
+                    <p style="font-size: 14px; margin: 0 0 4px 0; color: #1e293b; font-weight: 600;">Chưa có đánh giá nào</p>
+                    <p style="font-size:13px;margin:0">Phản hồi sẽ xuất hiện tại đây sau khi mentor hoặc quản lý lưu đánh giá.</p>
                 </div>
                 <% } %>
             </div>

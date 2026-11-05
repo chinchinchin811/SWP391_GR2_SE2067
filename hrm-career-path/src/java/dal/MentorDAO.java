@@ -6,6 +6,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import model.Mentor.MentorAssignment;
+import model.Mentor.ClassMenteeEvaluation;
 
 /**
  *
@@ -20,6 +21,64 @@ public class MentorDAO {
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, managerId); ps.setInt(2, menteeId); ps.setInt(3, classId);
             try (ResultSet rs = ps.executeQuery()) { return rs.next() && rs.getInt(1) > 0; }
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
+
+    public List<ClassMenteeEvaluation> getClassMenteeEvaluations(int classId) {
+        List<ClassMenteeEvaluation> list = new ArrayList<>();
+        String sql = "SELECT u.user_id, u.full_name, e.evaluation_id, e.performance_score, e.approval_status, e.public_feedback, e.private_feedback, "
+                + "me2.evaluation_id AS manager_evaluation_id, me2.performance_score AS manager_score, me2.public_feedback AS manager_public_feedback, me2.private_feedback AS manager_private_feedback "
+                + "FROM Class_Enrollments ce JOIN Users u ON u.user_id=ce.user_id "
+                + "OUTER APPLY (SELECT TOP 1 me.evaluation_id, me.performance_score, me.approval_status, me.public_feedback, me.private_feedback "
+                + "FROM MentorAssignments ma JOIN MentorEvaluations me ON me.assignment_id=ma.assignment_id "
+                + "JOIN Users evaluator ON evaluator.user_id=me.evaluator_id AND evaluator.role_id<>3 "
+                + "WHERE ma.class_id=ce.class_id AND ma.mentee_id=ce.user_id AND ma.status='ACTIVE' AND me.evaluator_id=ma.mentor_id "
+                + "ORDER BY me.evaluation_date DESC, me.evaluation_id DESC) e "
+                + "OUTER APPLY (SELECT TOP 1 me.evaluation_id, me.performance_score, me.public_feedback, me.private_feedback "
+                + "FROM MentorAssignments ma JOIN MentorEvaluations me ON me.assignment_id=ma.assignment_id "
+                + "JOIN Users evaluator ON evaluator.user_id=me.evaluator_id AND evaluator.role_id=3 "
+                + "WHERE ma.class_id=ce.class_id AND ma.mentee_id=ce.user_id AND ma.status='ACTIVE' "
+                + "ORDER BY me.evaluation_date DESC, me.evaluation_id DESC) me2 "
+                + "WHERE ce.class_id=? ORDER BY ce.enrolled_at DESC";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, classId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ClassMenteeEvaluation row = new ClassMenteeEvaluation();
+                    row.setMenteeId(rs.getInt("user_id"));
+                    row.setMenteeName(rs.getString("full_name"));
+                    int evaluationId = rs.getInt("evaluation_id");
+                    if (!rs.wasNull()) {
+                        row.setEvaluationId(evaluationId);
+                        row.setScore(rs.getInt("performance_score"));
+                        row.setApprovalStatus(rs.getString("approval_status"));
+                        row.setPublicFeedback(rs.getString("public_feedback"));
+                        row.setPrivateFeedback(rs.getString("private_feedback"));
+                    }
+                    int managerEvaluationId = rs.getInt("manager_evaluation_id");
+                    if (!rs.wasNull()) {
+                        row.setManagerEvaluationId(managerEvaluationId);
+                        row.setManagerScore(rs.getInt("manager_score"));
+                        row.setManagerPublicFeedback(rs.getString("manager_public_feedback"));
+                        row.setManagerPrivateFeedback(rs.getString("manager_private_feedback"));
+                    }
+                    list.add(row);
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return list;
+    }
+
+    public boolean approveDepartmentEvaluation(int evaluationId, int managerId) {
+        String sql = "UPDATE e SET approval_status='APPROVED' FROM MentorEvaluations e "
+                + "JOIN MentorAssignments a ON a.assignment_id=e.assignment_id "
+                + "JOIN Training_Classes c ON c.class_id=a.class_id "
+                + "JOIN Users m ON m.user_id=? AND m.role_id=3 AND m.department_id=c.department_id "
+                + "WHERE e.evaluation_id=? AND e.approval_status='PENDING'";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, managerId);
+            ps.setInt(2, evaluationId);
+            return ps.executeUpdate() > 0;
         } catch (Exception e) { e.printStackTrace(); return false; }
     }
 
@@ -43,7 +102,7 @@ public class MentorDAO {
                 ps.setInt(1, classId);
                 try (ResultSet rs = ps.executeQuery()) { if (rs.next() && rs.getObject(1) != null) assignedMentorId = rs.getInt(1); }
             }
-            if (assignedMentorId == 0) { conn.rollback(); return false; }
+            if (assignedMentorId == 0) assignedMentorId = managerId;
             String find = "SELECT TOP 1 assignment_id FROM MentorAssignments WHERE mentee_id=? AND class_id=? AND status='ACTIVE' ORDER BY assignment_id DESC";
             try (PreparedStatement ps = conn.prepareStatement(find)) {
                 ps.setInt(1, menteeId); ps.setInt(2, classId);
@@ -56,7 +115,20 @@ public class MentorDAO {
                     try (ResultSet rs = ps.getGeneratedKeys()) { if (!rs.next()) { conn.rollback(); return false; } assignmentId = rs.getInt(1); }
                 }
             }
-            String save = "INSERT INTO MentorEvaluations(assignment_id,evaluator_id,performance_score,feedback,public_feedback,private_feedback,approval_status,evaluation_date) VALUES(?,?,?,?,?,?,'PENDING',GETDATE())";
+            String update = "UPDATE MentorEvaluations SET performance_score=?, feedback=?, public_feedback=?, private_feedback=?, approval_status='APPROVED', evaluation_date=GETDATE() WHERE assignment_id=? AND evaluator_id=?";
+            try (PreparedStatement ps = conn.prepareStatement(update)) {
+                ps.setInt(1, Math.max(1, Math.min(10, score)));
+                ps.setString(2, publicFeedback);
+                ps.setString(3, publicFeedback);
+                ps.setString(4, privateFeedback);
+                ps.setInt(5, assignmentId);
+                ps.setInt(6, managerId);
+                if (ps.executeUpdate() > 0) {
+                    conn.commit();
+                    return true;
+                }
+            }
+            String save = "INSERT INTO MentorEvaluations(assignment_id,evaluator_id,performance_score,feedback,public_feedback,private_feedback,approval_status,evaluation_date) VALUES(?,?,?,?,?,?,'APPROVED',GETDATE())";
             try (PreparedStatement ps = conn.prepareStatement(save)) {
                 ps.setInt(1, assignmentId); ps.setInt(2, managerId); ps.setInt(3, Math.max(1, Math.min(10, score)));
                 ps.setString(4, publicFeedback); ps.setString(5, publicFeedback); ps.setString(6, privateFeedback); ps.executeUpdate();

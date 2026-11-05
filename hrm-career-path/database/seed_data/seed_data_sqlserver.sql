@@ -652,17 +652,16 @@ INSERT INTO dbo.MentorAssignments (mentee_id, mentor_id, position_id, status, as
 (4, 6, 1, 'ACTIVE', 2, DATEADD(DAY, -15, GETDATE()));
 GO
 
--- Tạo đánh giá mẫu của Mentor dành cho Mentee (Phân biệt Công khai Non-anonymous và Nội bộ Anonymous)
-DECLARE @assign_id INT = (SELECT TOP 1 assignment_id FROM dbo.MentorAssignments WHERE mentee_id = 4 AND mentor_id = 6);
-IF @assign_id IS NOT NULL
-BEGIN
-    INSERT INTO dbo.MentorEvaluations (assignment_id, evaluator_id, performance_score, feedback, public_feedback, private_feedback, approval_status, evaluation_date) VALUES
-    (@assign_id, 6, 9, 
-     N'Nhân sự nắm bắt nhanh quy trình phát triển Java backend, tiếp thu tốt các tài liệu và có tinh thần tự học cao.',
-     N'Kỹ năng chuyên môn tốt, hoàn thành đúng hạn các task CRUD cơ bản, chủ động học hỏi các module Spring Boot.',
-     N'Thái độ làm việc hòa đồng, tiếp thu nhanh khi được góp ý 1-on-1. Đề xuất: Đủ điều kiện kết thúc thử việc sớm để bổ nhiệm Junior chính thức.',
-     'APPROVED', DATEADD(DAY, -2, GETDATE()));
-END;
+-- Xóa một đánh giá mẫu cũ dư của Lê Hữu Mentor (User 6) cho Phạm Đức Trọng (User 4).
+-- Chỉ nhắm đến đánh giá ghép nối cũ không thuộc lớp đào tạo.
+DELETE FROM dbo.MentorEvaluations
+WHERE evaluation_id = (
+    SELECT TOP 1 e.evaluation_id
+    FROM dbo.MentorEvaluations e
+    JOIN dbo.MentorAssignments a ON a.assignment_id = e.assignment_id
+    WHERE a.mentee_id = 4 AND a.mentor_id = 6 AND a.class_id IS NULL AND e.evaluator_id = 6
+    ORDER BY e.evaluation_id DESC
+);
 GO
 
 -- =======================================================
