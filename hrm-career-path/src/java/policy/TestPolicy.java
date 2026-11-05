@@ -13,24 +13,37 @@ import model.TestTemplate;
  */
 public final class TestPolicy {
 
-    /** ADMIN quản lý Văn hóa; MANAGER quản lý Chuyên môn; mentor quản lý đề lớp. */
+    /** HR quản lý Văn hóa; MANAGER quản lý Chuyên môn; mentor quản lý đề lớp. */
     public boolean canManage(TestActor actor, TestTemplate t) {
         if (t.classId() != null) {
             return "learning".equals(t.type()) && actor.mentoredClassIds().contains(t.classId());
         }
-        return "culture".equals(t.type()) ? actor.cultureManager()
-                : actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId());
+        if ("culture".equals(t.type())) {
+            return actor.cultureManager();
+        }
+        if ("learning".equals(t.type()) && actor.learningManager()) {
+            return Objects.equals(actor.learningDepartmentId(), t.departmentId());
+        }
+        return actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId());
     }
 
     /**
-     * Chỉ chủ sở hữu được thay đổi nội dung bộ đề trong đúng scope.
+     * HR được quản lý toàn bộ nội dung văn hóa và Học liệu của phòng HR;
+     * các vai trò khác chỉ sửa bộ đề do mình tạo.
      */
     public boolean canEditContent(TestActor actor, TestContent content) {
+        if (actor.cultureManager() && "culture".equals(content.type())) {
+            return true;
+        }
+        if (actor.cultureManager() && "learning".equals(content.type())
+                && Objects.equals(actor.learningDepartmentId(), content.departmentId())) {
+            return true;
+        }
         return actor.id() == content.createdBy();
     }
 
     /**
-     * Đề đã tạo hiển thị theo phạm vi; ADMIN chỉ xem đề văn hóa.
+     * Đề đã tạo hiển thị theo phạm vi; ADMIN không còn quyền quản lý văn hóa.
      */
     public boolean canView(TestActor actor, TestTemplate t) {
         return !"ADMIN".equals(actor.role()) || canManage(actor, t);
@@ -100,6 +113,9 @@ public final class TestPolicy {
     private int roleRank(String role) {
         if ("ADMIN".equals(role)) {
             return 4;
+        }
+        if ("HR".equals(role)) {
+            return 3;
         }
         if ("MANAGER".equals(role)) {
             return 2;

@@ -49,6 +49,7 @@ bin/
 tmp/
 *.tmp
 *.bak
+**/database/local_exports/
 *.swp
 *~.nib
 local.properties

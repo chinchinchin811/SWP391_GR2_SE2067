@@ -4,9 +4,6 @@
 <%
     String view = (String) request.getAttribute("testView");
     TestActor actor = (TestActor) request.getAttribute("testActor");
-    TestClass testClass = (TestClass) request.getAttribute("testClass");
-    Integer selectedClassId = (Integer) request.getAttribute("testClassId");
-    List<TestClass> mentorClasses = (List<TestClass>) request.getAttribute("mentorClasses");
     TestPolicy policy = (TestPolicy) request.getAttribute("testPolicy");
     Instant now = (Instant) request.getAttribute("testNow");
     String base = request.getContextPath() + "/tests";
@@ -28,26 +25,66 @@
 <jsp:include page="/views/common/sidebar.jsp" />
 <main class="main-content test-module">
     <link rel="stylesheet" href="<%= request.getContextPath() %>/assets/css/tests.css">
-    <div class="topbar"><h2>Bài test &amp; Đánh giá</h2>
-        <% boolean bankView = "bank".equals(view) || "bankDetail".equals(view) || "newSet".equals(view) || "editSet".equals(view); %>
-        <% if (bankView && (actor.cultureManager() || actor.departmentManager())) { %>
-        <a class="btn btn-primary" href="<%= base %>?action=newSet">+ Tạo bộ đề</a>
-        <% } else if (actor.testManager()) { %>
-        <a class="btn btn-primary" href="<%= base %>?action=new<%= selectedClassId == null ? "" : "&amp;classId=" + selectedClassId %>">+ Tạo đợt giao bài</a>
+    <% if (!"new".equals(view) && !"newSet".equals(view)) { %>
+    <div class="topbar">
+        <h2>
+            <%
+                if ("calendar".equals(view)) {
+                    out.print("Lịch bài test");
+                } else if ("bank".equals(view)
+                        || "bankDetail".equals(view)
+                        || "newSet".equals(view)
+                        || "editSet".equals(view)) {
+                    out.print("Bộ đề &amp; Câu hỏi");
+                } else {
+                    out.print("Bài test &amp; Đánh giá");
+                }
+            %>
+        </h2>
+
+
+        <% if (actor.cultureManager() || actor.departmentManager()) { %>
+        <% if ("bank".equals(view) || "bankDetail".equals(view)
+            || "newSet".equals(view) || "editSet".equals(view)) { %>
+        <a class="btn btn-primary" href="<%= base %>?action=newSet">
+            + Tạo bộ đề
+        </a>
+        <% } else if (!"list".equals(view) && !"mine".equals(view)) { %>
+        <a class="btn btn-primary" href="<%= base %>?action=new">
+            + Tạo đợt giao bài
+        </a>
         <% } %>
+        <% } %>
+
     </div>
+    <% } %>
     <div class="content-body">
+
+        <% if ("list".equals(view) || "mine".equals(view)) { %>
         <nav class="test-nav" aria-label="Bài test">
-            <a href="<%= base %>" class="<%= ("list".equals(view) && (request.getAttribute("scope") == null || "all".equals(request.getAttribute("scope")))) ? "active" : "" %>">Tất cả đề</a>
-            <% if(!"ADMIN".equals(actor.role())) { %>
-            <a href="<%= base %>?scope=upcoming" class="<%= "upcoming".equals(request.getAttribute("scope")) ? "active" : "" %>">Sắp diễn ra</a>
-            <a href="<%= base %>?action=mine" class="<%= "mine".equals(view) ? "active" : "" %>">Bài của tôi</a>
-            <a href="<%= base %>?action=calendar" class="<%= "calendar".equals(view) ? "active" : "" %>">Lịch</a>
-            <% } %>
-            <% if (actor.testManager()) { %>
-            <a href="<%= base %>?action=bank<%= selectedClassId == null ? "" : "&amp;classId=" + selectedClassId %>" class="<%= bankView ? "active" : "" %>">Kho đề</a>
+            <a href="<%= base %>"
+               class="<%= ("list".equals(view)
+                   && (request.getAttribute("scope") == null
+                   || "all".equals(request.getAttribute("scope")))
+                   ? "active" : "") %>">
+                Tất cả đề
+            </a>
+
+            <% if (!"ADMIN".equals(actor.role())) { %>
+            <a href="<%= base %>?scope=upcoming"
+               class="<%= "upcoming".equals(request.getAttribute("scope"))
+                   ? "active" : "" %>">
+                Sắp diễn ra
+            </a>
+
+            <a href="<%= base %>?action=mine"
+               class="<%= "mine".equals(view) ? "active" : "" %>">
+                Bài của tôi
+            </a>
             <% } %>
         </nav>
+        <% } %>
+
         <% if (flash != null) { %><div class="alert alert-success" role="status"><%= h(flash) %></div><% } %>
         <% if ("bank".equals(view) || "bankDetail".equals(view)) { %>
         <jsp:include page="/WEB-INF/views/tests/bank.jsp" />
@@ -59,41 +96,21 @@
 
         <% if ("new".equals(view)) { %>
         <section class="card"><div class="card-header"><h2>Tạo bài test</h2></div><div class="card-body">
-                <% if (mentorClasses != null && !mentorClasses.isEmpty()) { %>
-                <form method="get" action="<%= base %>" class="test-form">
-                    <input type="hidden" name="action" value="new">
-                    <label>Lớp đào tạo do bạn phụ trách
-                        <select name="classId" onchange="this.form.submit()">
-                            <option value="">-- Chọn lớp để giao đề Học liệu --</option>
-                            <% for (TestClass item : mentorClasses) { %><option value="<%= item.id() %>" <%= Objects.equals(selectedClassId,item.id()) ? "selected" : "" %>><%= h(item.name()) %></option><% } %>
-                        </select>
-                    </label>
-                    <noscript><button class="btn">Chọn lớp</button></noscript>
-                </form>
-                <% } %>
-                <% if (testClass != null) { %><p>Giao bài cho lớp <strong><%= h(testClass.name()) %></strong>. Chỉ hiển thị đề từ học liệu đã chọn cho lớp này.</p><% } %>
                 <form method="post" action="<%= base %>" class="test-form" id="testCreateForm">
                     <input type="hidden" name="csrf" value="<%= h(csrf) %>">
                     <input type="hidden" name="action" value="create">
-                    <% if (selectedClassId != null) { %><input type="hidden" name="classId" value="<%= selectedClassId %>"><% } %>
                     <label>Tiêu đề <input name="title" required maxlength="200"></label>
                     <label>Hướng bài thi
                         <select name="type" id="testType" onchange="syncTestCreateForm()">
-                            <% if (selectedClassId != null) { %><option value="learning">Bài thi Học liệu</option><% } else { %>
                             <% if (actor.cultureManager()) { %><option value="culture">Bài thi Văn hóa</option><% } %>
                             <% if (actor.professionalManager()) { %><option value="department">Bài thi Chuyên môn</option><% } %>
-                            <% if (actor.professionalManager() || actor.classMentor()) { %><option value="learning">Bài thi Học liệu</option><% } %>
-                            <% } %>
                         </select>
                     </label>
                     <label>Nội dung yêu cầu <textarea name="description" rows="9" required maxlength="20000"></textarea></label>
                     <label>Đề thi <select name="contentId" id="contentMode" onchange="syncTestCreateForm()" required>
                             <option value="" disabled selected>-- Chọn đề thi --</option>
-                            <% List<TestContent> newChoices=(List<TestContent>)request.getAttribute("contentChoices");if(newChoices!=null)for(TestContent item:newChoices){if("quiz".equals(item.kind())&&"ready".equals(item.status())){%><option value="<%= item.id() %>" data-test-type="<%= h(item.type()) %>"><%= typeLabel(item.type()) + ": " %><%= h(item.title()) %></option><% }} %>
+                            <% List<TestContent> newChoices=(List<TestContent>)request.getAttribute("contentChoices");if(newChoices!=null)for(TestContent item:newChoices){if("quiz".equals(item.kind())&&"ready".equals(item.status())){%><option value="<%= item.id() %>" data-test-type="<%= h(item.type()) %>"><%= "culture".equals(item.type()) ? "Văn hóa: " : "Chuyên môn: " %><%= h(item.title()) %></option><% }} %>
                         </select></label>
-                    <% if (selectedClassId != null && (newChoices == null || newChoices.isEmpty())) { %>
-                    <p class="empty-state">Lớp chưa có bộ đề cho các học liệu đã chọn. Không thể tạo đợt giao bài khi chưa có đề phù hợp.</p>
-                    <% } %>
                     <div class="test-columns">
                         <label>Thời gian bắt đầu (GMT+7) <input type="date" name="startDate" id="testStartDate" required min="<%= minimumTestDate %>" max="2099-12-31"><input type="time" name="startTime" id="testStartTime" required></label>
                         <label>Thời gian kết thúc (GMT+7) <input type="date" name="endDate" id="testEndDate" required min="<%= minimumTestDate %>" max="2099-12-31"><input type="time" name="endTime" id="testEndTime" required></label></div>
@@ -120,7 +137,7 @@
                 <table class="data-table"><thead><tr><th>Bài test</th><th>Phạm vi</th><th>Bắt đầu</th><th>Kết thúc</th><th>Trạng thái</th></tr></thead><tbody>
                                 <% for (TestTemplate t : templates) { %>
                         <tr><td><a href="<%= base %>?action=detail&amp;id=<%= t.id() %>"><%= h(t.title()) %></a></td>
-                            <td><%= "learning".equals(t.type()) ? "Học liệu" : ("culture".equals(t.type()) ? "Văn hóa chung" : "Đánh giá chuyên môn") %></td>
+                            <td><%= "culture".equals(t.type()) ? "Văn hóa chung" : "Đánh giá chuyên môn" %></td>
                             <td><%= time(t.startTime()) %></td><td><%= time(t.endTime()) %></td><td><%= h(templateStatus(t, now)) %></td></tr>
                             <% } %>
                     </tbody></table><% } %>
@@ -137,7 +154,6 @@
             <% } %>
 
         <% if ("detail".equals(view)) { %>
-        <% if (testClass != null) { %><p>Lớp đào tạo: <strong><%= h(testClass.name()) %></strong> · <a href="<%= base %>?action=bank&amp;classId=<%= testClass.id() %>">Xem đề Học liệu của lớp</a></p><% } %>
         <section class="card test-template-summary">
             <div class="card-header">
                 <h2><%= h(template.title()) %></h2>
@@ -145,7 +161,7 @@
             </div>
             <div class="card-body">
                 <div class="test-summary-grid">
-                    <div><span>Phạm vi</span><strong><%= "learning".equals(template.type()) ? "Học liệu" : ("culture".equals(template.type()) ? "Văn hóa chung" : "Đánh giá chuyên môn") %></strong></div>
+                    <div><span>Phạm vi</span><strong><%= "culture".equals(template.type()) ? "Văn hóa chung" : "Đánh giá chuyên môn" %></strong></div>
                     <div><span>Bắt đầu</span><strong><%= time(template.startTime()) %></strong></div>
                     <div><span>Kết thúc</span><strong><%= time(template.endTime()) %></strong></div>
                 </div>
@@ -173,8 +189,7 @@
                             </optgroup><% } %>
                         </select>
                     </label>
-                    <p><%= template.classId() == null ? "Chỉ hiển thị đề đã sẵn sàng đúng loại bài thi." : "Chỉ hiển thị đề thuộc học liệu đã chọn cho lớp này." %> <a href="<%= base %>?action=bank<%= template.classId() == null ? "" : "&amp;classId=" + template.classId() %>">Xem kho đề</a></p>
-                    <fieldset class="test-candidates"><legend><%= template.classId() == null ? "Người được giao" : "Học viên của lớp" %></legend>
+                    <fieldset class="test-candidates"><legend>Người được giao</legend>
                         <% if (candidates.isEmpty()) { %><p>Không còn người phù hợp chưa được giao.</p><% } %>
                         <% for (TestActor candidate : candidates) { %>
                         <label><input type="checkbox" name="assigneeId" value="<%= candidate.id() %>">
@@ -241,7 +256,7 @@
                 <table class="data-table"><thead><tr><th>Bài test</th><th>Phạm vi</th><th>Bộ đề</th><th>Người làm</th><th>Mở đợt</th><th>Đóng đợt</th><th>Thời lượng</th><th>Trạng thái</th><th>Nộp lúc</th><th>Điểm / 10</th><th></th></tr></thead><tbody>
                                 <% for (TestAssignment a : assignments) { %>
                         <tr><td><%= h(a.title()) %></td>
-                            <td><%= "learning".equals(a.testType()) ? "Học liệu" : ("culture".equals(a.testType()) ? "Văn hóa chung" : "Đánh giá chuyên môn") %></td>
+                            <td><%= "culture".equals(a.testType()) ? "Văn hóa chung" : "Đánh giá chuyên môn" %></td>
                             <td><%= a.contentId()==null ? "—" : h(a.contentTitle()) %><% if(a.contentId()!=null) { %><br><small><%= "quiz".equals(a.contentKind()) ? "Trắc nghiệm" : "Câu hỏi" %></small><% } %></td>
                             <td><%= h(a.assigneeName()) %></td><td><%= time(a.startTime()) %></td><td><%= time(a.endTime()) %></td>
                             <td><%= a.durationMinutes() %> phút</td><td><%= a.timeExpired(now) ? "Hết giờ" : h(status(a.status())) %></td>

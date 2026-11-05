@@ -169,10 +169,13 @@ public final class TestService {
             }
             return null;
         }
+        if ("learning".equals(type) && actor.learningManager()) {
+            return actor.learningDepartmentId();
+        }
         if (!actor.professionalManager()) {
             throw new TestException(403, "Bạn chưa được gán quyền tạo đánh giá chuyên môn.");
         }
-        return "HR".equals(actor.role()) ? null : actor.managedDepartmentId();
+        return actor.managedDepartmentId();
     }
 
     private int insertTemplate(TestDAO dao, TestActor actor, String title, String description,
@@ -337,10 +340,10 @@ public final class TestService {
                 if (t.classId() != null && !dao.enrolled(t.classId(), id)) {
                     throw new TestException(403, "Chỉ được giao bài cho học viên thuộc lớp đào tạo này.");
                 }
-                if (t.classId() == null && actor.departmentManager()
+                if (t.classId() == null && t.departmentId() != null
                         && (!"EMPLOYEE".equals(recipient.role())
-                        || !Objects.equals(actor.managedDepartmentId(), recipient.departmentId()))) {
-                    throw new TestException(403, "MANAGER chỉ được giao bài cho nhân viên trong phòng ban mình quản lý.");
+                        || !Objects.equals(t.departmentId(), recipient.departmentId()))) {
+                    throw new TestException(403, "Chỉ được giao bài cho nhân viên trong phòng ban của đợt đánh giá.");
                 }
                 dao.insertId("INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id,duration_minutes) "
                         + "OUTPUT INSERTED.id VALUES (?,?,?,?,?)", templateId, id, actor.id(), selectedContentId, durationMinutes);
@@ -669,9 +672,9 @@ public final class TestService {
             TestActor actor = dao.actor(userId);
             bankManager(actor);
             if ("learning".equals(type)) {
-                if (!actor.departmentManager() || learningMaterialId == null || learningMaterialId <= 0
+                if (!actor.learningManager() || learningMaterialId == null || learningMaterialId <= 0
                         || !dao.learningMaterialAvailable(actor, learningMaterialId)) {
-                    throw new TestException(403, "MANAGER phải chọn một học liệu hợp lệ trong phạm vi phụ trách.");
+                    throw new TestException(403, "Bạn phải chọn một học liệu hợp lệ trong phạm vi phụ trách.");
                 }
             } else if (learningMaterialId != null) {
                 throw new TestException(400, "Chỉ bộ đề Học liệu mới được liên kết học liệu.");
@@ -694,7 +697,7 @@ public final class TestService {
             bankManager(actor);
             TestContent content = dao.managedContent(actor, id);
             if (!policy.canEditContent(actor, content)) {
-                throw new TestException(403, "Bạn chỉ có thể sửa bộ đề do mình tạo.");
+                throw new TestException(403, "Bạn không có quyền sửa bộ đề này.");
             }
             if (dao.contentAssigned(id)) {
                 throw new TestException(409, "Bộ đề đã được giao nên không thể sửa nội dung.");
@@ -725,15 +728,15 @@ public final class TestService {
             bankManager(actor);
             TestContent content = dao.managedContent(actor, id);
             if (!policy.canEditContent(actor, content)) {
-                throw new TestException(403, "Bạn chỉ có thể sửa bộ đề do mình tạo.");
+                throw new TestException(403, "Bạn không có quyền sửa bộ đề này.");
             }
             if (dao.contentAssigned(id)) {
                 throw new TestException(409, "Bộ đề đã được giao nên không thể sửa nội dung.");
             }
             if ("learning".equals(type)) {
-                if (!actor.departmentManager() || learningMaterialId == null || learningMaterialId <= 0
+                if (!actor.learningManager() || learningMaterialId == null || learningMaterialId <= 0
                         || !dao.learningMaterialAvailable(actor, learningMaterialId)) {
-                    throw new TestException(403, "MANAGER phải chọn một học liệu hợp lệ trong phạm vi phụ trách.");
+                    throw new TestException(403, "Bạn phải chọn một học liệu hợp lệ trong phạm vi phụ trách.");
                 }
             } else if (learningMaterialId != null) {
                 throw new TestException(400, "Chỉ bộ đề Học liệu mới được liên kết học liệu.");
@@ -760,7 +763,7 @@ public final class TestService {
     public List<LearningMaterial> getLearningMaterials(int userId) throws SQLException {
         return transaction(dao -> {
             TestActor actor = dao.actor(userId);
-            if (!actor.departmentManager()) {
+            if (!actor.learningManager()) {
                 return List.of();
             }
             return dao.learningMaterials(actor);

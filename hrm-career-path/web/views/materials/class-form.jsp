@@ -73,9 +73,10 @@
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Mentor</label>
-                            <select class="form-control" name="mentorId">
-                                <option value="">— Chưa phân công —</option>
+                            <label>Mentor đứng lớp <span style="color:#c00">*</span></label>
+                            <small style="display:block;color:#666;margin-bottom:6px">Nhân viên được ghi danh vào lớp sẽ tự động trở thành mentee của mentor này.</small>
+                            <select required class="form-control" name="mentorId">
+                                <option value="">— Chọn mentor đứng lớp —</option>
                                 <% if (mentors != null) {
                                     for (User u : mentors) { %>
                                 <option value="<%= u.getUserId() %>"><%= u.getFullName() %></option>

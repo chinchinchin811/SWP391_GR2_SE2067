@@ -14,33 +14,59 @@ import model.Mentor.MentorAssignment;
  */
 public class MentorDAO {
 
-    public List<User> getUnassignedNewEmployees() {
-        List<User> list = new ArrayList<>();
-        String sql = "SELECT u.user_id, u.full_name, u.position_id, p.position_name, d.department_name, jl.level_name "
-                + "FROM Users u "
-                + "LEFT JOIN Positions p ON u.position_id = p.position_id "
-                + "LEFT JOIN Departments d ON u.department_id = d.department_id "
-                + "LEFT JOIN Job_Levels jl ON u.level_id = jl.level_id "
-                + "WHERE u.role_id = 4 AND (u.is_deleted = 0 OR u.is_deleted IS NULL) "
-                + "AND (LOWER(jl.level_name) LIKE '%intern%' OR LOWER(jl.level_name) LIKE '%fresher%') "
-                + "AND u.user_id NOT IN (SELECT mentee_id FROM MentorAssignments WHERE status = 'ACTIVE')";
+    public boolean isMenteeInManagedClass(int managerId, int classId, int menteeId) {
+        String sql = "SELECT COUNT(*) FROM Training_Classes c JOIN Users manager ON manager.user_id=? "
+                + "JOIN Class_Enrollments e ON e.class_id=c.class_id AND e.user_id=? "
+                + "WHERE c.class_id=? AND c.is_deleted=0 AND c.department_id=manager.department_id AND manager.role_id=3";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, managerId); ps.setInt(2, menteeId); ps.setInt(3, classId);
+            try (ResultSet rs = ps.executeQuery()) { return rs.next() && rs.getInt(1) > 0; }
+        } catch (Exception e) { e.printStackTrace(); return false; }
+    }
 
-        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+    public boolean ownsAssignment(int assignmentId, int mentorId) {
+        String sql = "SELECT COUNT(*) FROM MentorAssignments WHERE assignment_id=? AND mentor_id=? AND class_id IS NOT NULL AND status='ACTIVE'";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, assignmentId); ps.setInt(2, mentorId);
+            try (ResultSet rs = ps.executeQuery()) { return rs.next() && rs.getInt(1) > 0; }
+        } catch (Exception e) { return false; }
+    }
 
-            while (rs.next()) {
-                User u = new User();
-                u.setUserId(rs.getInt("user_id"));
-                u.setFullName(rs.getString("full_name"));
-                u.setPositionId(rs.getInt("position_id"));
-                u.setPositionName(rs.getString("position_name"));
-                u.setDepartmentName(rs.getString("department_name"));
-                u.setLevelName(rs.getString("level_name"));
-                list.add(u);
+    public boolean saveClassEvaluation(int classId, int menteeId, int managerId, int score, String publicFeedback, String privateFeedback) {
+        if (!isMenteeInManagedClass(managerId, classId, menteeId)) return false;
+        Connection conn = null;
+        try {
+            conn = new DBContext().getConnection();
+            conn.setAutoCommit(false);
+            int assignmentId = 0;
+            int assignedMentorId = 0;
+            try (PreparedStatement ps = conn.prepareStatement("SELECT mentor_id FROM Training_Classes WHERE class_id=?")) {
+                ps.setInt(1, classId);
+                try (ResultSet rs = ps.executeQuery()) { if (rs.next() && rs.getObject(1) != null) assignedMentorId = rs.getInt(1); }
             }
+            if (assignedMentorId == 0) { conn.rollback(); return false; }
+            String find = "SELECT TOP 1 assignment_id FROM MentorAssignments WHERE mentee_id=? AND class_id=? AND status='ACTIVE' ORDER BY assignment_id DESC";
+            try (PreparedStatement ps = conn.prepareStatement(find)) {
+                ps.setInt(1, menteeId); ps.setInt(2, classId);
+                try (ResultSet rs = ps.executeQuery()) { if (rs.next()) assignmentId = rs.getInt(1); }
+            }
+            if (assignmentId == 0) {
+                String insert = "INSERT INTO MentorAssignments(class_id,mentee_id,mentor_id,status,assigned_by) VALUES(?,?,?, 'ACTIVE',?)";
+                try (PreparedStatement ps = conn.prepareStatement(insert, Statement.RETURN_GENERATED_KEYS)) {
+                    ps.setInt(1, classId); ps.setInt(2, menteeId); ps.setInt(3, assignedMentorId); ps.setInt(4, managerId); ps.executeUpdate();
+                    try (ResultSet rs = ps.getGeneratedKeys()) { if (!rs.next()) { conn.rollback(); return false; } assignmentId = rs.getInt(1); }
+                }
+            }
+            String save = "INSERT INTO MentorEvaluations(assignment_id,evaluator_id,performance_score,feedback,public_feedback,private_feedback,approval_status,evaluation_date) VALUES(?,?,?,?,?,?,'PENDING',GETDATE())";
+            try (PreparedStatement ps = conn.prepareStatement(save)) {
+                ps.setInt(1, assignmentId); ps.setInt(2, managerId); ps.setInt(3, Math.max(1, Math.min(10, score)));
+                ps.setString(4, publicFeedback); ps.setString(5, publicFeedback); ps.setString(6, privateFeedback); ps.executeUpdate();
+            }
+            conn.commit(); return true;
         } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
+            try { if (conn != null) conn.rollback(); } catch (SQLException ignored) {}
+            e.printStackTrace(); return false;
+        } finally { try { if (conn != null) conn.close(); } catch (SQLException ignored) {} }
     }
 
     public List<User> getAllMentorsWithSpecialty() {
@@ -75,33 +101,30 @@ public class MentorDAO {
         return list;
     }
 
-    public boolean assignMentorWithPosition(int menteeId, int mentorId, int positionId, int hrId) {
-        String sql = "INSERT INTO MentorAssignments (mentee_id, mentor_id, position_id, status, assigned_by) VALUES (?, ?, ?, 'ACTIVE', ?)";
-        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, menteeId);
-            ps.setInt(2, mentorId);
-            if (positionId > 0) {
-                ps.setInt(3, positionId);
-            } else {
-                ps.setNull(3, Types.INTEGER);
-            }
-            ps.setInt(4, hrId);
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
+    public List<MentorEvaluation> getAllEvaluations() {
+        return getEvaluationsForScope("", 0);
     }
 
-    public List<MentorEvaluation> getAllEvaluations() {
+    public List<MentorEvaluation> getEvaluationsByMentor(int mentorId) {
+        return getEvaluationsForScope(" AND a.mentor_id=?", mentorId);
+    }
+
+    public List<MentorEvaluation> getEvaluationsByDepartment(int departmentId) {
+        return getEvaluationsForScope(" AND m.department_id=?", departmentId);
+    }
+
+    private List<MentorEvaluation> getEvaluationsForScope(String scope, int scopeId) {
         List<MentorEvaluation> list = new ArrayList<>();
         String sql = "SELECT e.*, "
                 + "(SELECT full_name FROM Users WHERE user_id = a.mentee_id) AS MenteeName, "
-                + "(SELECT full_name FROM Users WHERE user_id = e.evaluator_id) AS MentorName "
+                + "(SELECT full_name FROM Users WHERE user_id = a.mentor_id) AS MentorName "
                 + "FROM MentorEvaluations e "
                 + "INNER JOIN MentorAssignments a ON e.assignment_id = a.assignment_id "
-                + "ORDER BY e.evaluation_id DESC";
-        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+                + "INNER JOIN Users m ON m.user_id=a.mentee_id "
+                + "WHERE a.class_id IS NOT NULL" + scope + " ORDER BY e.evaluation_id DESC";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (!scope.isEmpty()) ps.setInt(1, scopeId);
+            try (ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 MentorEvaluation eval = new MentorEvaluation();
                 eval.setEvaluationId(rs.getInt("evaluation_id"));
@@ -114,41 +137,6 @@ public class MentorDAO {
                 eval.setMentorName(rs.getString("MentorName"));
                 list.add(eval);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
-    public List<MentorAssignment> getActiveAssignments() {
-        List<MentorAssignment> list = new ArrayList<>();
-        // Đã sửa: Bổ sung LEFT JOIN Job_Levels jl và linh hoạt lấy position_name của Mentee nếu a.position_id null
-        String sql = "SELECT a.assignment_id, a.status, "
-                + "m.user_id as mentee_id, m.full_name as mentee_name, jl.level_name, "
-                + "mt.user_id as mentor_id, mt.full_name as mentor_name, "
-                + "COALESCE(p.position_name, pm.position_name) AS position_name, d.department_name "
-                + "FROM MentorAssignments a "
-                + "INNER JOIN Users m ON a.mentee_id = m.user_id "
-                + "INNER JOIN Users mt ON a.mentor_id = mt.user_id "
-                + "LEFT JOIN Job_Levels jl ON m.level_id = jl.level_id "
-                + "LEFT JOIN Positions p ON a.position_id = p.position_id "
-                + "LEFT JOIN Positions pm ON m.position_id = pm.position_id "
-                + "LEFT JOIN Departments d ON m.department_id = d.department_id "
-                + "WHERE a.status = 'ACTIVE'";
-
-        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                MentorAssignment ma = new MentorAssignment();
-                ma.setAssignmentId(rs.getInt("assignment_id"));
-                ma.setMenteeId(rs.getInt("mentee_id"));
-                ma.setMenteeName(rs.getString("mentee_name"));
-                ma.setMenteeLevel(rs.getString("level_name"));
-                ma.setMentorId(rs.getInt("mentor_id"));
-                ma.setMentorName(rs.getString("mentor_name"));
-                ma.setPositionName(rs.getString("position_name"));
-                ma.setDepartmentName(rs.getString("department_name"));
-                ma.setStatus(rs.getString("status"));
-                list.add(ma);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -167,7 +155,7 @@ public class MentorDAO {
                 + "LEFT JOIN Positions p ON ma.position_id = p.position_id "
                 + "LEFT JOIN Positions pm ON u.position_id = pm.position_id "
                 + "LEFT JOIN Departments d ON u.department_id = d.department_id "
-                + "WHERE ma.mentor_id = ? "
+                + "WHERE ma.mentor_id = ? AND ma.class_id IS NOT NULL AND ma.status = 'ACTIVE' "
                 + "ORDER BY ma.status DESC, ma.assignment_id DESC";
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, mentorId);
@@ -227,7 +215,8 @@ public class MentorDAO {
                 + "LEFT JOIN Positions p ON a.position_id = p.position_id "
                 + "LEFT JOIN Positions pm ON mt.position_id = pm.position_id "
                 + "LEFT JOIN Departments d ON mt.department_id = d.department_id "
-                + "WHERE a.mentee_id = ? AND a.status = 'ACTIVE'";
+                + "WHERE a.mentee_id = ? AND a.status = 'ACTIVE' AND a.class_id IS NOT NULL "
+                + "ORDER BY a.assignment_id DESC";
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, menteeId);
             ResultSet rs = ps.executeQuery();
@@ -272,10 +261,10 @@ public class MentorDAO {
         List<MentorEvaluation> list = new ArrayList<>();
         String sql = "SELECT e.*, "
                 + "(SELECT full_name FROM Users WHERE user_id = a.mentee_id) AS MenteeName, "
-                + "(SELECT full_name FROM Users WHERE user_id = e.evaluator_id) AS MentorName "
+                + "(SELECT full_name FROM Users WHERE user_id = a.mentor_id) AS MentorName "
                 + "FROM MentorEvaluations e "
                 + "INNER JOIN MentorAssignments a ON e.assignment_id = a.assignment_id "
-                + "WHERE a.mentee_id = ? "
+                + "WHERE a.mentee_id = ? AND a.class_id IS NOT NULL "
                 + "ORDER BY e.evaluation_id DESC";
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, menteeId);
@@ -300,7 +289,7 @@ public class MentorDAO {
     }
 
     public boolean isMentor(int userId) {
-        String sql = "SELECT COUNT(*) FROM MentorAssignments WHERE mentor_id = ? AND status = 'ACTIVE'";
+        String sql = "SELECT COUNT(*) FROM MentorAssignments WHERE mentor_id = ? AND class_id IS NOT NULL AND status = 'ACTIVE'";
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             ResultSet rs = ps.executeQuery();
@@ -314,7 +303,7 @@ public class MentorDAO {
     }
 
     public boolean hasMentor(int userId) {
-        String sql = "SELECT COUNT(*) FROM MentorAssignments WHERE mentee_id = ? AND status = 'ACTIVE'";
+        String sql = "SELECT COUNT(*) FROM MentorAssignments WHERE mentee_id = ? AND class_id IS NOT NULL AND status = 'ACTIVE'";
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             ResultSet rs = ps.executeQuery();

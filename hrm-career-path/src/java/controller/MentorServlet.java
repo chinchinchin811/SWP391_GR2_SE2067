@@ -8,12 +8,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import dal.MentorDAO;
 import dal.PositionDAO;
+import dal.MaterialDAO;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
+import java.util.ArrayList;
 import model.Mentor.MentorAssignment;
 import model.Mentor.MentorEvaluation;
 import model.User;
+import model.TrainingClass;
+import model.ClassEnrollment;
+import java.util.Map;
+import java.util.LinkedHashMap;
 
 /**
  *
@@ -76,10 +82,12 @@ public class MentorServlet extends HttpServlet {
         String action = request.getParameter("action");
         if (action == null) {
             // Tự động chọn action mặc định theo quyền và trạng thái phân công
-            if (mentorDAO.isMentor(currentUser.getUserId())) {
+            if (currentUser.getRoleId() == 3) {
+                action = "managerWorkspace";
+            } else if (mentorDAO.isMentor(currentUser.getUserId())) {
                 action = "myMentees";
             } else if (currentUser.getRoleId() == 2) {
-                action = "pair";
+                action = "evaluations";
             } else if (currentUser.getRoleId() == 4) {
                 if (mentorDAO.hasMentor(currentUser.getUserId())) {
                     action = "myMentor";
@@ -94,14 +102,28 @@ public class MentorServlet extends HttpServlet {
 
         switch (action) {
             case "pair":
-                if (currentUser.getRoleId() != 2) {
+                response.sendRedirect(request.getContextPath() + "/materials?action=classList");
+                return;
+
+            case "managerWorkspace":
+                if (currentUser.getRoleId() != 3 || currentUser.getDepartmentId() == null) {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }
-                request.setAttribute("newEmployees", mentorDAO.getUnassignedNewEmployees());
-                request.setAttribute("mentors", mentorDAO.getAllMentorsWithSpecialty());
-                request.setAttribute("assignments", mentorDAO.getActiveAssignments());
-                request.getRequestDispatcher("mentor-pairing.jsp").forward(request, response);
+                List<TrainingClass> managerClasses = new ArrayList<>();
+                Map<Integer, List<ClassEnrollment>> classMentees = new LinkedHashMap<>();
+                MaterialDAO materialDAO = new MaterialDAO();
+                for (TrainingClass trainingClass : materialDAO.getClasses(currentUser.getUserId(), false)) {
+                    if (currentUser.getDepartmentId().equals(trainingClass.getDepartmentId())) {
+                        materialDAO.syncClassMentorAssignments(trainingClass.getClassId(), currentUser.getUserId());
+                        managerClasses.add(trainingClass);
+                        classMentees.put(trainingClass.getClassId(), materialDAO.getEnrollments(trainingClass.getClassId()));
+                    }
+                }
+                request.setAttribute("managerClasses", managerClasses);
+                request.setAttribute("classMentees", classMentees);
+                request.setAttribute("managerEvaluations", mentorDAO.getEvaluationsByDepartment(currentUser.getDepartmentId()));
+                request.getRequestDispatcher("mentor-manager-workspace.jsp").forward(request, response);
                 break;
 
             case "evaluations":
@@ -109,11 +131,24 @@ public class MentorServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }
-                request.setAttribute("evaluations", mentorDAO.getAllEvaluations());
+                if (currentUser.getRoleId() == 4) {
+                    request.setAttribute("evaluations", mentorDAO.getEvaluationsByMentor(currentUser.getUserId()));
+                } else if (currentUser.getRoleId() == 3) {
+                    request.setAttribute("evaluations", currentUser.getDepartmentId() == null ? new ArrayList<>() : mentorDAO.getEvaluationsByDepartment(currentUser.getDepartmentId()));
+                } else if (currentUser.getRoleId() == 2) {
+                    request.setAttribute("evaluations", mentorDAO.getAllEvaluations());
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
                 request.getRequestDispatcher("mentor-evaluation.jsp").forward(request, response);
                 break;
 
             case "myMentees":
+                if (currentUser.getRoleId() != 4 || !mentorDAO.isMentor(currentUser.getUserId())) {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
                 // Lấy danh sách Mentee của Mentor này
                 request.setAttribute("myAssignments", mentorDAO.getAssignmentsByMentor(currentUser.getUserId()));
                 request.getRequestDispatcher("my-mentees.jsp").forward(request, response);
@@ -143,6 +178,22 @@ public class MentorServlet extends HttpServlet {
                 break;
 
             case "evaluateForm":
+                if (currentUser.getRoleId() == 3) {
+                    int classId = parseInt(request.getParameter("classId"));
+                    int menteeId = parseInt(request.getParameter("menteeId"));
+                    if (!new MentorDAO().isMenteeInManagedClass(currentUser.getUserId(), classId, menteeId)) {
+                        response.sendRedirect(request.getContextPath() + "/mentors?action=managerWorkspace");
+                        return;
+                    }
+                    request.setAttribute("classId", classId);
+                    request.setAttribute("menteeId", menteeId);
+                    request.setAttribute("managerEvaluation", true);
+                } else if (currentUser.getRoleId() == 4) {
+                    if (!mentorDAO.ownsAssignment(parseInt(request.getParameter("assignmentId")), currentUser.getUserId())) {
+                        response.sendRedirect(request.getContextPath() + "/mentors?action=myMentees");
+                        return;
+                    }
+                }
                 request.setAttribute("assignmentId", request.getParameter("assignmentId"));
                 request.getRequestDispatcher("mentor-evaluate-form.jsp").forward(request, response);
                 break;
@@ -175,43 +226,49 @@ public class MentorServlet extends HttpServlet {
         String action = request.getParameter("action");
 
         if ("assign".equals(action)) {
-            // SỬA LỖI: Cần lấy String trước, kiểm tra null/empty để tránh lỗi 500
-            String menteeIdStr = request.getParameter("menteeId");
-            String mentorIdStr = request.getParameter("mentorId");
-
-            if (menteeIdStr != null && mentorIdStr != null && !menteeIdStr.isEmpty() && !mentorIdStr.isEmpty()) {
-                int menteeId = Integer.parseInt(menteeIdStr);
-                int mentorId = Integer.parseInt(mentorIdStr);
-
-                int positionId = 0;
-                String posParam = request.getParameter("positionId");
-                if (posParam != null && !posParam.trim().isEmpty()) {
-                    positionId = Integer.parseInt(posParam);
-                }
-
-                boolean success = new MentorDAO().assignMentorWithPosition(menteeId, mentorId, positionId, currentUser.getUserId());
-                if (success) {
-                    session.setAttribute("successMessage", "Ghép Mentor thành công!");
-                }
-            }
-            response.sendRedirect(request.getContextPath() + "/mentors?action=pair");
+            response.sendRedirect(request.getContextPath() + "/materials?action=classList");
         } else if ("saveEvaluation".equals(action)) {
+            if (currentUser.getRoleId() != 3 && currentUser.getRoleId() != 4) {
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
+            }
+            String[] visible = request.getParameterValues("visibleCriteria");
+            String[] internal = request.getParameterValues("internalCriteria");
+            String comment = request.getParameter("comment");
+            String publicFeedback = criteriaText(visible, false) + (comment == null || comment.trim().isEmpty() ? "" : "\n\nNhận xét: " + comment.trim());
+            String privateFeedback = criteriaText(internal, true);
+            int score = criteriaCount(visible) * 2;
+            if (score == 0) {
+                session.setAttribute("errorMessage", "Hãy chọn ít nhất một tiêu chí công khai để tính điểm.");
+                response.sendRedirect(request.getContextPath() + (currentUser.getRoleId() == 3 ? "/mentors?action=managerWorkspace" : "/mentors?action=myMentees"));
+                return;
+            }
+            if (currentUser.getRoleId() == 3) {
+                int classId = parseInt(request.getParameter("classId"));
+                int menteeId = parseInt(request.getParameter("menteeId"));
+                boolean success = new MentorDAO().saveClassEvaluation(classId, menteeId, currentUser.getUserId(), score, publicFeedback, privateFeedback);
+                session.setAttribute(success ? "successMessage" : "errorMessage", success ? "Lưu đánh giá Mentee thành công!" : "Không thể lưu đánh giá cho mentee này.");
+                response.sendRedirect(request.getContextPath() + "/mentors?action=managerWorkspace");
+                return;
+            }
             String assignmentIdStr = request.getParameter("assignmentId");
-            String scoreStr = request.getParameter("performanceScore");
-            String publicFeedback = request.getParameter("publicFeedback");
-            String privateFeedback = request.getParameter("privateFeedback");
+            String scoreStr = String.valueOf(score);
             
             if (assignmentIdStr != null && !assignmentIdStr.isEmpty()) {
                 int assignmentId = Integer.parseInt(assignmentIdStr);
-                int score = 8;
+                if (!new MentorDAO().ownsAssignment(assignmentId, currentUser.getUserId())) {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
+                int currentScore = 8;
                 if (scoreStr != null && !scoreStr.trim().isEmpty()) {
                     try {
-                        score = Integer.parseInt(scoreStr.trim());
+                        currentScore = Integer.parseInt(scoreStr.trim());
                     } catch (NumberFormatException ignored) {}
                 }
                 
                 // Lưu đánh giá với đầy đủ Public Feedback (Non-anonymous) và Private Feedback (Anonymous)
-                boolean success = new MentorDAO().saveEvaluation(assignmentId, currentUser.getUserId(), score, publicFeedback, privateFeedback);
+                boolean success = new MentorDAO().saveEvaluation(assignmentId, currentUser.getUserId(), currentScore, publicFeedback, privateFeedback);
                 
                 if (success) {
                     session.setAttribute("successMessage", "Lưu đánh giá Mentee thành công!");
@@ -221,6 +278,36 @@ public class MentorServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/mentors?action=evaluations");
         }
 
+    }
+
+    private int parseInt(String value) {
+        try { return Integer.parseInt(value); } catch (Exception e) { return 0; }
+    }
+
+    private String criteriaText(String[] selected, boolean internal) {
+        String[] labels = internal
+                ? new String[]{"Chủ động và trách nhiệm", "Tuân thủ quy trình", "Giao tiếp và phối hợp", "Tiếp thu phản hồi", "Tiềm năng phát triển"}
+                : new String[]{"Hoàn thành nhiệm vụ đúng hạn", "Chất lượng công việc đạt yêu cầu", "Nắm vững kiến thức chuyên môn", "Chủ động học hỏi", "Phối hợp tốt với đồng đội"};
+        StringBuilder text = new StringBuilder();
+        boolean[] included = new boolean[labels.length];
+        if (selected != null) for (String value : selected) {
+            int i = parseInt(value);
+            if (i >= 0 && i < labels.length) included[i] = true;
+        }
+        for (int i = 0; i < included.length; i++) if (included[i]) text.append("• ").append(labels[i]).append("\n");
+        return text.toString().trim();
+    }
+
+    private int criteriaCount(String[] selected) {
+        if (selected == null) return 0;
+        boolean[] included = new boolean[5];
+        for (String value : selected) {
+            int i = parseInt(value);
+            if (i >= 0 && i < included.length) included[i] = true;
+        }
+        int count = 0;
+        for (boolean value : included) if (value) count++;
+        return count;
     }
 
     /**

@@ -6,7 +6,7 @@
     List<TrainingClass> relatedClasses = (List<TrainingClass>) request.getAttribute("relatedClasses");
     String fromClassId = request.getParameter("classId");
     User currentUser = (User) session.getAttribute("currentUser");
-    boolean canManage = currentUser != null && (currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3);
+    boolean canManage = Boolean.TRUE.equals(request.getAttribute("canManageMaterial"));
     Boolean hasAccessAttr = (Boolean) request.getAttribute("hasAccess");
     boolean hasAccess = canManage || (hasAccessAttr != null && hasAccessAttr.booleanValue());
     request.setAttribute("pageTitle", (material != null ? material.getTitle() : "Học liệu") + " | HRM");

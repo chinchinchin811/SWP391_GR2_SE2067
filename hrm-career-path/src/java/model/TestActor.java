@@ -23,9 +23,21 @@ public record TestActor(int id, String name, String role, Integer departmentId, 
         return cultureManager() || departmentManager() || classMentor();
     }
 
-    /** ADMIN quản lý bài văn hóa; HR bị loại khỏi toàn bộ module bài test. */
+    /** HR quản lý toàn bộ bài kiểm tra và bộ đề văn hóa của công ty. */
     public boolean cultureManager() {
-        return "ADMIN".equals(role);
+        return "HR".equals(role);
+    }
+
+    /**
+     * Phòng dùng để giới hạn Học liệu: HR dùng phòng nhân sự của tài khoản,
+     * MANAGER dùng đúng phòng đang được giao quản lý.
+     */
+    public Integer learningDepartmentId() {
+        return cultureManager() ? departmentId : managedDepartmentId;
+    }
+
+    public boolean learningManager() {
+        return (cultureManager() || departmentManager()) && learningDepartmentId() != null;
     }
 
     /**

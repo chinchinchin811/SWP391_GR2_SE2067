@@ -3,8 +3,22 @@
 <%@ page import="dal.MentorDAO" %>
 <%
     User user = (User) session.getAttribute("currentUser");
-    String currentURI = request.getRequestURI();
+    
+    // 1. Lấy ĐÚNG URI gốc ban đầu (Khắc phục lỗi khi Servlet forward sang file .jsp)
+    String currentURI = (String) request.getAttribute("javax.servlet.forward.request_uri");
+    if (currentURI == null) {
+        currentURI = request.getRequestURI();
+    }
+    
+    // 2. Xử lý action an toàn hơn (thêm trim() xóa khoảng trắng thừa)
     String action = request.getParameter("action");
+    if (action == null) {
+        action = (String) request.getAttribute("action");
+    }
+    if (action != null) {
+        action = action.trim();
+    }
+
     int roleId = (user != null) ? user.getRoleId() : 4;
 
     MentorDAO sidebarMentorDAO = new MentorDAO();
@@ -12,19 +26,19 @@
     boolean isUserMentee = (user != null) && sidebarMentorDAO.hasMentor(user.getUserId());
 
     boolean organizationActive = currentURI.contains("/departments") || currentURI.contains("/positions");
-    boolean employeeActive = currentURI.contains("/employees") || currentURI.contains("/promotions") || (currentURI.contains("/mentors") && ("pair".equals(action) || "evaluations".equals(action)));
-    boolean mentorAdminActive = currentURI.contains("/mentors")
+    boolean employeeActive = currentURI.contains("/employees") || currentURI.contains("/promotions");
+    
+    // Mở rộng điều kiện để bắt thêm chữ "evaluation" phòng trường hợp tên file jsp không chứa "/mentors"
+    boolean hrMentorActive = (currentURI.contains("/mentors") || currentURI.contains("evaluation")) 
             && ("pair".equals(action) || "evaluations".equals(action));
-
-    boolean mentorWorkspaceActive = currentURI.contains("/mentors") 
-            && ("evaluations".equals(action) || "myMentees".equals(action));
+     
+    boolean mentorWorkspaceActive = (currentURI.contains("/mentors") || currentURI.contains("evaluation")) 
+            && ("evaluations".equals(action) || "myMentees".equals(action) || "managerWorkspace".equals(action));
             
     boolean trainingActive = currentURI.contains("/materials")
             || currentURI.contains("/flashcards")
             || currentURI.contains("/flashcard-list.jsp");
     boolean testActive = currentURI.contains("/tests");
-    
-    User loggedInUser = (User) session.getAttribute("currentUser");
 %>
 <aside class="sidebar">
     <a href="<%= request.getContextPath() %>/dashboard" class="sidebar-brand" title="Trang tổng quan">
@@ -113,7 +127,7 @@
                 </ul>
             </li>
 
-            <li class="sidebar-section <%= (employeeActive || currentURI.contains("/transfer")) ? "has-active" : "" %>" data-sidebar-section="employees">
+            <li class="sidebar-section <%= (employeeActive || hrMentorActive || currentURI.contains("/transfer")) ? "has-active" : "" %>" data-sidebar-section="employees">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-employees">
                     <span><i class="fa-solid fa-users-gear nav-cat-icon"></i> Quản trị Nhân sự</span>
                     <span class="sidebar-menu-category-icon" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
@@ -122,16 +136,10 @@
                     <li class="<%= currentURI.contains("/employees") && action == null ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/employees"><i class="fa-solid fa-address-book nav-icon"></i> <span>Danh sách Nhân viên</span></a>
                     </li>
-<!--                    <li class="<%= currentURI.contains("/employees") && "create".equals(action) ? "active" : "" %>">
-                        <a href="<%= request.getContextPath() %>/employees?action=create"><i class="fa-solid fa-user-plus nav-icon"></i> <span>Khai báo Nhân viên mới</span></a>
-                    </li>-->
                     <li class="<%= currentURI.contains("/transfer") && "hrRequests".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/transfer?action=hrRequests"><i class="fa-solid fa-people-arrows nav-icon"></i> <span>Điều Chuyển Nhân Sự</span></a>
-                    </li>
-<!--                    <li class="<%= currentURI.contains("/mentors") && "pair".equals(action) ? "active" : "" %>">
-                        <a href="<%= request.getContextPath() %>/mentors?action=pair"><i class="fa-solid fa-handshake nav-icon"></i> <span>Ghép Nối Mentor</span></a>
-                    </li>-->
-                    <li class="<%= currentURI.contains("/mentors") && "evaluations".equals(action) ? "active" : "" %>">
+                    </li>        
+                    <li class="<%= (currentURI.contains("/mentors") || currentURI.contains("evaluation")) && "evaluations".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/mentors?action=evaluations"><i class="fa-solid fa-clipboard-check nav-icon"></i> <span>Tổng hợp Đánh giá</span></a>
                     </li>
                     <li class="<%= currentURI.contains("/promotions") ? "active" : "" %>">
@@ -170,19 +178,26 @@
             <% } %>
 
             <%-- Mentor Workspace: Hiển thị cho nhân sự đang phụ trách kèm cặp Mentee --%>
-            <% if (isUserMentor) { %>
+            <% if (isUserMentor || roleId == 3) { %>
             <li class="sidebar-section <%= mentorWorkspaceActive ? "has-active" : "" %>" data-sidebar-section="mentor-workspace">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-mentor-workspace">
                     <span><i class="fa-solid fa-user-tie nav-cat-icon"></i> Mentor Workspace</span>
                     <span class="sidebar-menu-category-icon" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
                 </button>
                 <ul class="sidebar-submenu" id="sidebar-mentor-workspace">
+                    <% if (roleId == 3) { %>
+                    <li class="<%= currentURI.contains("/mentors") && "managerWorkspace".equals(action) ? "active" : "" %>">
+                        <a href="<%= request.getContextPath() %>/mentors?action=managerWorkspace"><i class="fa-solid fa-users-viewfinder nav-icon"></i> <span>Mentee trong lớp của tôi</span></a>
+                    </li>
+                    <% } %>
+                    <% if (isUserMentor) { %>
                     <li class="<%= currentURI.contains("/mentors") && "myMentees".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/mentors?action=myMentees">
                             <i class="fa-solid fa-user-graduate nav-icon"></i> <span>Danh sách Mentee của tôi</span>
                         </a>
                     </li>
-                    <li class="<%= currentURI.contains("/mentors") && "evaluations".equals(action) ? "active" : "" %>">
+                    <% } %>
+                    <li class="<%= (currentURI.contains("/mentors") || currentURI.contains("evaluation")) && "evaluations".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/mentors?action=evaluations">
                             <i class="fa-solid fa-clipboard-check nav-icon"></i> <span>Đánh giá Mentee</span>
                         </a>
@@ -191,22 +206,25 @@
             </li>
             <% } %>
 
-            <% if (roleId != 1 && roleId != 2) { %>
+            <% if (roleId != 1) { %>
             <li class="sidebar-section <%= trainingActive ? "has-active" : "" %>" data-sidebar-section="training">
                 <button class="sidebar-menu-category" type="button" aria-expanded="true" aria-controls="sidebar-training">
                     <span><i class="fa-solid fa-graduation-cap nav-cat-icon"></i> Học liệu &amp; Đào tạo</span>
                     <span class="sidebar-menu-category-icon" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
                 </button>
                 <ul class="sidebar-submenu" id="sidebar-training">
+                    <% if (roleId != 2) { %>
                     <li class="<%= currentURI.contains("/materials") && (action == null || "list".equals(action) || "view".equals(action) || "create".equals(action) || "edit".equals(action)) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/materials"><i class="fa-solid fa-book-bookmark nav-icon"></i> <span>Học liệu</span></a>
-                    </li>
-                    <li class="<%= currentURI.contains("/flashcards") || currentURI.contains("/flashcard-list.jsp") ? "active" : "" %>">
-                        <a href="<%= request.getContextPath() %>/flashcards"><i class="fa-solid fa-clone nav-icon"></i> <span>Flashcards</span></a>
                     </li>
                     <li class="<%= currentURI.contains("/materials") && ("classList".equals(action) || "classDetail".equals(action) || "classAssign".equals(action) || "classCreate".equals(action)) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/materials?action=classList"><i class="fa-solid fa-chalkboard-user nav-icon"></i> <span>Lớp Đào Tạo</span></a>
                     </li>
+                    <% } %>
+                    <li class="<%= currentURI.contains("/flashcards") || currentURI.contains("/flashcard-list.jsp") ? "active" : "" %>">
+                        <a href="<%= request.getContextPath() %>/flashcards"><i class="fa-solid fa-clone nav-icon"></i> <span>Flashcards</span></a>
+                    </li>
+
                 </ul>
             </li>
 
@@ -222,7 +240,7 @@
                     <li class="<%= currentURI.contains("/tests") && "calendar".equals(action) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/tests?action=calendar"><i class="fa-regular fa-calendar-days nav-icon"></i> <span>Lịch bài test</span></a>
                     </li>
-                    <% if (roleId == 3 || isUserMentor) { %>
+                    <% if (roleId == 2 || roleId == 3 || isUserMentor) { %>
                     <li class="<%= currentURI.contains("/tests") && ("bank".equals(action) || "bankDetail".equals(action)) ? "active" : "" %>">
                         <a href="<%= request.getContextPath() %>/tests?action=bank"><i class="fa-solid fa-box-archive nav-icon"></i> <span>Bộ đề &amp; Câu hỏi</span></a>
                     </li>

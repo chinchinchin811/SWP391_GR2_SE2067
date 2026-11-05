@@ -333,6 +333,26 @@ CREATE TABLE dbo.Training_Classes (
 CREATE INDEX IX_Class_Dept_Status ON dbo.Training_Classes(department_id, status, is_deleted);
 GO
 
+-- Gắn từng mentee với mentor của đúng lớp. Nullable để giữ các bản ghi ghép nối cũ.
+IF COL_LENGTH('dbo.MentorAssignments', 'class_id') IS NULL
+BEGIN
+    ALTER TABLE dbo.MentorAssignments ADD class_id INT NULL;
+END;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_MentorAssignments_TrainingClass')
+BEGIN
+    ALTER TABLE dbo.MentorAssignments ADD CONSTRAINT FK_MentorAssignments_TrainingClass
+        FOREIGN KEY (class_id) REFERENCES dbo.Training_Classes(class_id);
+END;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'UX_MentorAssignments_ClassMenteeActive' AND object_id = OBJECT_ID('dbo.MentorAssignments'))
+BEGIN
+    CREATE UNIQUE INDEX UX_MentorAssignments_ClassMenteeActive
+        ON dbo.MentorAssignments(class_id, mentee_id)
+        WHERE class_id IS NOT NULL AND status = 'ACTIVE';
+END;
+GO
+
 CREATE TABLE dbo.Class_Materials (
     class_id INT NOT NULL REFERENCES dbo.Training_Classes(class_id) ON DELETE CASCADE,
     material_id INT NOT NULL REFERENCES dbo.Learning_Materials(material_id) ON DELETE CASCADE,

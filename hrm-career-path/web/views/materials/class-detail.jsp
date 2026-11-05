@@ -76,6 +76,20 @@
                         </td>
                     </tr>
                 </table>
+                <% if (canManage && trainingClass.getClassId() > 0) { %>
+                <form method="post" action="<%= request.getContextPath() %>/materials" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid #eee">
+                    <input type="hidden" name="action" value="setClassMentor"><input type="hidden" name="classId" value="<%= trainingClass.getClassId() %>">
+                    <label for="classMentor"><b>Mentor đứng lớp:</b></label>
+                    <select id="classMentor" class="form-control" name="mentorId" required style="max-width:320px">
+                        <option value="">— Chọn mentor —</option>
+                        <% List<User> classMentors = (List<User>) request.getAttribute("classMentors");
+                           if (classMentors != null) for (User mentor : classMentors) { %>
+                        <option value="<%= mentor.getUserId() %>" <%= java.util.Objects.equals(trainingClass.getMentorId(), mentor.getUserId()) ? "selected" : "" %>><%= mentor.getFullName() %></option>
+                        <% } %>
+                    </select>
+                    <button type="submit" class="btn btn-primary">Lưu mentor &amp; ghép mentee</button>
+                </form>
+                <% } %>
             </div>
         </div>
 

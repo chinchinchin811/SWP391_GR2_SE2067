@@ -127,7 +127,7 @@ public class TestModuleIntegrationTest {
                 + "department_id INT REFERENCES Departments(department_id),status BIT,is_deleted BIT); "
                 + "INSERT INTO Roles VALUES (1,'ADMIN'),(2,'HR'),(3,'MANAGER'),(4,'EMPLOYEE'); "
                 + "INSERT INTO Departments VALUES (1,N'Phòng Kỹ Thuật (IT)',3,1,0),(2,N'Phòng Nhân Sự (HR)',5,1,0); "
-                + "INSERT INTO Users VALUES (1,'admin',N'Admin',1,NULL,1,0),(2,'hr_manager',N'HR',2,NULL,1,0),"
+                + "INSERT INTO Users VALUES (1,'admin',N'Admin',1,NULL,1,0),(2,'hr_manager',N'HR',2,2,1,0),"
                 + "(3,'manager_it',N'Leader A',3,1,1,0),(4,'member_a',N'Member A',4,1,1,0),(5,'manager_b',N'Leader B',3,2,1,0),"
                 + "(6,'member_b',N'Member B',4,2,1,0),(7,'member_a2',N'Member A2',4,1,1,0),(8,'no_department',N'No department',4,NULL,1,0); "
                 + "CREATE TABLE Test_Content(id INT IDENTITY PRIMARY KEY,title NVARCHAR(200) NOT NULL,prompt NVARCHAR(MAX) NOT NULL,"
@@ -151,13 +151,14 @@ public class TestModuleIntegrationTest {
         TestService s = service(NOW);
         rejects(403, () -> s.createTemplate(4, "x", "y", "department", NOW, NOW.plusSeconds(3600)));
         rejects(403, () -> s.createTemplate(3, "x", "y", "culture", NOW, NOW.plusSeconds(3600)));
+        rejects(403, () -> s.createTemplate(1, "x", "y", "culture", NOW, NOW.plusSeconds(3600)));
         rejects(403, () -> s.createTemplate(1, "Đánh giá chuyên môn toàn công ty", "Nội dung", "department", NOW, NOW.plusSeconds(3600)));
         rejects(400, () -> s.createTemplate(3, "x", "y", "department", NOW, NOW));
         rejects(400, () -> s.createTemplate(3, "x", "y", "department", NOW.plusSeconds(10), NOW.plusSeconds(5)));
         rejects(400, () -> s.createTemplate(3, "x", "y", "department", NOW.minusSeconds(1), NOW.plusSeconds(10)));
         rejects(400, () -> s.createTemplate(3, " ", "y", "department", NOW, NOW.plusSeconds(10)));
         int dept = s.createTemplate(3, "Đề chuyên môn <script>", "Mô tả tự do", "department", NOW, NOW.plusSeconds(3600));
-        int culture = s.createTemplate(1, "Văn hóa", "Bài viết văn hóa", "culture", NOW, NOW.plusSeconds(3600));
+        int culture = s.createTemplate(2, "Văn hóa", "Bài viết văn hóa", "culture", NOW, NOW.plusSeconds(3600));
         int future = s.createTemplate(3, "Bài sắp tới", "Nội dung", "department", NOW.plusSeconds(3600), NOW.plusSeconds(7200));
         check(s.getTemplate(4, dept).id() == dept, "new professional evaluation is active immediately");
         check(s.getTemplate(6, culture).id() == culture, "new culture evaluation is active immediately");
@@ -251,9 +252,9 @@ public class TestModuleIntegrationTest {
         rejects(409, () -> s.submitAssignment(4, pending, "early", null, null));
         s.revokeAssignment(3, pending);
         check(s.getMyAssignments(4, 1, 20).size() == 1, "assignment creator can revoke pending assignment");
-        int expiring = s.createTemplate(1, "Đợt sắp hết hạn", "Thu hồi bài chưa làm",
+        int expiring = s.createTemplate(2, "Đợt sắp hết hạn", "Thu hồi bài chưa làm",
                 "culture", NOW, NOW.plusSeconds(10));
-        s.assignTest(1, expiring, List.of(8));
+        s.assignTest(2, expiring, List.of(8));
         int expiringAssignment = assignment(expiring, 8);
         s.closeExpiredTests(NOW.plusSeconds(20));
         check(count("SELECT COUNT(*) FROM Test_Templates WHERE id=" + expiring + " AND status='closed'") == 1,
@@ -274,18 +275,18 @@ public class TestModuleIntegrationTest {
         check(s.getTemplate(7, dept).id() == dept, "closed template remains available without archive feature");
         check(count("SELECT COUNT(*) FROM Test_Evaluations") == 2, "closing template preserves grades");
 
-        s.assignTest(1, culture, List.of(6));
+        s.assignTest(2, culture, List.of(6));
         int ca = assignment(culture, 6);
         rejects(404, () -> s.getAssignment(4, ca));
         rejects(403, () -> s.assignTest(5, culture, List.of(6)));
         s.startAssignment(6, ca);
         s.submitAssignment(6, ca, "culture response", null, null);
-        s.evaluateAssignment(1, ca, new BigDecimal("10"), "ADMIN may grade culture");
+        s.evaluateAssignment(2, ca, new BigDecimal("10"), "HR chấm bài văn hóa");
         check(s.getAssignment(6, ca).evaluation() != null, "culture full flow");
-        rejects(403, () -> s.currentActor(2));
-        rejects(403, () -> s.listTemplates(2, "all", 1, 20));
-        rejects(403, () -> s.getMyAssignments(2, 1, 20));
-        rejects(403, () -> s.assignTest(1, culture, List.of(2)));
+        check(s.currentActor(2).cultureManager(), "HR is the company culture manager");
+        check(s.listTemplates(2, "all", 1, 20).stream().anyMatch(item -> item.id() == culture),
+                "HR can browse culture evaluations");
+        check(s.getMyAssignments(2, 1, 20).isEmpty(), "HR can open the test module without an assignment");
         sql("UPDATE Users SET status=0 WHERE user_id=6");
         rejects(403, () -> s.getMyAssignments(6, 1, 20));
         rejects(403, () -> s.getMyAssignments(1, 1, 20));
@@ -321,7 +322,7 @@ public class TestModuleIntegrationTest {
         check(s.getContent(3, customReady).questions().size() == 2, "custom set stores all questions");
         check(count("SELECT COUNT(*) FROM Test_Question_Options q JOIN Test_Questions t ON t.id=q.question_id WHERE t.content_id=" + customReady) == 6,
                 "custom set stores all answer options atomically");
-        rejects(403, () -> s.getEditableContent(2, customReady));
+        rejects(404, () -> s.getEditableContent(2, customReady));
         s.updateContentSet(3, customReady, "Bộ đề tự tạo đã sửa", "Nội dung mới", "department", List.of(
                 new TestService.QuestionDraft("Java chạy trên JVM?", "single", List.of(
                         new TestService.OptionDraft("Đúng", true), new TestService.OptionDraft("Sai", false)))));
@@ -408,12 +409,12 @@ public class TestModuleIntegrationTest {
 
     private static void runLearningTests(Path seedDirectory) throws Exception {
         sql("INSERT INTO Learning_Materials(title,description,scope_type,department_id,created_by) VALUES "
-                + "(N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty',N'Văn hóa','CULTURE',NULL,1),"
+                + "(N'Sổ Tay Văn Hóa Doanh Nghiệp & Quy Định Công Ty',N'Văn hóa','DEPARTMENT',2,5),"
                 + "(N'Slide Đào Tạo Quy Trình Phát Triển Phần Mềm Agile/Scrum',N'Scrum','DEPARTMENT',1,3),"
                 + "(N'Video Bài Giảng: Kiến Trúc Java Backend & Servlet Jakarta EE',N'Java','DEPARTMENT',1,3),"
                 + "(N'Bộ Tiêu Chuẩn Lập Trình Java & Quy Định Đặt Mã Nguồn (Clean Code)',N'Clean Code','DEPARTMENT',1,3),"
-                + "(N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026',N'Tầm nhìn','CULTURE',NULL,1),"
-                + "(N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp',N'Bảo mật','CULTURE',NULL,1)");
+                + "(N'Video Giới Thiệu Tầm Nhìn, Sứ Mệnh & Môi Trường Làm Việc 2026',N'Tầm nhìn','DEPARTMENT',2,5),"
+                + "(N'Cẩm Nang Quy Chuẩn An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp',N'Bảo mật','DEPARTMENT',2,5)");
         String allSeed = Files.readString(seedDirectory.resolve("seed_data_sqlserver.sql"), StandardCharsets.UTF_8);
         int start = allSeed.indexOf("-- BEGIN LEARNING TEST BANK SEED");
         int end = allSeed.indexOf("-- END LEARNING TEST BANK SEED", start);
@@ -432,15 +433,16 @@ public class TestModuleIntegrationTest {
         TestService s = service(NOW);
         int common = count("SELECT id FROM Test_Content WHERE learning_material_id=1");
         int javaBank = count("SELECT id FROM Test_Content WHERE learning_material_id=3");
-        check(s.getContent(3, common).questions().size() == 15, "manager can read common learning bank");
-        rejects(403, () -> s.getContent(2, common));
+        check(s.getContent(5, common).questions().size() == 15, "HR department manager can read culture learning bank");
+        rejects(404, () -> s.getContent(3, common));
+        check(s.getContent(2, common).questions().size() == 15, "HR can read culture learning banks");
         rejects(404, () -> s.getContent(1, common));
-        int general = s.createTemplate(3, "Học liệu", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common);
-        s.assignTest(3, general, List.of(7), common);
-        int generalAssignment = assignment(general, 7);
-        s.startAssignment(7, generalAssignment);
+        int general = s.createTemplate(2, "Học liệu", "Mô tả", "learning", NOW, NOW.plusSeconds(3600), common);
+        s.assignTest(2, general, List.of(6), common);
+        int generalAssignment = assignment(general, 6);
+        s.startAssignment(6, generalAssignment);
         Map<Integer, Set<Integer>> answers = new LinkedHashMap<>();
-        for (TestQuestion question : s.getContent(3, common).questions()) {
+        for (TestQuestion question : s.getContent(5, common).questions()) {
             Set<Integer> correct = new LinkedHashSet<>();
             for (TestQuestionOption option : question.options()) {
                 if (Boolean.TRUE.equals(option.correct())) {
@@ -449,28 +451,45 @@ public class TestModuleIntegrationTest {
             }
             answers.put(question.id(), correct);
         }
-        s.submitQuiz(7, generalAssignment, answers);
+        s.submitQuiz(6, generalAssignment, answers);
         check(count("SELECT COUNT(*) FROM Test_Assignments WHERE id=" + generalAssignment + " AND quiz_score=10") == 1,
                 "learning quiz can be assigned, submitted and graded");
 
         sql("INSERT INTO Training_Classes(class_id,class_name,department_id,mentor_id,status) VALUES "
                 + "(100,N'Lớp A',1,4,'OPEN'),(101,N'Lớp B',1,3,'IN_PROGRESS'),(103,N'Lớp HR',NULL,2,'OPEN'),(104,N'Lớp rỗng',1,4,'OPEN'); "
-                + "INSERT INTO Class_Materials VALUES (100,1),(101,3),(103,1); "
+                + "INSERT INTO Class_Materials VALUES (100,3),(101,3),(103,1); "
                 + "INSERT INTO Class_Enrollments VALUES (100,6),(100,7),(101,7),(103,7)");
+        Set<Integer> itManagerLearningBanks = s.listContent(3, 1, 20).stream()
+                .filter(item -> "learning".equals(item.type())).map(TestContent::id)
+                .collect(java.util.stream.Collectors.toSet());
+        check(itManagerLearningBanks.size() == 3 && itManagerLearningBanks.contains(javaBank)
+                && !itManagerLearningBanks.contains(common),
+                "IT manager only sees IT learning banks after becoming a class mentor");
+        Set<Integer> hrManagerLearningBanks = s.listContent(5, 1, 20).stream()
+                .filter(item -> "learning".equals(item.type())).map(TestContent::id)
+                .collect(java.util.stream.Collectors.toSet());
+        check(hrManagerLearningBanks.size() == 3 && hrManagerLearningBanks.contains(common)
+                && !hrManagerLearningBanks.contains(javaBank),
+                "HR department manager only sees culture and workplace learning banks");
+        check(s.listContent(3, 101, 1, 20).stream().map(TestContent::id)
+                .collect(java.util.stream.Collectors.toSet()).equals(Set.of(javaBank)),
+                "class selector still limits manager to learning banks selected for that class");
         check(s.currentActor(4).classMentor(), "employee receives mentor rights from class assignment");
         check(s.listContent(4, 100, 1, 20).size() == 1, "class bank only contains selected material");
         check(s.listContent(4, 104, 1, 20).isEmpty(), "class without materials has no banks");
-        rejects(404, () -> s.getContent(4, javaBank, 100));
+        rejects(404, () -> s.getContent(4, common, 100));
         int classTemplate = s.createTemplate(4, "Lớp A kiểm tra", "Mô tả", "learning",
-                NOW, NOW.plusSeconds(3600), common, 100);
+                NOW, NOW.plusSeconds(3600), javaBank, 100);
         check(Objects.equals(s.getTemplate(4, classTemplate).classId(), 100), "class scope persisted");
         check(s.getCandidates(4, classTemplate).stream().map(TestActor::id)
                 .collect(java.util.stream.Collectors.toSet()).equals(Set.of(6, 7)),
                 "recipient selector contains only class members");
-        rejects(403, () -> s.assignTest(4, classTemplate, List.of(5), common));
-        s.assignTest(4, classTemplate, List.of(6), common);
-        rejects(403, () -> s.createTemplate(2, "Mentor HR", "Mô tả", "learning",
-                NOW, NOW.plusSeconds(3600), common, 103));
+        rejects(403, () -> s.assignTest(4, classTemplate, List.of(5), javaBank));
+        s.assignTest(4, classTemplate, List.of(6), javaBank);
+        int hrClassTemplate = s.createTemplate(2, "Mentor HR", "Mô tả", "learning",
+                NOW, NOW.plusSeconds(3600), common, 103);
+        check(Objects.equals(s.getTemplate(2, hrClassTemplate).classId(), 103),
+                "HR mentor can create a learning assignment for the assigned class");
     }
 
     /**
