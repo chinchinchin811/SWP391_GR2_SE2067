@@ -1,11 +1,14 @@
 package controller;
 
+import dal.CareerProgressionDAO;
 import dal.DepartmentDAO;
 import dal.PositionDAO;
 import dal.PositionRequestDAO;
+import model.CriteriaRequirement;
 import model.Department;
 import model.JobLevel;
 import model.Position;
+import model.PositionLevelCriteria;
 import model.PositionRequest;
 import model.User;
 import jakarta.servlet.ServletException;
@@ -14,6 +17,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 
 public class PositionServlet extends HttpServlet {
@@ -21,6 +25,7 @@ public class PositionServlet extends HttpServlet {
     private final PositionDAO positionDAO = new PositionDAO();
     private final DepartmentDAO departmentDAO = new DepartmentDAO();
     private final PositionRequestDAO positionRequestDAO = new PositionRequestDAO();
+    private final CareerProgressionDAO careerProgressionDAO = new CareerProgressionDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -100,9 +105,24 @@ public class PositionServlet extends HttpServlet {
             case "create":
                 showCreateForm(request, response);
                 break;
+
             case "edit":
                 showEditForm(request, response);
                 break;
+
+            case "detail":
+                showPositionDetail(request, response, currentUser);
+                break;
+
+            case "criteria":
+                showCriteria(request, response, currentUser);
+                break;
+
+            case "criteriaConfig":
+                String cfgPosId = request.getParameter("positionId");
+                response.sendRedirect(request.getContextPath() + "/positions" + (cfgPosId != null ? "?action=detail&id=" + cfgPosId : ""));
+                break;
+
             default:
                 listPositions(request, response, currentUser);
                 break;
@@ -148,7 +168,7 @@ public class PositionServlet extends HttpServlet {
             return;
         }
 
-        // Chỉ Admin (role 1) mới được thêm/sửa/xóa vị trí trực tiếp
+        // Chỉ Admin (role 1) mới được thêm/sửa/xóa vị trí và cấu hình barem
         if (currentUser.getRoleId() != 1) {
             response.sendRedirect(request.getContextPath() + "/positions");
             return;
@@ -164,9 +184,207 @@ public class PositionServlet extends HttpServlet {
             case "delete":
                 deletePosition(request, response);
                 break;
+            case "addLevel":
+                addPositionLevel(request, response, currentUser);
+                break;
+            case "editLevel":
+                editPositionLevel(request, response, currentUser);
+                break;
+            case "deleteLevel":
+                deletePositionLevel(request, response, currentUser);
+                break;
+            case "copyDefaultLevels":
+                copyDefaultLevels(request, response, currentUser);
+                break;
+            case "saveCriteria":
+                saveCriteria(request, response, currentUser);
+                break;
+            case "deleteCriteria":
+                deleteCriteria(request, response, currentUser);
+                break;
+            case "addRequirement":
+                addRequirement(request, response, currentUser);
+                break;
+            case "deleteRequirement":
+                deleteRequirement(request, response, currentUser);
+                break;
             default:
                 response.sendRedirect(request.getContextPath() + "/positions");
                 break;
+        }
+    }
+
+    // ==========================================
+    // ACTION HANDLERS
+    // ==========================================
+
+    private void showCriteria(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws ServletException, IOException {
+        String posIdStr = request.getParameter("positionId");
+        if (posIdStr == null || posIdStr.isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+            return;
+        }
+        try {
+            int posId = Integer.parseInt(posIdStr);
+            Position pos = positionDAO.getPositionById(posId);
+            if (pos == null) {
+                response.sendRedirect(request.getContextPath() + "/positions");
+                return;
+            }
+            List<PositionLevelCriteria> criteriaList = careerProgressionDAO.getCriteriaByPosition(posId);
+            List<JobLevel> allLevels = positionDAO.getLevelsByPosition(posId);
+            if (allLevels == null || allLevels.isEmpty()) {
+                allLevels = positionDAO.getAllJobLevels();
+            }
+
+            request.setAttribute("position", pos);
+            request.setAttribute("criteriaList", criteriaList);
+            request.setAttribute("allLevels", allLevels);
+            request.getRequestDispatcher("/views/positions/position-criteria.jsp").forward(request, response);
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
+    }
+
+    private String resolveRedirectUrl(HttpServletRequest request, String returnTo, int posId) {
+        if ("criteria".equals(returnTo)) {
+            return request.getContextPath() + "/positions?action=criteria&positionId=" + posId;
+        }
+        return request.getContextPath() + "/positions?action=detail&id=" + posId;
+    }
+
+    private void saveCriteria(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String posIdStr = request.getParameter("positionId");
+        String fromLevelStr = request.getParameter("fromLevelId");
+        String toLevelStr = request.getParameter("toLevelId");
+        String summary = request.getParameter("competencySummary");
+        String testScoreStr = request.getParameter("minTestScore");
+        String ratingStr = request.getParameter("minManagerRating");
+        String returnTo = request.getParameter("returnTo");
+
+        try {
+            int posId = Integer.parseInt(posIdStr);
+            String redirectUrl = resolveRedirectUrl(request, returnTo, posId);
+
+            int fromLvl = Integer.parseInt(fromLevelStr);
+            int toLvl = Integer.parseInt(toLevelStr);
+
+            // Validate logic thăng tiến: toLevel phải lớn hơn fromLevel
+            JobLevel fromLevel = positionDAO.getJobLevelById(fromLvl);
+            JobLevel toLevel = positionDAO.getJobLevelById(toLvl);
+            if (fromLevel == null || toLevel == null) {
+                request.getSession().setAttribute("errorMessage", "Cấp bậc đã chọn không tồn tại trong hệ thống!");
+                response.sendRedirect(redirectUrl);
+                return;
+            }
+            if (fromLvl == toLvl) {
+                request.getSession().setAttribute("errorMessage", "Cấp bậc mục tiêu không được trùng với cấp bậc hiện tại!");
+                response.sendRedirect(redirectUrl);
+                return;
+            }
+            if (toLevel.getRankOrder() <= fromLevel.getRankOrder()) {
+                request.getSession().setAttribute("errorMessage", "Cấp bậc mục tiêu phải cao hơn cấp bậc hiện tại (Bậc " + toLevel.getRankOrder() + " <= Bậc " + fromLevel.getRankOrder() + ")!");
+                response.sendRedirect(redirectUrl);
+                return;
+            }
+
+            PositionLevelCriteria c = new PositionLevelCriteria();
+            c.setPositionId(posId);
+            c.setFromLevelId(fromLvl);
+            c.setToLevelId(toLvl);
+            c.setCompetencySummary(summary != null ? summary.trim() : "");
+            c.setStatus(true);
+
+            if (testScoreStr != null && !testScoreStr.trim().isEmpty()) {
+                c.setMinTestScore(new BigDecimal(testScoreStr.trim()));
+            } else {
+                c.setMinTestScore(new BigDecimal("80.0"));
+            }
+            if (ratingStr != null && !ratingStr.trim().isEmpty()) {
+                c.setMinManagerRating(new BigDecimal(ratingStr.trim()));
+            } else {
+                c.setMinManagerRating(new BigDecimal("7.5"));
+            }
+
+            int id = careerProgressionDAO.addCriteria(c);
+            if (id > 0) {
+                request.getSession().setAttribute("successMessage", "Đã thiết lập nấc barem thăng tiến mới thành công!");
+            } else {
+                request.getSession().setAttribute("errorMessage", "Không thể lưu barem. Có thể nấc thăng tiến giữa 2 cấp bậc này đã tồn tại!");
+            }
+            response.sendRedirect(redirectUrl);
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
+    }
+
+    private void deleteCriteria(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String critIdStr = request.getParameter("criteriaId");
+        String posIdStr = request.getParameter("positionId");
+        String returnTo = request.getParameter("returnTo");
+        try {
+            int critId = Integer.parseInt(critIdStr);
+            int posId = Integer.parseInt(posIdStr);
+            careerProgressionDAO.deleteCriteria(critId);
+            request.getSession().setAttribute("successMessage", "Đã xóa nấc barem thăng tiến!");
+            String redirectUrl = resolveRedirectUrl(request, returnTo, posId);
+            response.sendRedirect(redirectUrl);
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
+    }
+
+    private void addRequirement(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String critIdStr = request.getParameter("criteriaId");
+        String posIdStr = request.getParameter("positionId");
+        String title = request.getParameter("requirementTitle");
+        String type = request.getParameter("requirementType");
+        String desc = request.getParameter("description");
+        String isMandatoryStr = request.getParameter("isMandatory");
+        String returnTo = request.getParameter("returnTo");
+
+        try {
+            int critId = Integer.parseInt(critIdStr);
+            int posId = Integer.parseInt(posIdStr);
+            CriteriaRequirement req = new CriteriaRequirement();
+            req.setCriteriaId(critId);
+            req.setRequirementTitle(title != null ? title.trim() : "");
+            req.setRequirementType(type != null ? type.trim() : "OTHER");
+            req.setDescription(desc != null ? desc.trim() : "");
+            req.setMandatory("true".equalsIgnoreCase(isMandatoryStr) || "1".equals(isMandatoryStr));
+            req.setOrderIndex(1);
+
+            int id = careerProgressionDAO.addRequirement(req);
+            if (id > 0) {
+                request.getSession().setAttribute("successMessage", "Đã thêm tiêu chí minh chứng thực tế mới!");
+            } else {
+                request.getSession().setAttribute("errorMessage", "Thêm tiêu chí thất bại!");
+            }
+            String redirectUrl = resolveRedirectUrl(request, returnTo, posId);
+            response.sendRedirect(redirectUrl);
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
+    }
+
+    private void deleteRequirement(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String reqIdStr = request.getParameter("requirementId");
+        String posIdStr = request.getParameter("positionId");
+        String returnTo = request.getParameter("returnTo");
+        try {
+            int reqId = Integer.parseInt(reqIdStr);
+            int posId = Integer.parseInt(posIdStr);
+            careerProgressionDAO.deleteRequirement(reqId);
+            request.getSession().setAttribute("successMessage", "Đã xóa tiêu chí minh chứng!");
+            String redirectUrl = resolveRedirectUrl(request, returnTo, posId);
+            response.sendRedirect(redirectUrl);
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
         }
     }
 
@@ -238,7 +456,6 @@ public class PositionServlet extends HttpServlet {
         }
 
         List<Department> departments;
-        // Nếu là Manager (role 3), chỉ xem vị trí trong phòng ban mình phụ trách
         if (currentUser != null && currentUser.getRoleId() == 3) {
             Department myDept = departmentDAO.getDepartmentByManagerId(currentUser.getUserId());
             if (myDept != null) {
@@ -383,5 +600,168 @@ public class PositionServlet extends HttpServlet {
             e.printStackTrace();
         }
         response.sendRedirect(request.getContextPath() + "/positions");
+    }
+
+    private void showPositionDetail(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws ServletException, IOException {
+        String idStr = request.getParameter("id");
+        if (idStr == null || idStr.isEmpty()) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+            return;
+        }
+        try {
+            int posId = Integer.parseInt(idStr);
+            Position pos = positionDAO.getPositionById(posId);
+            if (pos == null) {
+                response.sendRedirect(request.getContextPath() + "/positions");
+                return;
+            }
+            List<JobLevel> levels = positionDAO.getLevelsByPosition(posId);
+            List<PositionLevelCriteria> criteriaList = careerProgressionDAO.getCriteriaByPosition(posId);
+
+            request.setAttribute("position", pos);
+            request.setAttribute("levels", levels);
+            request.setAttribute("criteriaList", criteriaList);
+            request.getRequestDispatcher("/views/positions/position-detail.jsp").forward(request, response);
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
+    }
+
+    private void addPositionLevel(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String posIdStr = request.getParameter("positionId");
+        String name = request.getParameter("levelName");
+        String rankStr = request.getParameter("rankOrder");
+        String desc = request.getParameter("description");
+        String returnTo = request.getParameter("returnTo");
+
+        try {
+            int posId = Integer.parseInt(posIdStr);
+            String target = "config".equals(returnTo)
+                    ? request.getContextPath() + "/positions?action=criteriaConfig&positionId=" + posId
+                    : request.getContextPath() + "/positions?action=detail&id=" + posId;
+
+            int rank = Integer.parseInt(rankStr);
+            if (name == null || name.trim().isEmpty() || rank <= 0) {
+                request.getSession().setAttribute("errorMessage", "Vui lòng nhập tên cấp bậc và thứ tự bậc hợp lệ (> 0)!");
+                response.sendRedirect(target);
+                return;
+            }
+
+            JobLevel lvl = new JobLevel();
+            lvl.setPositionId(posId);
+            lvl.setLevelName(name.trim());
+            lvl.setRankOrder(rank);
+            lvl.setDescription(desc != null ? desc.trim() : "");
+
+            int newId = positionDAO.addJobLevel(lvl);
+            if (newId > 0) {
+                request.getSession().setAttribute("successMessage", "Đã thêm cấp bậc '" + lvl.getLevelName() + "' cho vị trí (Các bậc liên quan đã tự động cập nhật thứ tự)!");
+            } else {
+                request.getSession().setAttribute("errorMessage", "Không thể thêm cấp bậc. Vui lòng kiểm tra lại thông tin!");
+            }
+            response.sendRedirect(target);
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
+    }
+
+    private void editPositionLevel(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String posIdStr = request.getParameter("positionId");
+        String levelIdStr = request.getParameter("levelId");
+        String name = request.getParameter("levelName");
+        String rankStr = request.getParameter("rankOrder");
+        String desc = request.getParameter("description");
+        String returnTo = request.getParameter("returnTo");
+
+        try {
+            int posId = Integer.parseInt(posIdStr);
+            int levelId = Integer.parseInt(levelIdStr);
+            int rank = Integer.parseInt(rankStr);
+            String target = "config".equals(returnTo)
+                    ? request.getContextPath() + "/positions?action=criteriaConfig&positionId=" + posId
+                    : request.getContextPath() + "/positions?action=detail&id=" + posId;
+
+            JobLevel lvl = new JobLevel();
+            lvl.setLevelId(levelId);
+            lvl.setPositionId(posId);
+            lvl.setLevelName(name != null ? name.trim() : "");
+            lvl.setRankOrder(rank);
+            lvl.setDescription(desc != null ? desc.trim() : "");
+
+            boolean ok = positionDAO.updateJobLevel(lvl);
+            if (ok) {
+                request.getSession().setAttribute("successMessage", "Đã cập nhật thông tin cấp bậc (Thứ tự các bậc liên quan đã được tự động dời nấc tương ứng)!");
+            } else {
+                request.getSession().setAttribute("errorMessage", "Cập nhật cấp bậc thất bại!");
+            }
+            response.sendRedirect(target);
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
+    }
+
+    private void deletePositionLevel(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String posIdStr = request.getParameter("positionId");
+        String levelIdStr = request.getParameter("levelId");
+        String returnTo = request.getParameter("returnTo");
+        try {
+            int posId = Integer.parseInt(posIdStr);
+            int levelId = Integer.parseInt(levelIdStr);
+            String target = "config".equals(returnTo)
+                    ? request.getContextPath() + "/positions?action=criteriaConfig&positionId=" + posId
+                    : request.getContextPath() + "/positions?action=detail&id=" + posId;
+
+            if (positionDAO.isLevelUsed(levelId)) {
+                request.getSession().setAttribute("errorMessage", "Không thể xóa cấp bậc này vì đang được nhân viên giữ hoặc đang có trong barem thăng tiến!");
+            } else {
+                boolean ok = positionDAO.deleteJobLevel(levelId);
+                if (ok) {
+                    request.getSession().setAttribute("successMessage", "Đã xóa cấp bậc khỏi vị trí (Các bậc sau đó đã tự động giảm 1 nấc)!");
+                } else {
+                    request.getSession().setAttribute("errorMessage", "Xóa cấp bậc thất bại!");
+                }
+            }
+            response.sendRedirect(target);
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
+    }
+
+    private void copyDefaultLevels(HttpServletRequest request, HttpServletResponse response, User currentUser)
+            throws IOException {
+        String posIdStr = request.getParameter("positionId");
+        String returnTo = request.getParameter("returnTo");
+        try {
+            int posId = Integer.parseInt(posIdStr);
+            String target = "config".equals(returnTo)
+                    ? request.getContextPath() + "/positions?action=criteriaConfig&positionId=" + posId
+                    : request.getContextPath() + "/positions?action=detail&id=" + posId;
+
+            String[][] defaults = {
+                {"Intern", "1", "Thực tập sinh"},
+                {"Fresher", "2", "Nhân viên mới vào nghề"},
+                {"Junior", "3", "Nhân viên có 1 - 2 năm kinh nghiệm"},
+                {"Middle", "4", "Nhân viên có 2 - 4 năm kinh nghiệm"},
+                {"Senior", "5", "Chuyên viên có 4+ năm kinh nghiệm"},
+                {"Lead", "6", "Trưởng nhóm chuyên môn"}
+            };
+            for (String[] def : defaults) {
+                JobLevel lvl = new JobLevel();
+                lvl.setPositionId(posId);
+                lvl.setLevelName(def[0]);
+                lvl.setRankOrder(Integer.parseInt(def[1]));
+                lvl.setDescription(def[2]);
+                positionDAO.addJobLevel(lvl);
+            }
+            request.getSession().setAttribute("successMessage", "Đã khởi tạo bộ 6 cấp bậc tiêu chuẩn cho vị trí!");
+            response.sendRedirect(target);
+        } catch (Exception e) {
+            response.sendRedirect(request.getContextPath() + "/positions");
+        }
     }
 }

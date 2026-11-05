@@ -173,15 +173,47 @@ public class PositionRequestDAO {
                 }
             }
 
-            // 2. Nếu APPROVED -> Tự động tạo Position mới
+            // 2. Nếu APPROVED -> Tự động tạo Position mới và bộ 6 cấp bậc tiêu chuẩn
             if ("APPROVED".equalsIgnoreCase(status)) {
                 PositionRequest req = getRequestById(requestId);
                 if (req != null) {
-                    try (PreparedStatement psInsert = conn.prepareStatement(insertPosSql)) {
+                    int newPosId = -1;
+                    try (PreparedStatement psInsert = conn.prepareStatement(insertPosSql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
                         psInsert.setString(1, req.getPositionName());
                         psInsert.setInt(2, req.getDepartmentId());
                         psInsert.setString(3, req.getDescription());
                         psInsert.executeUpdate();
+                        try (ResultSet rsGen = psInsert.getGeneratedKeys()) {
+                            if (rsGen.next()) {
+                                newPosId = rsGen.getInt(1);
+                            }
+                        }
+                    }
+
+                    // Tự động khởi tạo 6 cấp bậc chuẩn cho vị trí mới được duyệt
+                    if (newPosId > 0) {
+                        String insertLvlSql = """
+                            INSERT INTO Job_Levels (position_id, level_name, rank_order, description)
+                            VALUES (?, ?, ?, ?)
+                            """;
+                        String[][] defaults = {
+                            {"Intern", "1", "Thực tập sinh"},
+                            {"Fresher", "2", "Nhân viên mới vào nghề"},
+                            {"Junior", "3", "Nhân viên có 1 - 2 năm kinh nghiệm"},
+                            {"Middle", "4", "Nhân viên có 2 - 4 năm kinh nghiệm"},
+                            {"Senior", "5", "Chuyên viên có 4+ năm kinh nghiệm"},
+                            {"Lead", "6", "Trưởng nhóm chuyên môn"}
+                        };
+                        try (PreparedStatement psLvl = conn.prepareStatement(insertLvlSql)) {
+                            for (String[] def : defaults) {
+                                psLvl.setInt(1, newPosId);
+                                psLvl.setString(2, def[0]);
+                                psLvl.setInt(3, Integer.parseInt(def[1]));
+                                psLvl.setString(4, def[2]);
+                                psLvl.addBatch();
+                            }
+                            psLvl.executeBatch();
+                        }
                     }
                 }
             }
