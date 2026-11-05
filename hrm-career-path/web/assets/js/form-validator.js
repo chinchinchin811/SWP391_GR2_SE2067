@@ -19,12 +19,16 @@
         if (!lbl) return '';
         var clone = lbl.cloneNode(true);
         // Remove child form elements, buttons, links, icons, small help text
-        var toRemove = clone.querySelectorAll('input, select, textarea, button, a, small, i, .help-text, span.badge');
+        var toRemove = clone.querySelectorAll('input, select, textarea, button, a, small, i, .help-text, span');
         for (var i = 0; i < toRemove.length; i++) {
             toRemove[i].remove();
         }
         var text = clone.textContent || '';
-        // Remove *, colons, dashes, and normalize whitespace
+        // 1. Remove all parentheses and their contents, e.g. (*), (Username), (Chỉ xem), ()
+        text = text.replace(/\([^\)]*\)/g, ' ');
+        // 2. Remove all brackets and their contents, e.g. [*], []
+        text = text.replace(/\[[^\]]*\]/g, ' ');
+        // 3. Remove *, colons, dashes, and normalize whitespace
         text = text.replace(/[\*\:\—\-\–]/g, ' ').replace(/\s+/g, ' ').trim();
         return text;
     }
@@ -121,9 +125,9 @@
         errorEl.style.lineHeight = '1.4';
         errorEl.textContent = msg;
 
-        // Place after field or after .input-group wrapper
+        // Place after field or after .input-group wrapper / relative wrapper
         var target = field;
-        if (field.parentElement && (field.parentElement.classList.contains('input-group') || field.parentElement.classList.contains('input-wrapper'))) {
+        if (field.parentElement && (field.parentElement.classList.contains('input-group') || field.parentElement.classList.contains('input-wrapper') || field.parentElement.style.position === 'relative')) {
             target = field.parentElement;
         }
         if (target.nextSibling) {
@@ -139,7 +143,7 @@
         field.style.borderColor = '';
 
         var target = field;
-        if (field.parentElement && (field.parentElement.classList.contains('input-group') || field.parentElement.classList.contains('input-wrapper'))) {
+        if (field.parentElement && (field.parentElement.classList.contains('input-group') || field.parentElement.classList.contains('input-wrapper') || field.parentElement.style.position === 'relative')) {
             target = field.parentElement;
         }
         var parent = target.parentNode;
@@ -152,6 +156,10 @@
             }
         }
     }
+
+    // Expose helpers globally
+    window.showFieldError = showFieldError;
+    window.clearFieldError = clearFieldError;
 
     // Live clearing on typing or selecting
     document.addEventListener('input', function (e) {
@@ -182,8 +190,6 @@
             if (field.type === 'hidden' || field.type === 'submit' || field.type === 'button' || field.type === 'reset' || field.disabled) {
                 continue;
             }
-
-            clearFieldError(field);
 
             var isRequired = field.hasAttribute('required') || field.required;
             if (isRequired) {
@@ -228,4 +234,3 @@
         }
     }, true);
 })();
-

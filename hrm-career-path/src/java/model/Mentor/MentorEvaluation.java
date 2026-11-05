@@ -1,4 +1,3 @@
-
 package model.Mentor;
 
 import java.sql.Timestamp;
@@ -31,6 +30,22 @@ public class MentorEvaluation {
 
     public void setEvaluationId(int evaluationId) {
         this.evaluationId = evaluationId;
+    }
+
+    public int getAssignmentId() {
+        return assignmentId;
+    }
+
+    public void setAssignmentId(int assignmentId) {
+        this.assignmentId = assignmentId;
+    }
+
+    public int getEvaluatorId() {
+        return evaluatorId;
+    }
+
+    public void setEvaluatorId(int evaluatorId) {
+        this.evaluatorId = evaluatorId;
     }
 
     public int getPerformanceScore() {

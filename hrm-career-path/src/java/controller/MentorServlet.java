@@ -10,7 +10,6 @@ import dal.MentorDAO;
 import dal.PositionDAO;
 import dal.MaterialDAO;
 import jakarta.servlet.http.HttpSession;
-import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 import model.Mentor.MentorAssignment;
@@ -41,7 +40,6 @@ public class MentorServlet extends HttpServlet {
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         try (PrintWriter out = response.getWriter()) {
-            /* TODO output your page here. You may use following sample code. */
             out.println("<!DOCTYPE html>");
             out.println("<html>");
             out.println("<head>");
@@ -208,6 +206,38 @@ public class MentorServlet extends HttpServlet {
                 request.setAttribute("assignmentId", request.getParameter("assignmentId"));
                 request.getRequestDispatcher("mentor-evaluate-form.jsp").forward(request, response);
                 break;
+
+            case "editEvaluation":
+                int editEvalId = parseInt(request.getParameter("id"));
+                if (editEvalId <= 0) {
+                    response.sendRedirect(request.getContextPath() + "/mentors?action=evaluations");
+                    return;
+                }
+                MentorEvaluation evalToEdit = mentorDAO.getEvaluationById(editEvalId);
+                if (evalToEdit == null) {
+                    session.setAttribute("errorMessage", "Không tìm thấy thông tin đánh giá.");
+                    response.sendRedirect(request.getContextPath() + "/mentors?action=evaluations");
+                    return;
+                }
+                // "Khi nào nhận xét đánh giá được duyệt thì mentor không thể chỉnh sửa được nữa."
+                if ("APPROVED".equalsIgnoreCase(evalToEdit.getApprovalStatus())) {
+                    session.setAttribute("errorMessage", "Đánh giá này đã được duyệt nên không thể chỉnh sửa.");
+                    response.sendRedirect(request.getContextPath() + "/mentors?action=evaluations");
+                    return;
+                }
+                if (currentUser.getRoleId() == 4) {
+                    if (evalToEdit.getEvaluatorId() != currentUser.getUserId() && !mentorDAO.ownsAssignment(evalToEdit.getAssignmentId(), currentUser.getUserId())) {
+                        session.setAttribute("errorMessage", "Bạn không có quyền chỉnh sửa đánh giá này.");
+                        response.sendRedirect(request.getContextPath() + "/mentors?action=evaluations");
+                        return;
+                    }
+                }
+                MentorAssignment editAssign = mentorDAO.getAssignmentById(evalToEdit.getAssignmentId());
+                request.setAttribute("evaluation", evalToEdit);
+                request.setAttribute("assignment", editAssign);
+                request.setAttribute("assignmentId", evalToEdit.getAssignmentId());
+                request.getRequestDispatcher("mentor-evaluate-form.jsp").forward(request, response);
+                break;
         }
     }
 
@@ -308,6 +338,29 @@ public class MentorServlet extends HttpServlet {
             String publicFeedback = pubFb.toString().trim();
             String privateFeedback = privFb.toString().trim();
 
+            // KIỂM TRA CHỈNH SỬA ĐÁNH GIÁ (EDIT EVALUATION)
+            int evaluationId = parseInt(request.getParameter("evaluationId"));
+            if (evaluationId > 0) {
+                MentorEvaluation existingEval = new MentorDAO().getEvaluationById(evaluationId);
+                if (existingEval == null || "APPROVED".equalsIgnoreCase(existingEval.getApprovalStatus())) {
+                    session.setAttribute("errorMessage", "Đánh giá đã được phê duyệt hoặc không tồn tại, không thể chỉnh sửa!");
+                    response.sendRedirect(request.getContextPath() + "/mentors?action=evaluations");
+                    return;
+                }
+                if (currentUser.getRoleId() == 4 && existingEval.getEvaluatorId() != currentUser.getUserId() && !new MentorDAO().ownsAssignment(existingEval.getAssignmentId(), currentUser.getUserId())) {
+                    session.setAttribute("errorMessage", "Bạn không có quyền chỉnh sửa đánh giá này.");
+                    response.sendRedirect(request.getContextPath() + "/mentors?action=evaluations");
+                    return;
+                }
+                boolean updateOk = new MentorDAO().updateEvaluation(evaluationId, currentUser.getUserId(), score, publicFeedback, privateFeedback);
+                if (updateOk) {
+                    session.setAttribute("successMessage", "Cập nhật đánh giá Mentee thành công!");
+                } else {
+                    session.setAttribute("errorMessage", "Cập nhật đánh giá thất bại.");
+                }
+                response.sendRedirect(request.getContextPath() + "/mentors?action=evaluations");
+                return;
+            }
 
             if (currentUser.getRoleId() == 3) {
                 int classId = parseInt(request.getParameter("classId"));

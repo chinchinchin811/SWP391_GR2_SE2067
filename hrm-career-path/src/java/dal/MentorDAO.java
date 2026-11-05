@@ -1,4 +1,3 @@
-
 package dal;
 
 import model.Mentor.MentorEvaluation;
@@ -110,7 +109,6 @@ public class MentorDAO {
         return list;
     }
 
-
     public List<MentorEvaluation> getAllEvaluations() {
         return getEvaluationsForScope("", 0);
     }
@@ -135,18 +133,20 @@ public class MentorDAO {
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             if (!scope.isEmpty()) ps.setInt(1, scopeId);
             try (ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                MentorEvaluation eval = new MentorEvaluation();
-                eval.setEvaluationId(rs.getInt("evaluation_id"));
-                eval.setPerformanceScore(rs.getInt("performance_score"));
-                eval.setFeedback(rs.getString("feedback"));
-                eval.setPublicFeedback(rs.getString("public_feedback"));
-                eval.setPrivateFeedback(rs.getString("private_feedback"));
-                eval.setApprovalStatus(rs.getString("approval_status"));
-                eval.setMenteeName(rs.getString("MenteeName"));
-                eval.setMentorName(rs.getString("MentorName"));
-                list.add(eval);
-            }
+                while (rs.next()) {
+                    MentorEvaluation eval = new MentorEvaluation();
+                    eval.setEvaluationId(rs.getInt("evaluation_id"));
+                    eval.setAssignmentId(rs.getInt("assignment_id"));
+                    eval.setEvaluatorId(rs.getInt("evaluator_id"));
+                    eval.setPerformanceScore(rs.getInt("performance_score"));
+                    eval.setFeedback(rs.getString("feedback"));
+                    eval.setPublicFeedback(rs.getString("public_feedback"));
+                    eval.setPrivateFeedback(rs.getString("private_feedback"));
+                    eval.setApprovalStatus(rs.getString("approval_status"));
+                    eval.setMenteeName(rs.getString("MenteeName"));
+                    eval.setMentorName(rs.getString("MentorName"));
+                    list.add(eval);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -154,7 +154,6 @@ public class MentorDAO {
         return list;
     }
 
-    // 1. Sửa hàm lấy danh sách Mentee của Mentor (Hiển thị cả Đang ghép & Đã từng ghép)
     public List<MentorAssignment> getAssignmentsByMentor(int mentorId) {
         List<MentorAssignment> list = new ArrayList<>();
         String sql = "SELECT ma.assignment_id, ma.mentee_id, ma.status, u.full_name AS mentee_name, jl.level_name AS mentee_level, "
@@ -187,7 +186,6 @@ public class MentorDAO {
         return list;
     }
 
-    // 2. Thêm hàm lấy hồ sơ chi tiết Mentee theo ID (cho nút "Hồ sơ")
     public User getMenteeDetail(int menteeId) {
         String sql = "SELECT u.user_id, u.full_name, u.email, u.phone, p.position_name, d.department_name, jl.level_name "
                 + "FROM Users u "
@@ -215,7 +213,6 @@ public class MentorDAO {
         return null;
     }
 
-    // 3. Thêm hàm lấy thông tin Mentor của một Mentee (cho account Employee xem)
     public MentorAssignment getMentorByMentee(int menteeId) {
         String sql = "SELECT a.assignment_id, a.status, "
                 + "mt.user_id as mentor_id, mt.full_name as mentor_name, "
@@ -278,6 +275,37 @@ public class MentorDAO {
         return null;
     }
 
+    public MentorEvaluation getEvaluationById(int evaluationId) {
+        String sql = "SELECT e.*, "
+                + "(SELECT full_name FROM Users WHERE user_id = a.mentee_id) AS MenteeName, "
+                + "(SELECT full_name FROM Users WHERE user_id = a.mentor_id) AS MentorName "
+                + "FROM MentorEvaluations e "
+                + "INNER JOIN MentorAssignments a ON e.assignment_id = a.assignment_id "
+                + "WHERE e.evaluation_id = ?";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, evaluationId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    MentorEvaluation eval = new MentorEvaluation();
+                    eval.setEvaluationId(rs.getInt("evaluation_id"));
+                    eval.setAssignmentId(rs.getInt("assignment_id"));
+                    eval.setEvaluatorId(rs.getInt("evaluator_id"));
+                    eval.setPerformanceScore(rs.getInt("performance_score"));
+                    eval.setFeedback(rs.getString("feedback"));
+                    eval.setPublicFeedback(rs.getString("public_feedback"));
+                    eval.setPrivateFeedback(rs.getString("private_feedback"));
+                    eval.setApprovalStatus(rs.getString("approval_status"));
+                    eval.setMenteeName(rs.getString("MenteeName"));
+                    eval.setMentorName(rs.getString("MentorName"));
+                    return eval;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public boolean saveEvaluation(int assignmentId, int evaluatorId, int score, String publicFeedback, String privateFeedback) {
         String sql = "INSERT INTO MentorEvaluations (assignment_id, evaluator_id, performance_score, feedback, public_feedback, private_feedback, approval_status, evaluation_date) "
                 + "VALUES (?, ?, ?, ?, ?, ?, 'PENDING', GETDATE())";
@@ -299,6 +327,23 @@ public class MentorDAO {
         return saveEvaluation(assignmentId, evaluatorId, score, feedback, null);
     }
 
+    public boolean updateEvaluation(int evaluationId, int evaluatorId, int score, String publicFeedback, String privateFeedback) {
+        // Chỉ cho phép cập nhật khi chưa được duyệt (approval_status != 'APPROVED')
+        String sql = "UPDATE MentorEvaluations SET performance_score=?, feedback=?, public_feedback=?, private_feedback=?, evaluation_date=GETDATE() "
+                + "WHERE evaluation_id=? AND (approval_status IS NULL OR approval_status != 'APPROVED')";
+        try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, score);
+            ps.setString(2, (publicFeedback != null ? publicFeedback : ""));
+            ps.setString(3, publicFeedback);
+            ps.setString(4, privateFeedback);
+            ps.setInt(5, evaluationId);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public List<MentorEvaluation> getEvaluationsByMentee(int menteeId) {
         List<MentorEvaluation> list = new ArrayList<>();
         String sql = "SELECT e.*, "
@@ -314,6 +359,8 @@ public class MentorDAO {
                 while (rs.next()) {
                     MentorEvaluation eval = new MentorEvaluation();
                     eval.setEvaluationId(rs.getInt("evaluation_id"));
+                    eval.setAssignmentId(rs.getInt("assignment_id"));
+                    eval.setEvaluatorId(rs.getInt("evaluator_id"));
                     eval.setPerformanceScore(rs.getInt("performance_score"));
                     eval.setFeedback(rs.getString("feedback"));
                     // Mentee chỉ được xem public_feedback (Non-anonymous), KHÔNG xem private_feedback
@@ -348,6 +395,7 @@ public class MentorDAO {
         }
         return false;
     }
+
     public boolean hasMentor(int userId) {
         String sql = "SELECT COUNT(*) FROM MentorAssignments WHERE mentee_id = ? AND class_id IS NOT NULL AND status = 'ACTIVE'";
         try (Connection conn = new DBContext().getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {

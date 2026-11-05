@@ -1,5 +1,5 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="java.util.List,java.text.SimpleDateFormat,model.*" %>
+<%@ page import="java.util.List,java.util.ArrayList,java.text.SimpleDateFormat,model.*" %>
 <%
     TrainingClass trainingClass = (TrainingClass) request.getAttribute("trainingClass");
     List<ClassEnrollment> enrollments = (List<ClassEnrollment>) request.getAttribute("enrollments");
@@ -86,13 +86,10 @@
                     <h2>Học Liệu Theo Lộ Trình</h2>
                     <span class="badge-count">Tổng: <%= (trainingClass.getMaterials() != null ? trainingClass.getMaterials().size() : 0) %> học liệu</span>
                 </div>
-                <% if (canManage && availableMaterials != null && !availableMaterials.isEmpty()) { %>
-                <form method="post" action="<%= request.getContextPath() %>/materials" style="display:flex;gap:8px;align-items:center;margin:0">
-                    <input type="hidden" name="action" value="addClassMaterial">
-                    <input type="hidden" name="classId" value="<%= trainingClass.getClassId() %>">
-                    <select name="materialId" class="form-control" style="font-size:12px;padding:5px 8px;max-width:300px" required>
-                        <option value="">— Chọn học liệu thêm vào lớp —</option>
-                        <% for (LearningMaterial am : availableMaterials) {
+                <%
+                    List<LearningMaterial> unassignedMaterials = new ArrayList<>();
+                    if (canManage && availableMaterials != null) {
+                        for (LearningMaterial am : availableMaterials) {
                             boolean alreadyInClass = false;
                             if (trainingClass.getMaterials() != null) {
                                 for (LearningMaterial em : trainingClass.getMaterials()) {
@@ -102,13 +99,24 @@
                                     }
                                 }
                             }
-                            if (!alreadyInClass) { %>
+                            if (!alreadyInClass) unassignedMaterials.add(am);
+                        }
+                    }
+                %>
+                <% if (canManage && !unassignedMaterials.isEmpty()) { %>
+                <form method="post" action="<%= request.getContextPath() %>/materials" style="display:flex;gap:8px;align-items:center;margin:0">
+                    <input type="hidden" name="action" value="addClassMaterial">
+                    <input type="hidden" name="classId" value="<%= trainingClass.getClassId() %>">
+                    <select name="materialId" id="materialIdSelect" data-field-name="Học liệu" class="form-control" style="font-size:12px;padding:5px 8px;max-width:300px" required>
+                        <option value="">— Chọn học liệu thêm vào lớp —</option>
+                        <% for (LearningMaterial am : unassignedMaterials) { %>
                         <option value="<%= am.getMaterialId() %>"><%= am.getTitle() %> (<%= am.getMaterialType() %>)</option>
-                        <%  }
-                        } %>
+                        <% } %>
                     </select>
                     <button type="submit" class="btn btn-sm btn-primary">+ Thêm học liệu</button>
                 </form>
+                <% } else if (canManage) { %>
+                    <span style="font-size:12.5px;color:#6b7280;font-style:italic"><i class="fa-solid fa-circle-check" style="color:#10b981;margin-right:4px;"></i> Đã gán tất cả học liệu khả dụng vào lớp</span>
                 <% } %>
             </div>
             <div class="card-body" style="padding:0">

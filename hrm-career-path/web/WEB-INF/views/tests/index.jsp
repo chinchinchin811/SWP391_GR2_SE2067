@@ -44,12 +44,9 @@
 
 
         <% if (actor.cultureManager() || actor.departmentManager()) { %>
-        <% if ("bank".equals(view) || "bankDetail".equals(view)
-            || "newSet".equals(view) || "editSet".equals(view)) { %>
-        <a class="btn btn-primary" href="<%= base %>?action=newSet">
-            + Tạo bộ đề
-        </a>
-        <% } else if (!"list".equals(view) && !"mine".equals(view)) { %>
+        <% if ("bank".equals(view)) { %><a class="btn btn-primary" href="<%= base %>?action=newSet">+ Tạo bộ đề</a><% } else if (!"bankDetail".equals(view)
+            && !"newSet".equals(view) && !"editSet".equals(view)
+            && !"list".equals(view) && !"mine".equals(view)) { %>
         <a class="btn btn-primary" href="<%= base %>?action=new">
             + Tạo đợt giao bài
         </a>

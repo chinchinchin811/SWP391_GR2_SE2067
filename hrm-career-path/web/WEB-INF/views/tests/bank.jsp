@@ -15,7 +15,7 @@
     TestActor bankActor=(TestActor)request.getAttribute("testActor");
     TestPolicy bankPolicy=(TestPolicy)request.getAttribute("testPolicy");
     List<String> bankScopes="ADMIN".equals(bankActor.role()) ? List.of("culture")
-            : (bankActor.cultureManager() ? List.of("culture", "department") : List.of("department"));
+            : (bankActor.cultureManager() || bankActor.classMentor() ? List.of("culture", "department") : List.of("department"));
 %>
 <% if(items!=null) { %>
 <section class="card">
