@@ -168,8 +168,7 @@
                                                                                         value="<%= ev.getEvidenceId() %>">
                                                                                     <input type="hidden"
                                                                                         name="isVerified"
-                                                                                        value="<%= ev.isVerified() ? "
-                                                                                        false" : "true" %>">
+                                                                                        value="<%= ev.isVerified() ? "false" : "true" %>">
                                                                                     <% if (ev.isVerified()) { %>
                                                                                         <button type="submit"
                                                                                             class="btn btn-sm btn-success"
@@ -255,8 +254,7 @@
                                                                     </label>
                                                                     <input type="number" step="0.5" min="0" max="100"
                                                                         name="testScore" class="form-control"
-                                                                        value="<%= reqItem.getTestScore() != null ? reqItem.getTestScore() : "
-                                                                        85.0" %>"
+                                                                        value="<%= reqItem.getTestScore() != null ? reqItem.getTestScore() : "85.0" %>"
                                                                     style="width: 100%; padding: 9px 12px; font-size:
                                                                     14px; border: 1px solid #cbd5e1; border-radius:
                                                                     6px;" required>
