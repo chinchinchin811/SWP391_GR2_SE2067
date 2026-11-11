@@ -293,131 +293,21 @@ INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
 GO
 
 -- =======================================================
--- 8. SEED DATA: KHO ĐỀ THI VĂN HÓA & CHUYÊN MÔN
+-- 8. SEED DATA: KHO ĐỀ THI CHUYÊN MÔN
 -- Câu hỏi chỉ được nạp từ database, không tạo thủ công trên giao diện.
 -- Hỗ trợ: đúng/sai, một đáp án, nhiều đáp án đúng và hơn 4 lựa chọn.
 -- =======================================================
 SET XACT_ABORT ON;
 BEGIN TRANSACTION;
 
-DECLARE @culture_creator_id INT = (SELECT TOP (1) user_id FROM dbo.Users WHERE username = 'hr_manager');
 DECLARE @technical_creator_id INT = (SELECT TOP (1) user_id FROM dbo.Users WHERE username = 'manager_it');
 DECLARE @technical_department_id INT = (
     SELECT TOP (1) department_id FROM dbo.Users
     WHERE username = 'manager_it' AND department_id IS NOT NULL
 );
 
-IF @culture_creator_id IS NULL OR @technical_creator_id IS NULL OR @technical_department_id IS NULL
+IF @technical_creator_id IS NULL OR @technical_department_id IS NULL
     THROW 50001, N'Không tìm thấy tài khoản hoặc phòng ban để seed kho đề thi.', 1;
-
-DECLARE @culture_content_id INT = (
-    SELECT TOP (1) id FROM dbo.Test_Content
-    WHERE title = N'Đề thi Văn hóa doanh nghiệp' AND type = 'culture' AND is_deleted = 0
-);
-IF @culture_content_id IS NULL
-BEGIN
-    INSERT INTO dbo.Test_Content(title,prompt,kind,type,department_id,created_by,status,is_deleted)
-    VALUES (N'Đề thi Văn hóa doanh nghiệp',
-            N'Đánh giá kiến thức về bảo mật, giao tiếp, hợp tác và quy định làm việc.',
-            'quiz','culture',NULL,@culture_creator_id,'ready',0);
-    SET @culture_content_id = SCOPE_IDENTITY();
-END;
-
-IF NOT EXISTS (SELECT 1 FROM dbo.Test_Questions WHERE content_id = @culture_content_id)
-BEGIN
-    DECLARE @question_id INT;
-
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
-    VALUES (@culture_content_id,N'Nhân viên được phép chia sẻ tài liệu nội bộ lên mạng xã hội nếu không ghi tên công ty.','true_false');
-    SET @question_id = SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question_id,N'Đúng',0,1),(@question_id,N'Sai',1,2);
-
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
-    VALUES (@culture_content_id,N'Chọn đúng 3 hành vi thể hiện cách làm việc chuyên nghiệp.','multiple');
-    SET @question_id = SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question_id,N'Báo sớm cho quản lý khi có nguy cơ trễ tiến độ',1,1),
-        (@question_id,N'Bảo mật dữ liệu khách hàng và dữ liệu nội bộ',1,2),
-        (@question_id,N'Phản hồi dựa trên sự việc và hướng đến giải pháp',1,3),
-        (@question_id,N'Chia sẻ mật khẩu cho đồng nghiệp để xử lý nhanh hơn',0,4),
-        (@question_id,N'Bỏ qua quy trình phê duyệt khi công việc gấp',0,5),
-        (@question_id,N'Đưa tài liệu công ty lên thiết bị công cộng',0,6);
-
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
-    VALUES (@culture_content_id,N'Khi chưa hiểu một quy định nội bộ, lựa chọn phù hợp nhất là gì?','single');
-    SET @question_id = SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question_id,N'Hỏi quản lý, HR hoặc người phụ trách để được hướng dẫn',1,1),
-        (@question_id,N'Tự suy đoán rồi áp dụng cho cả nhóm',0,2),
-        (@question_id,N'Bỏ qua quy định đó',0,3),
-        (@question_id,N'Đợi đến khi có vi phạm mới tìm hiểu',0,4),
-        (@question_id,N'Hỏi trên mạng xã hội công khai',0,5),
-        (@question_id,N'Sao chép cách làm của một công ty khác',0,6);
-
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
-    VALUES (@culture_content_id,N'Khi nhận email đáng ngờ yêu cầu cung cấp mật khẩu, nhân viên nên làm gì?','single');
-    SET @question_id = SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question_id,N'Không cung cấp thông tin và báo bộ phận phụ trách',1,1),
-        (@question_id,N'Nhập mật khẩu để kiểm tra liên kết',0,2),
-        (@question_id,N'Chuyển tiếp email cho toàn công ty',0,3),
-        (@question_id,N'Trả lời email bằng tài khoản cá nhân',0,4);
-
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
-    VALUES (@culture_content_id,N'Nhân viên có thể gửi dữ liệu khách hàng qua email cá nhân nếu chỉ dùng trong công việc.','true_false');
-    SET @question_id = SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question_id,N'Đúng',0,1),(@question_id,N'Sai',1,2);
-
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
-    VALUES (@culture_content_id,N'Khi phát hiện nguy cơ mất an toàn thông tin, nhân viên cần ưu tiên hành động nào?','single');
-    SET @question_id = SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question_id,N'Báo ngay cho quản lý hoặc bộ phận phụ trách an toàn thông tin',1,1),
-        (@question_id,N'Tự xóa mọi dữ liệu liên quan rồi không báo cáo',0,2),
-        (@question_id,N'Đăng sự việc lên mạng xã hội để cảnh báo',0,3),
-        (@question_id,N'Chờ đến cuộc họp tuần mới thông báo',0,4),
-        (@question_id,N'Gửi dữ liệu cho bạn bè kiểm tra',0,5),
-        (@question_id,N'Bỏ qua nếu chưa thấy thiệt hại',0,6);
-
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
-    VALUES (@culture_content_id,N'Chọn đúng 3 hành động giúp phối hợp nhóm hiệu quả.','multiple');
-    SET @question_id = SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question_id,N'Cập nhật tiến độ và trở ngại một cách minh bạch',1,1),
-        (@question_id,N'Lắng nghe và phản hồi ý kiến đồng đội với sự tôn trọng',1,2),
-        (@question_id,N'Chủ động hỗ trợ khi thành viên khác cần giúp đỡ',1,3),
-        (@question_id,N'Giữ riêng thông tin quan trọng để tạo lợi thế cá nhân',0,4),
-        (@question_id,N'Đổ lỗi ngay khi có sự cố',0,5),
-        (@question_id,N'Từ chối mọi góp ý trái quan điểm',0,6);
-
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
-    VALUES (@culture_content_id,N'Khi có khả năng phát sinh xung đột lợi ích, nhân viên nên làm gì?','single');
-    SET @question_id = SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question_id,N'Chủ động khai báo với quản lý hoặc HR để được hướng dẫn',1,1),
-        (@question_id,N'Giữ kín vì đây là chuyện cá nhân',0,2),
-        (@question_id,N'Tự quyết định mà không cần báo cáo',0,3),
-        (@question_id,N'Nhờ đồng nghiệp che giấu thông tin',0,4);
-
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
-    VALUES (@culture_content_id,N'Mọi hành vi quấy rối hoặc phân biệt đối xử tại nơi làm việc đều cần được phản ánh qua kênh phù hợp.','true_false');
-    SET @question_id = SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question_id,N'Đúng',1,1),(@question_id,N'Sai',0,2);
-
-    INSERT INTO dbo.Test_Questions(content_id,prompt,question_type)
-    VALUES (@culture_content_id,N'Chọn đúng 3 dấu hiệu thường gặp của email lừa đảo.','multiple');
-    SET @question_id = SCOPE_IDENTITY();
-    INSERT INTO dbo.Test_Question_Options(question_id,option_text,is_correct,display_order) VALUES
-        (@question_id,N'Địa chỉ người gửi bất thường hoặc gần giống tên miền thật',1,1),
-        (@question_id,N'Yêu cầu cung cấp mật khẩu hoặc thông tin nhạy cảm',1,2),
-        (@question_id,N'Tạo cảm giác khẩn cấp để buộc người nhận hành động ngay',1,3),
-        (@question_id,N'Email được gửi qua kênh nội bộ đã xác minh',0,4),
-        (@question_id,N'Nội dung đúng với công việc đã trao đổi trước đó',0,5),
-        (@question_id,N'Có chữ ký chuẩn của công ty và không yêu cầu thao tác',0,6);
-END;
 
 DECLARE @technical_content_id INT = (
     SELECT TOP (1) id FROM dbo.Test_Content

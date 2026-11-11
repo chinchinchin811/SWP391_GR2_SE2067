@@ -530,21 +530,23 @@ public class MaterialServlet extends HttpServlet {
             s.sendRedirect(q.getContextPath() + "/login");
             return null;
         }
+        if (currentUser.getRoleId() == 2) {
+            s.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return null;
+        }
         return currentUser;
     }
 
     private boolean canManage(User u) {
         if (u == null) return false;
         int r = u.getRoleId();
-        return r == 2 || r == 3;
+        return r == 3;
     }
 
     private boolean canManageMaterial(User u, LearningMaterial material) {
         if (!canManage(u) || material == null) return false;
         Integer userDepartment = u.getDepartmentId();
-        if (userDepartment != null && userDepartment.equals(material.getDepartmentId())) return true;
-        return u.getRoleId() == 2 && "CULTURE".equalsIgnoreCase(material.getScopeType())
-                && material.getDepartmentId() == null;
+        return userDepartment != null && userDepartment.equals(material.getDepartmentId());
     }
 
     private boolean canManageClass(User u, TrainingClass trainingClass) {

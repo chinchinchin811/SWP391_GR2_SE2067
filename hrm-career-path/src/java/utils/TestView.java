@@ -17,9 +17,6 @@ public final class TestView {
         if ("culture".equals(type)) {
             return "Văn hóa";
         }
-        if ("learning".equals(type)) {
-            return "Học liệu";
-        }
         return "Chuyên môn";
     }
 

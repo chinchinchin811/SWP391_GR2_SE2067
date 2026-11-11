@@ -7,7 +7,6 @@
     List<Flashcard> cards = (List<Flashcard>) request.getAttribute("cards");
     FlashcardDeck currentDeck = (FlashcardDeck) request.getAttribute("currentDeck");
     int cardCount = (cards != null) ? cards.size() : 0;
-    boolean canManageCulture = Boolean.TRUE.equals(request.getAttribute("canManageCulture"));
     boolean canManageProfessional = Boolean.TRUE.equals(request.getAttribute("canManageProfessional"));
     String notice = request.getParameter("notice");
 %>
@@ -587,11 +586,6 @@
             <section class="deck-group">
                 <div class="deck-group-title">
                     <span>Văn hóa công ty</span>
-                    <% if (canManageCulture) { %>
-                    <a class="deck-add-action" href="<%= request.getContextPath() %>/flashcards?action=createDeck&type=culture" title="Thêm bộ thẻ văn hóa">
-                        <i class="fa-solid fa-plus"></i><span>Thêm</span>
-                    </a>
-                    <% } %>
                 </div>
                 <div class="deck-group-items">
                     <% if (decks != null) {
@@ -604,15 +598,6 @@
                             <span><%= html(d.getTitle()) %></span>
                             <i class="fa-solid fa-chevron-right deck-item-icon"></i>
                         </a>
-                        <% if (canManageCulture) { %>
-                        <div class="deck-row-actions">
-                            <a class="deck-action" href="<%= request.getContextPath() %>/flashcards?action=editDeck&deckId=<%= d.getDeckId() %>" title="Sửa bộ thẻ"><i class="fa-solid fa-pen"></i></a>
-                            <form class="deck-delete-form" method="post" action="<%= request.getContextPath() %>/flashcards" onsubmit="return confirm('Xóa bộ thẻ này và toàn bộ thẻ bên trong?');">
-                                <input type="hidden" name="action" value="deleteDeck"><input type="hidden" name="deckId" value="<%= d.getDeckId() %>">
-                                <button class="deck-action delete" type="submit" title="Xóa bộ thẻ"><i class="fa-solid fa-trash"></i></button>
-                            </form>
-                        </div>
-                        <% } %>
                     </div>
                     <% } } %>
                 </div>
@@ -659,8 +644,7 @@
             <div class="deck-heading">
                 <h2><%= html(currentDeck.getTitle()) %></h2>
                 <p><%= currentDeck.getDescription() != null ? html(currentDeck.getDescription()) : "Bộ câu hỏi trắc nghiệm & ôn tập kiến thức" %></p>
-                <% if (("culture".equals(currentDeck.getType()) && canManageCulture)
-                        || ("professional".equals(currentDeck.getType()) && canManageProfessional)) { %>
+                <% if ("professional".equals(currentDeck.getType()) && canManageProfessional) { %>
                 <a class="deck-add-action" style="margin: 0 auto 14px; width: fit-content;" href="<%= request.getContextPath() %>/flashcards?action=manageCards&deckId=<%= currentDeck.getDeckId() %>">
                     <i class="fa-solid fa-list-check"></i><span>Quản lý câu hỏi và đáp án</span>
                 </a>

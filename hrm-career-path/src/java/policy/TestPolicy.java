@@ -13,32 +13,12 @@ import model.TestTemplate;
  */
 public final class TestPolicy {
 
-    /** HR quản lý Văn hóa; MANAGER quản lý Chuyên môn; mentor quản lý đề lớp. */
     public boolean canManage(TestActor actor, TestTemplate t) {
-        if (t.classId() != null) {
-            return "learning".equals(t.type()) && actor.mentoredClassIds().contains(t.classId());
-        }
-        if ("culture".equals(t.type())) {
-            return actor.cultureManager();
-        }
-        if ("learning".equals(t.type()) && actor.learningManager()) {
-            return Objects.equals(actor.learningDepartmentId(), t.departmentId());
-        }
-        return actor.departmentManager() && Objects.equals(actor.managedDepartmentId(), t.departmentId());
+        return "department".equals(t.type()) && actor.departmentManager()
+                && Objects.equals(actor.managedDepartmentId(), t.departmentId());
     }
 
-    /**
-     * HR được quản lý toàn bộ nội dung văn hóa và Học liệu của phòng HR;
-     * các vai trò khác chỉ sửa bộ đề do mình tạo.
-     */
     public boolean canEditContent(TestActor actor, TestContent content) {
-        if (actor.cultureManager() && "culture".equals(content.type())) {
-            return true;
-        }
-        if (actor.cultureManager() && "learning".equals(content.type())
-                && Objects.equals(actor.learningDepartmentId(), content.departmentId())) {
-            return true;
-        }
         return actor.id() == content.createdBy();
     }
 

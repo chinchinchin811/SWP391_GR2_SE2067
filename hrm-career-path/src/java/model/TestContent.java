@@ -5,11 +5,5 @@ package model;
  * sửa nữa.
  */
 public record TestContent(int id, String title, String prompt, String kind, String type,
-        Integer departmentId, int createdBy, String status, Integer learningMaterialId) {
-
-    public TestContent(int id, String title, String prompt, String kind, String type,
-            Integer departmentId, int createdBy, String status) {
-        this(id, title, prompt, kind, type, departmentId, createdBy, status, null);
-    }
-
+        Integer departmentId, int createdBy, String status) {
 }

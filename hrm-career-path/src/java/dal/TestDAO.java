@@ -78,10 +78,6 @@ public final class TestDAO {
      * quyền cũ.
      */
     public TestActor actor(int id) throws SQLException {
-        Set<Integer> classes = new HashSet<>();
-        for (TestClass item : mentoredClasses(id)) {
-            classes.add(item.id());
-        }
         String sql = "SELECT u.user_id,u.full_name,r.role_name,u.department_id,d.department_id AS managed_id "
                 + "FROM Users u JOIN Roles r ON r.role_id=u.role_id "
                 + "LEFT JOIN Departments d ON d.department_id=u.department_id AND d.manager_id=u.user_id "
@@ -92,7 +88,7 @@ public final class TestDAO {
             }
             String role = rs.getString("role_name");
             return new TestActor(id, rs.getString("full_name"), role,
-                    (Integer) rs.getObject("department_id"), (Integer) rs.getObject("managed_id"), classes);
+                    (Integer) rs.getObject("department_id"), (Integer) rs.getObject("managed_id"));
         }
     }
 
@@ -102,27 +98,21 @@ public final class TestDAO {
      */
     private String management(TestActor actor, List<Object> args) {
         args.add(actor.departmentManager() ? actor.managedDepartmentId() : null);
-        args.add(actor.learningManager() ? actor.learningDepartmentId() : null);
-        args.add(actor.id());
-        return "((t.class_id IS NULL AND ((t.type='culture' AND " + (actor.cultureManager() ? "1=1" : "1=0")
-                + ") OR (t.type='department' AND t.department_id=?)"
-                + " OR (t.type='learning' AND t.department_id=?)"
-                + "))"
-                + " OR (t.type='learning' AND EXISTS (SELECT 1 FROM Training_Classes tc WHERE tc.class_id=t.class_id"
-                + " AND tc.mentor_id=? AND tc.is_deleted=0 AND tc.status<>'CANCELLED')))";
+        return "(t.type='department' AND t.department_id=?)";
     }
 
     /**
      * Lọc xóa mềm và giới hạn dữ liệu ngay tại SQL.
      */
     private String visible(TestActor actor, List<Object> args) {
-        String managed = management(actor, args);
-        args.add(actor.id());
-        args.add(actor.id());
-        return "t.is_deleted=0 AND (" + managed + " OR (t.status<>'draft' AND "
-                + ("ADMIN".equals(actor.role()) ? "t.type='culture' AND " : "")
-                + "(t.class_id IS NULL OR EXISTS (SELECT 1 FROM Class_Enrollments ce WHERE ce.class_id=t.class_id AND ce.user_id=?)"
-                + " OR EXISTS (SELECT 1 FROM Test_Assignments own WHERE own.test_template_id=t.id AND own.assignee_id=? AND own.is_deleted=0))))";
+        if ("HR".equals(actor.role())) {
+            return "1=0";
+        }
+        if ("ADMIN".equals(actor.role())) {
+            return "t.is_deleted=0 AND t.type='culture' AND t.status<>'draft'";
+        }
+        return "t.is_deleted=0 AND t.type IN ('department','culture') AND ("
+                + management(actor, args) + " OR t.status<>'draft')";
     }
 
     /**
@@ -141,7 +131,7 @@ public final class TestDAO {
         return new TestTemplate(rs.getInt("id"), rs.getString("title"), rs.getString("description"),
                 rs.getString("type"), (Integer) rs.getObject("department_id"), rs.getInt("created_by"),
                 rs.getString("status"), instant(rs, "start_time"), instant(rs, "end_time"),
-                (Integer) rs.getObject("default_content_id"), (Integer) rs.getObject("class_id"));
+                (Integer) rs.getObject("default_content_id"));
     }
 
     /**
@@ -261,7 +251,7 @@ public final class TestDAO {
     private TestContent content(ResultSet rs) throws SQLException {
         return new TestContent(rs.getInt("id"), rs.getString("title"), rs.getString("prompt"),
                 rs.getString("kind"), rs.getString("type"), (Integer) rs.getObject("department_id"),
-                rs.getInt("created_by"), rs.getString("status"), (Integer) rs.getObject("learning_material_id"));
+                rs.getInt("created_by"), rs.getString("status"));
     }
 
     /**
@@ -269,12 +259,8 @@ public final class TestDAO {
      * kiện SQL.
      */
     public TestContent managedContent(TestActor actor, int id) throws SQLException {
-        return managedContent(actor, id, null);
-    }
-
-    public TestContent managedContent(TestActor actor, int id, Integer classId) throws SQLException {
         List<Object> args = new ArrayList<>();
-        String scope = contentScope(actor, classId, args);
+        String scope = management(actor, args);
         args.add(id);
         try (PreparedStatement ps = prepare("SELECT t.* FROM Test_Content t WHERE t.is_deleted=0 AND " + scope + " AND t.id=?", args.toArray()); ResultSet rs = ps.executeQuery()) {
             if (!rs.next()) {
@@ -289,22 +275,11 @@ public final class TestDAO {
      * của đợt giao.
      */
     public List<TestContent> contents(TestActor actor, TestTemplate target, int offset, int size) throws SQLException {
-        return contents(actor, target, null, offset, size);
-    }
-
-    public List<TestContent> contents(TestActor actor, TestTemplate target, Integer classId, int offset, int size) throws SQLException {
-        if (target != null) {
-            classId = target.classId();
-        }
         List<Object> args = new ArrayList<>();
-        String sql = "SELECT t.id,t.title,CAST('' AS NVARCHAR(MAX)) AS prompt,t.kind,t.type,t.department_id,t.created_by,t.status,t.learning_material_id FROM Test_Content t WHERE t.is_deleted=0 AND " + contentScope(actor, classId, args);
+        String sql = "SELECT t.id,t.title,CAST('' AS NVARCHAR(MAX)) AS prompt,t.kind,t.type,t.department_id,t.created_by,t.status FROM Test_Content t WHERE t.is_deleted=0 AND " + management(actor, args);
         if (target != null) {
             sql += " AND t.status='ready' AND t.type=?";
             args.add(target.type());
-            if (classId == null) {
-                sql += " AND (t.department_id IS NULL OR t.department_id=?)";
-                args.add(target.departmentId());
-            }
         }
         sql += " ORDER BY t.id DESC";
         if (target == null) {
@@ -319,90 +294,6 @@ public final class TestDAO {
             }
         }
         return result;
-    }
-
-    /** Mentor chỉ được thấy bộ đề của những học liệu đã gắn với lớp mình phụ trách. */
-    private String contentScope(TestActor actor, Integer classId, List<Object> args) throws SQLException {
-        if (classId != null) {
-            requireMentor(actor, classId);
-            args.add(classId);
-            return "(t.type='learning' AND EXISTS (SELECT 1 FROM Class_Materials cm JOIN Learning_Materials lm"
-                    + " ON lm.material_id=cm.material_id WHERE cm.class_id=? AND cm.material_id=t.learning_material_id"
-                    + " AND lm.is_deleted=0 AND lm.status=1))";
-        }
-        List<String> scopes = new ArrayList<>();
-        if (actor.cultureManager()) {
-            scopes.add("t.type='culture'");
-            if (actor.learningManager()) {
-                scopes.add("(t.type='learning' AND t.department_id=?)");
-                args.add(actor.learningDepartmentId());
-            }
-        }
-        if (actor.departmentManager()) {
-            scopes.add("(t.type='department' AND t.department_id=?)");
-            args.add(actor.managedDepartmentId());
-            scopes.add("(t.type='learning' AND t.department_id=?)");
-            args.add(actor.managedDepartmentId());
-        } else if (actor.classMentor()) {
-            scopes.add("(t.type='learning' AND EXISTS (SELECT 1 FROM Class_Materials cm"
-                    + " JOIN Training_Classes tc ON tc.class_id=cm.class_id JOIN Learning_Materials lm ON lm.material_id=cm.material_id"
-                    + " WHERE cm.material_id=t.learning_material_id AND tc.mentor_id=? AND tc.is_deleted=0"
-                    + " AND tc.status<>'CANCELLED' AND lm.is_deleted=0 AND lm.status=1))");
-            args.add(actor.id());
-        }
-        return scopes.isEmpty() ? "1=0" : "(" + String.join(" OR ", scopes) + ")";
-    }
-
-    public List<TestClass> mentoredClasses(int userId) throws SQLException {
-        List<TestClass> rows = new ArrayList<>();
-        try (PreparedStatement ps = prepare("SELECT class_id,class_name,department_id,status FROM Training_Classes"
-                + " WHERE mentor_id=? AND is_deleted=0 AND status<>'CANCELLED' ORDER BY class_name,class_id", userId);
-                ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                rows.add(new TestClass(rs.getInt(1), rs.getString(2), (Integer) rs.getObject(3), rs.getString(4)));
-            }
-        }
-        return rows;
-    }
-
-    public TestClass requireMentor(TestActor actor, int classId) throws SQLException {
-        for (TestClass item : mentoredClasses(actor.id())) {
-            if (item.id() == classId) {
-                return item;
-            }
-        }
-        throw new TestException(404, "Không tìm thấy lớp đào tạo trong phạm vi mentor của bạn.");
-    }
-
-    public boolean enrolled(int classId, int userId) throws SQLException {
-        try (PreparedStatement ps = prepare("SELECT 1 FROM Class_Enrollments WHERE class_id=? AND user_id=?", classId, userId);
-                ResultSet rs = ps.executeQuery()) {
-            return rs.next();
-        }
-    }
-
-    public List<LearningMaterial> learningMaterials(TestActor actor) throws SQLException {
-        List<LearningMaterial> rows = new ArrayList<>();
-        try (PreparedStatement ps = prepare("SELECT material_id,title FROM Learning_Materials"
-                + " WHERE is_deleted=0 AND status=1 AND department_id=?"
-                + " ORDER BY title,material_id", actor.learningDepartmentId());
-                ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                LearningMaterial item = new LearningMaterial();
-                item.setMaterialId(rs.getInt(1));
-                item.setTitle(rs.getString(2));
-                rows.add(item);
-            }
-        }
-        return rows;
-    }
-
-    public boolean learningMaterialAvailable(TestActor actor, int materialId) throws SQLException {
-        try (PreparedStatement ps = prepare("SELECT 1 FROM Learning_Materials WHERE material_id=?"
-                + " AND is_deleted=0 AND status=1 AND department_id=?",
-                materialId, actor.learningDepartmentId()); ResultSet rs = ps.executeQuery()) {
-            return rs.next();
-        }
     }
 
     /**
@@ -504,14 +395,10 @@ public final class TestDAO {
         args.add(t.id());
         String sql = "SELECT u.user_id,u.full_name,u.department_id FROM Users u JOIN Roles r ON r.role_id=u.role_id CROSS JOIN Test_Templates t WHERE "
                 + filter + " AND t.id=? AND u.is_deleted=0 AND u.status=1 "
-                + "AND r.role_name<>'ADMIN' "
-                + (t.classId() != null ? "AND EXISTS (SELECT 1 FROM Class_Enrollments ce WHERE ce.class_id=t.class_id AND ce.user_id=u.user_id) "
-                    : t.departmentId() != null ? "AND r.role_name='EMPLOYEE' AND u.department_id=? " : "")
+                + "AND r.role_name='EMPLOYEE' AND u.department_id=? "
                 + "AND NOT EXISTS (SELECT 1 FROM Test_Assignments a WHERE a.test_template_id=t.id AND a.assignee_id=u.user_id) "
                 + "ORDER BY u.full_name,u.user_id";
-        if (t.classId() == null && t.departmentId() != null) {
-            args.add(t.departmentId());
-        }
+        args.add(t.departmentId());
         List<TestActor> result = new ArrayList<>();
         try (PreparedStatement ps = prepare(sql, args.toArray()); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {

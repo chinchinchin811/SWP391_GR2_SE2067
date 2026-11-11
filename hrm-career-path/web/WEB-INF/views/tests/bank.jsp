@@ -14,28 +14,7 @@
     List<TestContent> items=(List<TestContent>)request.getAttribute("bankItems");
     TestActor bankActor=(TestActor)request.getAttribute("testActor");
     TestPolicy bankPolicy=(TestPolicy)request.getAttribute("testPolicy");
-    Integer bankClassId=(Integer)request.getAttribute("testClassId");
-    TestClass bankClass=(TestClass)request.getAttribute("testClass");
-    List<TestClass> bankClasses=(List<TestClass>)request.getAttribute("mentorClasses");
-    String classQuery=bankClassId==null ? "" : "&amp;classId="+bankClassId;
-    List<String> bankScopes=bankClassId!=null ? List.of("learning")
-            : (bankActor.cultureManager() ? (bankActor.classMentor() ? List.of("culture","learning") : List.of("culture"))
-            : (bankActor.departmentManager() ? List.of("department","learning") : List.of("learning")));
 %>
-<% if(bankClasses!=null && !bankClasses.isEmpty()) { %>
-<form method="get" action="<%= bankBase %>" class="test-form">
-    <input type="hidden" name="action" value="bank">
-    <label>Kho đề theo lớp đào tạo
-        <select name="classId" onchange="this.form.submit()">
-            <option value="">-- Tất cả đề trong phạm vi của bạn --</option>
-            <% for(TestClass item:bankClasses) { %><option value="<%= item.id() %>" <%= Objects.equals(bankClassId,item.id()) ? "selected" : "" %>><%= h(item.name()) %></option><% } %>
-        </select>
-    </label>
-    <noscript><button class="btn">Xem kho đề</button></noscript>
-</form>
-<% } %>
-<% if(bankClassId!=null) { %><p>Đề Học liệu của lớp <strong><%= h(bankClass.name()) %></strong>
-    <% if (Set.of("OPEN","IN_PROGRESS").contains(bankClass.status())) { %> · <a href="<%= bankBase %>?action=new<%= classQuery %>">Tạo đợt giao bài cho lớp</a><% } %></p><% } %>
 <% if(items!=null) { %>
 <section class="card">
     <div class="card-header">
@@ -43,24 +22,14 @@
         <span class="text-secondary" style="font-size: 0.875rem;">Tổng số: <%= items.size() %> đề</span>
     </div>
     <div class="card-body">
-        <% if(items.isEmpty()) { %><p class="empty-state"><%= bankClassId == null ? "Chưa có đề thi nào trong phạm vi của bạn." : "Lớp chưa có bộ đề Học liệu phù hợp. Chỉ đề gắn với học liệu đã chọn cho lớp mới xuất hiện tại đây." %></p><% } %>
-        <%
-            for (String scope : bankScopes) {
-                boolean isCulture = "culture".equals(scope);
-                String sectionTitle = "Đề thi " + typeLabel(scope);
-                String sectionIcon = isCulture ? "fa-solid fa-landmark" : ("learning".equals(scope) ? "fa-solid fa-book-open" : "fa-solid fa-code");
-                int scopeCount = 0;
-                for (TestContent item : items) {
-                    if (scope.equals(item.type())) scopeCount++;
-                }
-        %>
+        <% if(items.isEmpty()) { %><p class="empty-state">Chưa có đề thi nào trong phạm vi của bạn.</p><% } %>
         <div class="test-bank-section">
             <div class="test-section-header">
                 <h3 class="test-section-title">
-                    <i class="<%= sectionIcon %>"></i>
-                    <span><%= sectionTitle %></span>
+                    <i class="fa-solid fa-code"></i>
+                    <span>Đề thi Chuyên môn</span>
                 </h3>
-                <span class="test-section-count"><%= scopeCount %> đề</span>
+                <span class="test-section-count"><%= items.size() %> đề</span>
             </div>
             <div class="test-table-wrapper">
                 <table class="data-table test-bank-table">
@@ -75,15 +44,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <%
-                            boolean found = false;
-                            for (TestContent item : items) {
-                                if (scope.equals(item.type())) {
-                                    found = true;
-                        %>
+                        <% for (TestContent item : items) { %>
                         <tr>
                             <td class="col-name">
-                                <a href="<%= bankBase %>?action=bankDetail&amp;id=<%= item.id() %><%= classQuery %>" class="test-title-link">
+                                <a href="<%= bankBase %>?action=bankDetail&amp;id=<%= item.id() %>" class="test-title-link">
                                     <%= h(item.title()) %>
                                 </a>
                             </td>
@@ -95,26 +59,17 @@
                                 <% } %>
                             </td>
                         </tr>
-                        <%
-                                }
-                            }
-                            if (!found) {
-                        %>
-                        <tr>
-                            <td colspan="2" class="empty-row">Chưa có đề thuộc nhóm này.</td>
-                        </tr>
                         <% } %>
                     </tbody>
                 </table>
             </div>
         </div>
-        <% } %>
         <% int pageNo = (Integer) request.getAttribute("pageNumber"); %>
         <% if (pageNo > 1 || items.size() == 20) { %>
         <nav class="test-nav" style="margin-top: 24px; margin-bottom: 0;" aria-label="Phân trang kho đề">
-            <% if (pageNo > 1) { %><a href="<%= bankBase %>?action=bank&amp;page=<%= pageNo - 1 %><%= classQuery %>">← Trang trước</a><% } %>
+            <% if (pageNo > 1) { %><a href="<%= bankBase %>?action=bank&amp;page=<%= pageNo - 1 %>">← Trang trước</a><% } %>
             <span>Trang <%= pageNo %></span>
-            <% if (items.size() == 20) { %><a href="<%= bankBase %>?action=bank&amp;page=<%= pageNo + 1 %><%= classQuery %>">Trang tiếp →</a><% } %>
+            <% if (items.size() == 20) { %><a href="<%= bankBase %>?action=bank&amp;page=<%= pageNo + 1 %>">Trang tiếp →</a><% } %>
         </nav>
         <% } %>
     </div>
@@ -146,6 +101,6 @@
             <% } %>
         </section>
         <% } %>
-        <a href="<%= bankBase %>?action=bank<%= classQuery %>">← Về kho đề thi</a>
+        <a href="<%= bankBase %>?action=bank">← Về kho đề thi</a>
     </div></section>
     <% } %>

@@ -6,8 +6,6 @@
     List<LearningMaterial> availableMaterials = (List<LearningMaterial>) request.getAttribute("availableMaterials");
     User currentUser = (User) session.getAttribute("currentUser");
     boolean canManage = currentUser != null && currentUser.getRoleId() == 3;
-    boolean isClassMentor = currentUser != null && trainingClass != null
-            && java.util.Objects.equals(trainingClass.getMentorId(), currentUser.getUserId());
     String successMessage = (String) session.getAttribute("successMessage");
     String errorMessage = (String) session.getAttribute("errorMessage");
     session.removeAttribute("successMessage");
@@ -21,11 +19,6 @@
     <div class="topbar">
         <h1>Chi Tiết Lớp Đào Tạo</h1>
         <div class="topbar-actions">
-            <% if (isClassMentor) { %>
-            <a class="btn" href="<%= request.getContextPath() %>/tests?action=bank&amp;classId=<%= trainingClass.getClassId() %>">Đề Học liệu của lớp</a>
-            <% if ("OPEN".equals(trainingClass.getStatus()) || "IN_PROGRESS".equals(trainingClass.getStatus())) { %>
-            <a class="btn btn-primary" href="<%= request.getContextPath() %>/tests?action=new&amp;classId=<%= trainingClass.getClassId() %>">+ Tạo đợt giao bài cho lớp</a>
-            <% } } %>
             <a class="btn btn-secondary" href="<%= request.getContextPath() %>/materials?action=classList">Quay lại danh sách</a>
             <% if (canManage && trainingClass != null) { %>
             <a class="btn btn-primary" href="<%= request.getContextPath() %>/materials?action=classAssign&id=<%= trainingClass.getClassId() %>">+ Thêm học viên</a>

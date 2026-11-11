@@ -17,7 +17,6 @@ import model.User;
 
 public class FlashcardServlet extends HttpServlet {
 
-    private static final String CULTURE = "culture";
     private static final String PROFESSIONAL = "professional";
 
     @Override
@@ -27,15 +26,17 @@ public class FlashcardServlet extends HttpServlet {
         if (user == null) {
             return;
         }
+        if (user.getRoleId() == 2) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
         if (user.getRoleId() == 1) {
             response.sendRedirect(request.getContextPath() + "/departments");
             return;
         }
 
         FlashcardDAO dao = new FlashcardDAO();
-        boolean canManageCulture = user.getRoleId() == 2;
         boolean canManageProfessional = user.getRoleId() == 3 || dao.isActiveMentor(user.getUserId());
-        request.setAttribute("canManageCulture", canManageCulture);
         request.setAttribute("canManageProfessional", canManageProfessional);
         request.setAttribute("positions", new PositionDAO().getAllPositions());
 
@@ -43,7 +44,7 @@ public class FlashcardServlet extends HttpServlet {
         try {
             if ("createDeck".equals(action)) {
                 String type = request.getParameter("type");
-                if (!canManageType(type, canManageCulture, canManageProfessional)) {
+                if (!canManageType(type, canManageProfessional)) {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     return;
                 }
@@ -61,7 +62,7 @@ public class FlashcardServlet extends HttpServlet {
                     response.sendError(HttpServletResponse.SC_NOT_FOUND);
                     return;
                 }
-                if (!canManageDeck(deck, canManageCulture, canManageProfessional)) {
+                if (!canManageDeck(deck, canManageProfessional)) {
                     response.sendError(HttpServletResponse.SC_FORBIDDEN);
                     return;
                 }
@@ -96,20 +97,23 @@ public class FlashcardServlet extends HttpServlet {
         if (user == null) {
             return;
         }
+        if (user.getRoleId() == 2) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
         if (user.getRoleId() == 1) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
 
         FlashcardDAO dao = new FlashcardDAO();
-        boolean canManageCulture = user.getRoleId() == 2;
         boolean canManageProfessional = user.getRoleId() == 3 || dao.isActiveMentor(user.getUserId());
         String action = request.getParameter("action");
         try {
             switch (action == null ? "" : action) {
                 case "createDeck": {
                     String type = request.getParameter("deckType");
-                    if (!canManageType(type, canManageCulture, canManageProfessional)) {
+                    if (!canManageType(type, canManageProfessional)) {
                         response.sendError(HttpServletResponse.SC_FORBIDDEN);
                         return;
                     }
@@ -138,7 +142,7 @@ public class FlashcardServlet extends HttpServlet {
                         response.sendError(HttpServletResponse.SC_NOT_FOUND);
                         return;
                     }
-                    if (!canManageDeck(deck, canManageCulture, canManageProfessional)) {
+                    if (!canManageDeck(deck, canManageProfessional)) {
                         response.sendError(HttpServletResponse.SC_FORBIDDEN);
                         return;
                     }
@@ -163,7 +167,7 @@ public class FlashcardServlet extends HttpServlet {
                         response.sendRedirect(request.getContextPath() + "/flashcards");
                         return;
                     }
-                    if (!canManageDeck(deck, canManageCulture, canManageProfessional)) {
+                    if (!canManageDeck(deck, canManageProfessional)) {
                         response.sendError(HttpServletResponse.SC_FORBIDDEN);
                         return;
                     }
@@ -180,7 +184,7 @@ public class FlashcardServlet extends HttpServlet {
                         response.sendError(HttpServletResponse.SC_NOT_FOUND);
                         return;
                     }
-                    if (!canManageDeck(deck, canManageCulture, canManageProfessional)) {
+                    if (!canManageDeck(deck, canManageProfessional)) {
                         response.sendError(HttpServletResponse.SC_FORBIDDEN);
                         return;
                     }
@@ -230,13 +234,12 @@ public class FlashcardServlet extends HttpServlet {
         return currentUser;
     }
 
-    private boolean canManageType(String type, boolean canManageCulture, boolean canManageProfessional) {
-        return (CULTURE.equals(type) && canManageCulture)
-                || (PROFESSIONAL.equals(type) && canManageProfessional);
+    private boolean canManageType(String type, boolean canManageProfessional) {
+        return PROFESSIONAL.equals(type) && canManageProfessional;
     }
 
-    private boolean canManageDeck(FlashcardDeck deck, boolean canManageCulture, boolean canManageProfessional) {
-        return deck != null && canManageType(deck.getType(), canManageCulture, canManageProfessional);
+    private boolean canManageDeck(FlashcardDeck deck, boolean canManageProfessional) {
+        return deck != null && canManageType(deck.getType(), canManageProfessional);
     }
 
     private FlashcardDeck findDeck(List<FlashcardDeck> decks, int deckId) {
