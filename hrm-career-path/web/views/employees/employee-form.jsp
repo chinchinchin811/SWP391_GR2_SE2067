@@ -26,6 +26,53 @@
 <jsp:include page="/views/common/header.jsp" />
 <jsp:include page="/views/common/sidebar.jsp" />
 
+<style>
+    .segmented-date-wrapper {
+        display: inline-flex;
+        align-items: center;
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 6px 12px;
+        width: 100%;
+        max-width: 280px;
+        box-sizing: border-box;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .segmented-date-wrapper.focused {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+    .segmented-date-input {
+        border: none;
+        outline: none;
+        background: transparent;
+        font-size: 14px;
+        font-family: inherit;
+        color: #1e293b;
+        text-align: center;
+        padding: 0;
+        margin: 0;
+    }
+    .segmented-date-input::placeholder {
+        color: #94a3b8;
+    }
+    .segmented-date-input.part-day,
+    .segmented-date-input.part-month {
+        width: 28px;
+    }
+    .segmented-date-input.part-year {
+        width: 48px;
+    }
+    .segmented-date-slash {
+        color: #64748b;
+        font-weight: 700;
+        font-size: 14px;
+        padding: 0 4px;
+        user-select: none;
+    }
+</style>
+
 <main class="main-content">
     <div class="topbar">
         <h1><%= isSelfEdit ? "Cập Nhật Thông Tin Cá Nhân" : (isEdit ? "Cập Nhật Hồ Sơ Nhân Viên" : "Khai Báo Nhân Viên Mới") %></h1>
@@ -118,11 +165,16 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="dob">Ngày sinh (*) (dd/mm/yyyy):</label>
-                            <input type="text" id="dob" name="dob" class="form-control" 
-                                   placeholder="dd/mm/yyyy (Ví dụ: 15/05/2000)" maxlength="10"
-                                   value="<%= (emp != null && emp.getDob() != null ? new java.text.SimpleDateFormat("dd/MM/yyyy").format(emp.getDob()) : (request.getParameter("dob") != null ? request.getParameter("dob") : "")) %>" required>
-                            <small style="color: #64748b; font-size: 11px;">Nhân viên phải từ đủ 18 tuổi trở lên (sinh trước ngày <%= maxDob.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) %>).</small>
+                            <label for="dob_day">Ngày sinh (*) (dd/mm/yyyy):</label>
+                            <div class="segmented-date-wrapper" id="dobWrapper">
+                                <input type="text" id="dob_day" class="segmented-date-input part-day" maxlength="2" placeholder="dd" autocomplete="off" inputmode="numeric">
+                                <span class="segmented-date-slash">/</span>
+                                <input type="text" id="dob_month" class="segmented-date-input part-month" maxlength="2" placeholder="mm" autocomplete="off" inputmode="numeric">
+                                <span class="segmented-date-slash">/</span>
+                                <input type="text" id="dob_year" class="segmented-date-input part-year" maxlength="4" placeholder="yyyy" autocomplete="off" inputmode="numeric">
+                                <input type="hidden" id="dob" name="dob" value="<%= (emp != null && emp.getDob() != null ? new java.text.SimpleDateFormat("dd/MM/yyyy").format(emp.getDob()) : (request.getParameter("dob") != null ? request.getParameter("dob") : "")) %>">
+                            </div>
+                            <small style="color: #64748b; font-size: 11px; display: block; margin-top: 4px;">Nhân viên phải từ đủ 18 tuổi trở lên (sinh trước ngày <%= maxDob.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) %>).</small>
                         </div>
                     </div>
 
@@ -263,11 +315,16 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="hireDate">Ngày bắt đầu làm việc (dd/mm/yyyy):</label>
-                        <input type="text" id="hireDate" name="hireDate" class="form-control" 
-                               placeholder="dd/mm/yyyy (Để trống sẽ mặc định lấy ngày hôm nay)" maxlength="10"
-                               value="<%= (emp != null && emp.getHireDate() != null ? new java.text.SimpleDateFormat("dd/MM/yyyy").format(emp.getHireDate()) : (request.getParameter("hireDate") != null ? request.getParameter("hireDate") : "")) %>">
-                        <small style="color: #64748b; font-size: 11px;">Để trống sẽ tự động lấy ngày hiện tại (<%= java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) %>) làm ngày bắt đầu làm việc.</small>
+                        <label for="hireDate_day">Ngày bắt đầu làm việc (dd/mm/yyyy):</label>
+                        <div class="segmented-date-wrapper" id="hireDateWrapper">
+                            <input type="text" id="hireDate_day" class="segmented-date-input part-day" maxlength="2" placeholder="dd" autocomplete="off" inputmode="numeric">
+                            <span class="segmented-date-slash">/</span>
+                            <input type="text" id="hireDate_month" class="segmented-date-input part-month" maxlength="2" placeholder="mm" autocomplete="off" inputmode="numeric">
+                            <span class="segmented-date-slash">/</span>
+                            <input type="text" id="hireDate_year" class="segmented-date-input part-year" maxlength="4" placeholder="yyyy" autocomplete="off" inputmode="numeric">
+                            <input type="hidden" id="hireDate" name="hireDate" value="<%= (emp != null && emp.getHireDate() != null ? new java.text.SimpleDateFormat("dd/MM/yyyy").format(emp.getHireDate()) : (request.getParameter("hireDate") != null ? request.getParameter("hireDate") : "")) %>">
+                        </div>
+                        <small style="color: #64748b; font-size: 11px; display: block; margin-top: 4px;">Để trống sẽ tự động lấy ngày hiện tại (<%= java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")) %>) làm ngày bắt đầu làm việc.</small>
                     </div>
                     <% } %>
 
@@ -473,57 +530,182 @@
         return null;
     }
 
-    function applyDateMask(input) {
-        if (!input) return;
-        input.addEventListener("input", function () {
-            var v = this.value.replace(/\D/g, "");
-            if (v.length > 8) v = v.substring(0, 8);
-            var res = "";
-            if (v.length > 0) res += v.substring(0, Math.min(2, v.length));
-            if (v.length > 2) res += "/" + v.substring(2, Math.min(4, v.length));
-            if (v.length > 4) res += "/" + v.substring(4, 8);
-            this.value = res;
+    function initSegmentedDate(prefix) {
+        var wrapper = document.getElementById(prefix + "Wrapper");
+        var dayInput = document.getElementById(prefix + "_day");
+        var monthInput = document.getElementById(prefix + "_month");
+        var yearInput = document.getElementById(prefix + "_year");
+        var hiddenInput = document.getElementById(prefix);
+
+        if (!wrapper || !dayInput || !monthInput || !yearInput || !hiddenInput)
+            return;
+
+        function syncFromHidden() {
+            var val = hiddenInput.value ? hiddenInput.value.trim() : "";
+            if (val) {
+                var parts = val.split(/[-/.]/);
+                if (parts.length === 3) {
+                    if (parts[0].length === 4) { // yyyy-mm-dd
+                        yearInput.value = parts[0];
+                        monthInput.value = parts[1].padStart(2, '0');
+                        dayInput.value = parts[2].padStart(2, '0');
+                    } else { // dd/mm/yyyy
+                        dayInput.value = parts[0].padStart(2, '0');
+                        monthInput.value = parts[1].padStart(2, '0');
+                        yearInput.value = parts[2];
+                    }
+                }
+            }
+        }
+        syncFromHidden();
+
+        function updateHidden() {
+            var d = dayInput.value.trim();
+            var m = monthInput.value.trim();
+            var y = yearInput.value.trim();
+            if (d || m || y) {
+                var paddedD = (d.length === 1) ? ("0" + d) : d;
+                var paddedM = (m.length === 1) ? ("0" + m) : m;
+                hiddenInput.value = paddedD + "/" + paddedM + "/" + y;
+            } else {
+                hiddenInput.value = "";
+            }
+        }
+
+        [dayInput, monthInput, yearInput].forEach(function (el) {
+            el.addEventListener("focus", function () {
+                wrapper.classList.add("focused");
+            });
+            el.addEventListener("blur", function () {
+                wrapper.classList.remove("focused");
+                updateHidden();
+            });
+        });
+
+        dayInput.addEventListener("input", function () {
+            var clean = this.value.replace(/\D/g, "");
+            if (clean.length > 2) clean = clean.substring(0, 2);
+            this.value = clean;
+            updateHidden();
+            if (clean.length === 2) {
+                monthInput.focus();
+                monthInput.select();
+            }
+        });
+
+        monthInput.addEventListener("input", function () {
+            var clean = this.value.replace(/\D/g, "");
+            if (clean.length > 2) clean = clean.substring(0, 2);
+            this.value = clean;
+            updateHidden();
+            if (clean.length === 2) {
+                yearInput.focus();
+                yearInput.select();
+            }
+        });
+
+        yearInput.addEventListener("input", function () {
+            var clean = this.value.replace(/\D/g, "");
+            if (clean.length > 4) clean = clean.substring(0, 4);
+            this.value = clean;
+            updateHidden();
+        });
+
+        monthInput.addEventListener("keydown", function (e) {
+            if (e.key === "Backspace" && (this.value === "" || (this.selectionStart === 0 && this.selectionEnd === 0))) {
+                dayInput.focus();
+            }
+        });
+
+        yearInput.addEventListener("keydown", function (e) {
+            if (e.key === "Backspace" && (this.value === "" || (this.selectionStart === 0 && this.selectionEnd === 0))) {
+                monthInput.focus();
+            }
+        });
+
+        [dayInput, monthInput, yearInput].forEach(function (el) {
+            el.addEventListener("paste", function (e) {
+                var pasted = (e.clipboardData || window.clipboardData).getData("text");
+                if (pasted) {
+                    var digits = pasted.replace(/\D/g, "");
+                    if (digits.length === 8) {
+                        e.preventDefault();
+                        dayInput.value = digits.substring(0, 2);
+                        monthInput.value = digits.substring(2, 4);
+                        yearInput.value = digits.substring(4, 8);
+                        updateHidden();
+                        yearInput.focus();
+                    }
+                }
+            });
         });
     }
 
     function validateEmployeeForm() {
-        var dobInput = document.getElementById("dob");
-        if (dobInput && dobInput.value) {
-            var parsed = parseDMY(dobInput.value);
-            if (!parsed) {
-                alert("Định dạng Ngày sinh không hợp lệ! Vui lòng nhập theo định dạng dd/mm/yyyy (Ví dụ: 15/05/2000).");
-                dobInput.focus();
-                return false;
-            }
-            var today = new Date();
-            if (parsed.date > today) {
-                alert("Ngày sinh không được ở thời điểm tương lai!");
-                dobInput.focus();
-                return false;
-            }
-            if (parsed.year > 2099 || parsed.year < 1920) {
-                alert("Năm sinh không hợp lệ!");
-                dobInput.focus();
-                return false;
-            }
-            var age = today.getFullYear() - parsed.year;
-            var mDiff = today.getMonth() - (parsed.month - 1);
-            if (mDiff < 0 || (mDiff === 0 && today.getDate() < parsed.day)) {
-                age--;
-            }
-            if (age < 18) {
-                alert("Nhân viên phải từ đủ 18 tuổi trở lên (Hiện tại tính theo ngày sinh mới " + age + " tuổi)!");
-                dobInput.focus();
-                return false;
-            }
+        var dayInput = document.getElementById("dob_day");
+        var monthInput = document.getElementById("dob_month");
+        var yearInput = document.getElementById("dob_year");
+
+        var d = dayInput ? dayInput.value.trim() : "";
+        var m = monthInput ? monthInput.value.trim() : "";
+        var y = yearInput ? yearInput.value.trim() : "";
+
+        if (!d || !m || !y || y.length < 4) {
+            alert("Vui lòng nhập đầy đủ Ngày sinh theo định dạng dd/mm/yyyy!");
+            if (!d && dayInput) dayInput.focus();
+            else if (!m && monthInput) monthInput.focus();
+            else if (yearInput) yearInput.focus();
+            return false;
         }
 
-        var hireInput = document.getElementById("hireDate");
-        if (hireInput && hireInput.value && hireInput.value.trim() !== "") {
-            var parsedHire = parseDMY(hireInput.value);
+        var parsed = parseDMY(d + "/" + m + "/" + y);
+        if (!parsed) {
+            alert("Ngày sinh không hợp lệ! Vui lòng kiểm tra lại ngày, tháng, năm sinh.");
+            if (dayInput) dayInput.focus();
+            return false;
+        }
+
+        var today = new Date();
+        if (parsed.date > today) {
+            alert("Ngày sinh không được ở thời điểm tương lai!");
+            if (yearInput) yearInput.focus();
+            return false;
+        }
+        if (parsed.year > 2099 || parsed.year < 1920) {
+            alert("Năm sinh không hợp lệ!");
+            if (yearInput) yearInput.focus();
+            return false;
+        }
+        var age = today.getFullYear() - parsed.year;
+        var mDiff = today.getMonth() - (parsed.month - 1);
+        if (mDiff < 0 || (mDiff === 0 && today.getDate() < parsed.day)) {
+            age--;
+        }
+        if (age < 18) {
+            alert("Nhân viên phải từ đủ 18 tuổi trở lên (Hiện tại tính theo ngày sinh mới " + age + " tuổi)!");
+            if (dayInput) dayInput.focus();
+            return false;
+        }
+
+        var hDay = document.getElementById("hireDate_day");
+        var hMonth = document.getElementById("hireDate_month");
+        var hYear = document.getElementById("hireDate_year");
+        var hd = hDay ? hDay.value.trim() : "";
+        var hm = hMonth ? hMonth.value.trim() : "";
+        var hy = hYear ? hYear.value.trim() : "";
+
+        if (hd || hm || hy) {
+            if (!hd || !hm || !hy || hy.length < 4) {
+                alert("Vui lòng nhập đầy đủ Ngày bắt đầu làm việc theo định dạng dd/mm/yyyy hoặc để trống cả 3 ô để tự động lấy ngày hiện tại!");
+                if (!hd && hDay) hDay.focus();
+                else if (!hm && hMonth) hMonth.focus();
+                else if (hYear) hYear.focus();
+                return false;
+            }
+            var parsedHire = parseDMY(hd + "/" + hm + "/" + hy);
             if (!parsedHire) {
-                alert("Định dạng Ngày bắt đầu làm việc không hợp lệ! Vui lòng nhập theo định dạng dd/mm/yyyy hoặc để trống.");
-                hireInput.focus();
+                alert("Ngày bắt đầu làm việc không hợp lệ! Vui lòng kiểm tra lại ngày, tháng, năm.");
+                if (hDay) hDay.focus();
                 return false;
             }
         }
@@ -546,8 +728,8 @@
         if (roleSelect) {
             roleSelect.addEventListener("change", onRoleChange);
         }
-        applyDateMask(document.getElementById("dob"));
-        applyDateMask(document.getElementById("hireDate"));
+        initSegmentedDate("dob");
+        initSegmentedDate("hireDate");
         onRoleChange();
     });
 </script>

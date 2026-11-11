@@ -142,37 +142,86 @@
 </main>
 
 <script>
+    var allPositionsMaster = [];
+    var allLevelsMaster = [];
+
+    function initAssignMasterData() {
+        var posSelect = document.getElementById("positionId");
+        if (posSelect && allPositionsMaster.length === 0) {
+            for (var i = 0; i < posSelect.options.length; i++) {
+                var o = posSelect.options[i];
+                if (o.value !== "0") {
+                    allPositionsMaster.push({
+                        value: o.value,
+                        text: o.text,
+                        dept: o.getAttribute("data-dept") || "0"
+                    });
+                }
+            }
+        }
+
+        var lvlSelect = document.getElementById("levelId");
+        if (lvlSelect && allLevelsMaster.length === 0) {
+            for (var j = 0; j < lvlSelect.options.length; j++) {
+                var lo = lvlSelect.options[j];
+                if (lo.value !== "0") {
+                    allLevelsMaster.push({
+                        value: lo.value,
+                        text: lo.text,
+                        pos: lo.getAttribute("data-pos") || "0"
+                    });
+                }
+            }
+        }
+    }
+
     function filterAssignPositions(preserveSelection) {
         var deptSelect = document.getElementById("departmentId");
         var posSelect = document.getElementById("positionId");
         if (!deptSelect || !posSelect)
             return;
 
+        initAssignMasterData();
+
         var selectedDept = deptSelect.value;
         var currentPos = posSelect.value;
+
+        posSelect.innerHTML = "";
+        var defOpt = document.createElement("option");
+        defOpt.value = "0";
+        defOpt.setAttribute("data-dept", "0");
+        defOpt.text = "-- Giữ nguyên hoặc Chưa phân --";
+        posSelect.appendChild(defOpt);
+
+        if (selectedDept === "0" || selectedDept === "") {
+            // Show all or keep default
+            allPositionsMaster.forEach(function (item) {
+                var opt = document.createElement("option");
+                opt.value = item.value;
+                opt.text = item.text;
+                opt.setAttribute("data-dept", item.dept);
+                if (preserveSelection && item.value === currentPos) {
+                    opt.selected = true;
+                }
+                posSelect.appendChild(opt);
+            });
+            return;
+        }
+
         var hasMatching = false;
-
-        for (var i = 0; i < posSelect.options.length; i++) {
-            var opt = posSelect.options[i];
-            var optDept = opt.getAttribute("data-dept");
-
-            if (opt.value === "0") {
-                opt.style.display = "";
-                opt.hidden = false;
-            } else if (selectedDept === "0" || selectedDept === "") {
-                opt.style.display = "";
-                opt.hidden = false;
-            } else if (optDept === selectedDept || optDept === "0") {
-                opt.style.display = "";
-                opt.hidden = false;
-                if (opt.value === currentPos) {
+        allPositionsMaster.forEach(function (item) {
+            if (item.dept === selectedDept || item.dept === "0") {
+                var opt = document.createElement("option");
+                opt.value = item.value;
+                opt.text = item.text;
+                opt.setAttribute("data-dept", item.dept);
+                if (preserveSelection && item.value === currentPos) {
+                    opt.selected = true;
                     hasMatching = true;
                 }
-            } else {
-                opt.style.display = "none";
-                opt.hidden = true;
+                posSelect.appendChild(opt);
             }
-        }
+        });
 
         if (!hasMatching && !preserveSelection && selectedDept !== "0") {
             posSelect.value = "0";
@@ -185,49 +234,49 @@
         if (!posSelect || !levelSelect)
             return;
 
+        initAssignMasterData();
+
         var selectedPos = posSelect.value;
         var currentLevel = levelSelect.value;
+
+        levelSelect.innerHTML = "";
+        var defOpt = document.createElement("option");
+        defOpt.value = "0";
+        defOpt.setAttribute("data-pos", "0");
+        defOpt.text = "-- Giữ nguyên hoặc Chưa phân --";
+        levelSelect.appendChild(defOpt);
+
+        var matched = [];
+        if (selectedPos === "0" || selectedPos === "") {
+            matched = allLevelsMaster.filter(function (item) {
+                return item.pos === "0" || !item.pos;
+            });
+            if (matched.length === 0) {
+                matched = allLevelsMaster.slice(0, 6);
+            }
+        } else {
+            matched = allLevelsMaster.filter(function (item) {
+                return item.pos === selectedPos;
+            });
+            if (matched.length === 0) {
+                matched = allLevelsMaster.filter(function (item) {
+                    return item.pos === "0" || !item.pos;
+                });
+            }
+        }
+
         var hasMatchingOption = false;
-
-        var matchingCount = 0;
-        for (var i = 0; i < levelSelect.options.length; i++) {
-            var opt = levelSelect.options[i];
-            var optPos = opt.getAttribute("data-pos");
-            if (opt.value !== "0" && optPos === selectedPos) {
-                matchingCount++;
+        matched.forEach(function (item) {
+            var opt = document.createElement("option");
+            opt.value = item.value;
+            opt.text = item.text;
+            opt.setAttribute("data-pos", item.pos);
+            if (preserveSelection && item.value === currentLevel) {
+                opt.selected = true;
+                hasMatchingOption = true;
             }
-        }
-
-        for (var i = 0; i < levelSelect.options.length; i++) {
-            var opt = levelSelect.options[i];
-            var optPos = opt.getAttribute("data-pos");
-
-            if (opt.value === "0") {
-                opt.style.display = "";
-                opt.hidden = false;
-            } else if (selectedPos === "0" || selectedPos === "") {
-                opt.style.display = "";
-                opt.hidden = false;
-                if (opt.value === currentLevel) {
-                    hasMatchingOption = true;
-                }
-            } else if (matchingCount > 0 && optPos === selectedPos) {
-                opt.style.display = "";
-                opt.hidden = false;
-                if (opt.value === currentLevel) {
-                    hasMatchingOption = true;
-                }
-            } else if (matchingCount === 0 && optPos === "0") {
-                opt.style.display = "";
-                opt.hidden = false;
-                if (opt.value === currentLevel) {
-                    hasMatchingOption = true;
-                }
-            } else {
-                opt.style.display = "none";
-                opt.hidden = true;
-            }
-        }
+            levelSelect.appendChild(opt);
+        });
 
         if (!hasMatchingOption && !preserveSelection && selectedPos !== "0") {
             levelSelect.value = "0";
@@ -240,6 +289,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
+        initAssignMasterData();
         filterAssignPositions(true);
         filterAssignLevels(true);
     });

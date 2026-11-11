@@ -19,7 +19,7 @@ public class EmailUtil {
     private static String SENDER_EMAIL = "cudamlua357@gmail.com";
 
     // Mật khẩu ứng dụng Google (16 ký tự do người dùng cấp)
-    private static final String SENDER_APP_PASSWORD = "wvkd ckxh gezt yjbb".replace(" ", "");
+    private static final String SENDER_APP_PASSWORD = "opaw ywyi lshd bqab".replace(" ", "");
 
     private static final String SMTP_HOST = "smtp.gmail.com";
     private static final String SMTP_PORT = "587"; // Cổng TLS
