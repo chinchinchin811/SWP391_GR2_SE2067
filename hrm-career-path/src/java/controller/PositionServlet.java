@@ -490,21 +490,27 @@ public class PositionServlet extends HttpServlet {
 
     private void showEditForm(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String idStr = request.getParameter("id");
-        if (idStr != null) {
-            try {
-                int id = Integer.parseInt(idStr);
-                Position pos = positionDAO.getPositionById(id);
-                if (pos != null) {
-                    List<Department> departments = departmentDAO.getAllDepartments();
-                    request.setAttribute("position", pos);
-                    request.setAttribute("departments", departments);
-                    request.getRequestDispatcher("/views/positions/position-form.jsp").forward(request, response);
-                    return;
-                }
-            } catch (NumberFormatException e) {
-                e.printStackTrace();
+        Position pos = (Position) request.getAttribute("position");
+        if (pos == null) {
+            String idStr = request.getParameter("id");
+            if (idStr == null || idStr.isEmpty()) {
+                idStr = request.getParameter("positionId");
             }
+            if (idStr != null) {
+                try {
+                    int id = Integer.parseInt(idStr);
+                    pos = positionDAO.getPositionById(id);
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        if (pos != null) {
+            List<Department> departments = departmentDAO.getAllDepartments();
+            request.setAttribute("position", pos);
+            request.setAttribute("departments", departments);
+            request.getRequestDispatcher("/views/positions/position-form.jsp").forward(request, response);
+            return;
         }
         response.sendRedirect(request.getContextPath() + "/positions");
     }
@@ -516,22 +522,58 @@ public class PositionServlet extends HttpServlet {
         String description = request.getParameter("description");
         String statusStr = request.getParameter("status");
 
-        if (name == null || name.trim().isEmpty()) {
-            request.setAttribute("error", "Tên vị trí không được để trống!");
+        Position pos = new Position();
+        pos.setPositionName(name != null ? name.trim() : "");
+        pos.setDescription(description != null ? description.trim() : null);
+        pos.setStatus(statusStr == null || "1".equals(statusStr) || "true".equalsIgnoreCase(statusStr));
+
+        if (deptIdStr == null || deptIdStr.trim().isEmpty() || deptIdStr.equals("0")) {
+            request.setAttribute("error", "Vui lòng chọn Phòng ban cho vị trí chuyên môn!");
+            request.setAttribute("position", pos);
             showCreateForm(request, response);
             return;
         }
 
-        Position pos = new Position();
-        pos.setPositionName(name.trim());
-        pos.setDescription(description);
-        pos.setStatus("1".equals(statusStr) || "true".equalsIgnoreCase(statusStr));
+        if (name == null || name.trim().isEmpty()) {
+            request.setAttribute("error", "Tên vị trí không được để trống!");
+            request.setAttribute("position", pos);
+            showCreateForm(request, response);
+            return;
+        }
 
-        if (deptIdStr != null && !deptIdStr.trim().isEmpty() && !deptIdStr.equals("0")) {
-            try {
-                pos.setDepartmentId(Integer.parseInt(deptIdStr));
-            } catch (NumberFormatException ignored) {
-            }
+        int deptId;
+        try {
+            deptId = Integer.parseInt(deptIdStr.trim());
+        } catch (NumberFormatException e) {
+            request.setAttribute("error", "Phòng ban không hợp lệ!");
+            request.setAttribute("position", pos);
+            showCreateForm(request, response);
+            return;
+        }
+
+        Department dept = departmentDAO.getDepartmentById(deptId);
+        if (dept == null || dept.isDeleted()) {
+            request.setAttribute("error", "Phòng ban đã chọn không tồn tại!");
+            request.setAttribute("position", pos);
+            showCreateForm(request, response);
+            return;
+        }
+
+        if (!dept.isStatus()) {
+            request.setAttribute("error", "Phòng ban '" + dept.getDepartmentName()
+                    + "' đang ở trạng thái Tạm ngưng! Không thể tạo vị trí chuyên môn mới cho phòng ban này.");
+            request.setAttribute("position", pos);
+            showCreateForm(request, response);
+            return;
+        }
+
+        pos.setDepartmentId(deptId);
+
+        if (positionDAO.isPositionNameExists(name.trim(), deptId, null)) {
+            request.setAttribute("error", "Vị trí này đã tồn tại trong phòng ban đã chọn!");
+            request.setAttribute("position", pos);
+            showCreateForm(request, response);
+            return;
         }
 
         boolean success = positionDAO.addPosition(pos);
@@ -539,7 +581,7 @@ public class PositionServlet extends HttpServlet {
             request.getSession().setAttribute("successMessage", "Thêm mới vị trí chuyên môn thành công!");
             response.sendRedirect(request.getContextPath() + "/positions");
         } else {
-            request.setAttribute("error", "Không thể thêm vị trí mới!");
+            request.setAttribute("error", "Không thể thêm vị trí mới! Có thể tên vị trí đã tồn tại.");
             request.setAttribute("position", pos);
             showCreateForm(request, response);
         }
@@ -559,16 +601,42 @@ public class PositionServlet extends HttpServlet {
             return;
         }
 
+        if (deptIdStr == null || deptIdStr.trim().isEmpty() || deptIdStr.equals("0")) {
+            request.setAttribute("error", "Vui lòng chọn Phòng ban cho vị trí chuyên môn!");
+            showEditForm(request, response);
+            return;
+        }
+
         try {
             int id = Integer.parseInt(idStr);
+            int deptId = Integer.parseInt(deptIdStr.trim());
+
+            Department dept = departmentDAO.getDepartmentById(deptId);
+            if (dept == null || dept.isDeleted()) {
+                request.setAttribute("error", "Phòng ban đã chọn không tồn tại!");
+                showEditForm(request, response);
+                return;
+            }
+
+            if (!dept.isStatus()) {
+                request.setAttribute("error", "Phòng ban '" + dept.getDepartmentName()
+                        + "' đang ở trạng thái Tạm ngưng! Không thể gán vị trí cho phòng ban này.");
+                showEditForm(request, response);
+                return;
+            }
+
             Position pos = new Position();
             pos.setPositionId(id);
             pos.setPositionName(name.trim());
             pos.setDescription(description);
             pos.setStatus("1".equals(statusStr) || "true".equalsIgnoreCase(statusStr));
+            pos.setDepartmentId(deptId);
 
-            if (deptIdStr != null && !deptIdStr.trim().isEmpty() && !deptIdStr.equals("0")) {
-                pos.setDepartmentId(Integer.parseInt(deptIdStr));
+            if (positionDAO.isPositionNameExists(name.trim(), deptId, id)) {
+                request.setAttribute("error", "Vị trí này đã tồn tại trong phòng ban đã chọn!");
+                request.setAttribute("position", pos);
+                showEditForm(request, response);
+                return;
             }
 
             boolean success = positionDAO.updatePosition(pos);

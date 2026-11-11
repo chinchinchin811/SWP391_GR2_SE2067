@@ -31,33 +31,39 @@
                 <h2>Thông Tin Vị Trí Chuyên Môn</h2>
             </div>
             <div class="card-body">
-                <form action="<%= request.getContextPath() %>/positions" method="POST">
+                <form action="<%= request.getContextPath() %>/positions" method="POST" onsubmit="return validatePositionForm()">
                     <input type="hidden" name="action" value="<%= isEdit ? "edit" : "create" %>">
                     <% if (isEdit) { %>
                     <input type="hidden" name="positionId" value="<%= pos.getPositionId() %>">
                     <% } %>
 
                     <div class="form-group">
-                        <label for="positionName">Tên Vị Trí / Chức Danh (*):</label>
-                        <input type="text" id="positionName" name="positionName" class="form-control" 
-                               value="<%= pos != null && pos.getPositionName() != null ? pos.getPositionName() : "" %>" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="departmentId">Phòng Ban:</label>
-                        <select id="departmentId" name="departmentId" class="form-control">
-                            <option value="0">-- Vị trí trong công ty --</option>
+                        <label for="departmentId">Phòng Ban (*):</label>
+                        <select id="departmentId" name="departmentId" class="form-control" required>
+                            <option value="">-- Chọn Phòng Ban --</option>
                             <%
                                 if (departments != null) {
                                     for (Department d : departments) {
                                         boolean isSel = (pos != null && pos.getDepartmentId() != null && pos.getDepartmentId().equals(d.getDepartmentId()));
+                                        boolean isInactive = !d.isStatus();
                             %>
-                            <option value="<%= d.getDepartmentId() %>" <%= isSel ? "selected" : "" %>><%= d.getDepartmentName() %></option>
+                            <option value="<%= d.getDepartmentId() %>" 
+                                    data-status="<%= d.isStatus() %>"
+                                    <%= isSel ? "selected" : "" %>
+                                    <%= (isInactive && !isSel) ? "disabled style='color: #94a3b8; background-color: #f1f5f9;'" : "" %>>
+                                <%= d.getDepartmentName() %><%= isInactive ? " (Tạm ngưng)" : "" %>
+                            </option>
                             <%
                                     }
                                 }
                             %>
                         </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="positionName">Tên Vị Trí Trong Phòng Ban (*):</label>
+                        <input type="text" id="positionName" name="positionName" class="form-control" 
+                               value="<%= pos != null && pos.getPositionName() != null ? pos.getPositionName() : "" %>" required>
                     </div>
 
                     <div class="form-group">
@@ -84,5 +90,29 @@
         </div>
     </div>
 </main>
+
+<script>
+function validatePositionForm() {
+    var deptSelect = document.getElementById("departmentId");
+    if (!deptSelect || !deptSelect.value || deptSelect.value.trim() === "" || deptSelect.value === "0") {
+        alert("Vui lòng chọn Phòng ban cho vị trí chuyên môn!");
+        if (deptSelect) deptSelect.focus();
+        return false;
+    }
+    var selectedOpt = deptSelect.options[deptSelect.selectedIndex];
+    if (selectedOpt && selectedOpt.getAttribute("data-status") === "false") {
+        alert("Phòng ban '" + selectedOpt.text.replace("(Tạm ngưng)", "").trim() + "' đang ở trạng thái Tạm ngưng! Không thể tạo vị trí cho phòng ban này.");
+        if (deptSelect) deptSelect.focus();
+        return false;
+    }
+    var nameInput = document.getElementById("positionName");
+    if (!nameInput || !nameInput.value || !nameInput.value.trim()) {
+        alert("Vui lòng nhập Tên vị trí trong phòng ban!");
+        if (nameInput) nameInput.focus();
+        return false;
+    }
+    return true;
+}
+</script>
 
 <jsp:include page="/views/common/footer.jsp" />

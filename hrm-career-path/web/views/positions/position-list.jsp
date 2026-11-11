@@ -22,10 +22,7 @@
 <main class="main-content">
     <div class="topbar">
         <div>
-            <h1 style="margin-bottom: 4px;">Tổ Chức Vị Trí Chuyên Môn &amp; Cấp Bậc</h1>
-            <p style="color: #64748b; font-size: 13.5px; margin: 0;">
-                Quản lý danh mục vị trí công việc theo phòng ban, cấu hình cấp bậc riêng và barem tiêu chuẩn thăng tiến.
-            </p>
+            <h1 style="margin: 0;">Tổ Chức Vị Trí Chuyên Môn &amp; Cấp Bậc</h1>
         </div>
         <div>
             <% if (roleId == 1) { %>
@@ -85,7 +82,7 @@
         <div class="card" style="background: #ffffff; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden;">
             <div class="card-header" style="padding: 16px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
                 <h2 style="font-size: 16px; margin: 0; color: #1e293b;">
-                    <i class="fa-solid fa-id-badge" style="color: #4f46e5; margin-right: 6px;"></i> Danh Mục Vị Trí Chuyên Môn
+                    Danh Mục Vị Trí Chuyên Môn
                 </h2>
                 <span style="font-size: 13px; color: #64748b; font-weight: 600;">Tổng số: <%= positions != null ? positions.size() : 0 %> vị trí</span>
             </div>
