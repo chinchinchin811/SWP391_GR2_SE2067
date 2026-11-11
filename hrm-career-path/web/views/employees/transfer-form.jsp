@@ -125,22 +125,66 @@
 </main>
 
 <script>
-function filterPositionsByDept() {
-    var deptSelect = document.getElementById("targetDepartmentId");
+var allTransferPositions = [];
+
+function initTransferPositions() {
     var posSelect = document.getElementById("targetPositionId");
-    var selectedDept = deptSelect.value;
-    
-    for (var i = 0; i < posSelect.options.length; i++) {
-        var opt = posSelect.options[i];
-        if (opt.value === "0") continue;
-        var optDept = opt.getAttribute("data-dept");
-        if (!selectedDept || optDept === "0" || optDept === selectedDept) {
-            opt.style.display = "";
-        } else {
-            opt.style.display = "none";
+    if (posSelect && allTransferPositions.length === 0) {
+        for (var i = 0; i < posSelect.options.length; i++) {
+            var o = posSelect.options[i];
+            if (o.value !== "0") {
+                allTransferPositions.push({
+                    value: o.value,
+                    text: o.text,
+                    dept: o.getAttribute("data-dept") || "0"
+                });
+            }
         }
     }
 }
+
+function filterPositionsByDept() {
+    initTransferPositions();
+    var deptSelect = document.getElementById("targetDepartmentId");
+    var posSelect = document.getElementById("targetPositionId");
+    if (!deptSelect || !posSelect) return;
+
+    var selectedDept = deptSelect.value;
+    var currentPos = posSelect.value;
+
+    posSelect.innerHTML = "";
+    var defOpt = document.createElement("option");
+    defOpt.value = "0";
+    defOpt.text = "-- Chọn Vị Trí Mong Muốn --";
+    posSelect.appendChild(defOpt);
+
+    if (!selectedDept || selectedDept === "") {
+        return;
+    }
+
+    var hasMatch = false;
+    allTransferPositions.forEach(function(item) {
+        if (item.dept === selectedDept || item.dept === "0") {
+            var opt = document.createElement("option");
+            opt.value = item.value;
+            opt.text = item.text;
+            if (item.value === currentPos) {
+                opt.selected = true;
+                hasMatch = true;
+            }
+            posSelect.appendChild(opt);
+        }
+    });
+
+    if (!hasMatch) {
+        posSelect.value = "0";
+    }
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    initTransferPositions();
+    filterPositionsByDept();
+});
 </script>
 
 <jsp:include page="/views/common/footer.jsp" />

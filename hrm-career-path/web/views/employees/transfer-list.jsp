@@ -2,6 +2,7 @@
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.List" %>
 <%@ page import="model.JobLevel" %>
+<%@ page import="model.Position" %>
 <%@ page import="model.TransferRequest" %>
 <%@ page import="model.User" %>
 <%
@@ -10,6 +11,7 @@
     if (viewRole == null) viewRole = "EMPLOYEE";
     List<TransferRequest> requests = (List<TransferRequest>) request.getAttribute("requests");
     List<JobLevel> jobLevels = (List<JobLevel>) request.getAttribute("jobLevels");
+    List<Position> positions = (List<Position>) request.getAttribute("positions");
     
     String successMessage = (String) session.getAttribute("successMessage");
     String errorMessage = (String) session.getAttribute("errorMessage");
@@ -166,7 +168,7 @@
                                 <td style="text-align: center;">
                                     <% if ("APPROVED".equals(req.getManagerStatus()) && "PENDING".equals(req.getHrStatus())) { %>
                                         <div style="display: flex; gap: 4px; justify-content: center;">
-                                            <button type="button" class="btn btn-sm btn-primary" onclick="openHrModal(<%= req.getRequestId() %>, '<%= req.getEmployeeName() %>', '<%= req.getTargetDepartmentName() %>', '<%= req.getTargetPositionName() != null ? req.getTargetPositionName() : "" %>')">
+                                            <button type="button" class="btn btn-sm btn-primary" onclick="openHrModal(<%= req.getRequestId() %>, '<%= req.getEmployeeName() %>', '<%= req.getTargetDepartmentName() %>', '<%= req.getTargetPositionName() != null ? req.getTargetPositionName() : "" %>', <%= req.getTargetDepartmentId() %>, <%= req.getTargetPositionId() != null ? req.getTargetPositionId() : 0 %>)">
                                                 <i class="fa-solid fa-arrows-rotate"></i> Điều chuyển
                                             </button>
                                             <button type="button" class="btn btn-sm btn-danger" onclick="openHrRejectModal(<%= req.getRequestId() %>, '<%= req.getEmployeeName() %>')">
@@ -229,21 +231,19 @@
             <input type="hidden" id="hrModalReqId" name="requestId" value="">
             <input type="hidden" name="status" value="COMPLETED">
             
-            <p id="hrModalDesc" style="font-size: 13px; color: #475569; margin-bottom: 15px;"></p>
+            <p id="hrModalDesc" style="font-size: 13.5px; color: #475569; margin-bottom: 15px;"></p>
+
+            <div class="form-group" style="margin-bottom: 15px;" id="hrModalPosGroup">
+                <label for="hrModalPositionId" style="font-weight: 600;">Vị trí chuyên môn mới (*):</label>
+                <select id="hrModalPositionId" name="positionId" class="form-control" onchange="onHrModalPosChange()" required>
+                    <option value="">-- Chọn Vị Trí Chuyên Môn --</option>
+                </select>
+            </div>
 
             <div class="form-group" style="margin-bottom: 15px;">
-                <label for="levelId" style="font-weight: 600;">Xác định Cấp bậc (Job Level) tại vị trí mới (*):</label>
-                <select id="levelId" name="levelId" class="form-control" required>
+                <label for="hrModalLevelId" style="font-weight: 600;">Xác định Cấp bậc (Job Level) tại vị trí mới (*):</label>
+                <select id="hrModalLevelId" name="levelId" class="form-control" required>
                     <option value="">-- Chọn Cấp Bậc --</option>
-                    <%
-                        if (jobLevels != null) {
-                            for (JobLevel jl : jobLevels) {
-                    %>
-                        <option value="<%= jl.getLevelId() %>"><%= jl.getLevelName() %> (Bậc <%= jl.getRankOrder() %>)</option>
-                    <%
-                            }
-                        }
-                    %>
                 </select>
             </div>
 
@@ -263,6 +263,55 @@
 </div>
 
 <script>
+var hrAllPositions = [
+    <% if (positions != null) { for (Position p : positions) { %>
+    { value: "<%= p.getPositionId() %>", text: "<%= p.getPositionName().replace("\"", "\\\"") %>", dept: "<%= p.getDepartmentId() != null ? p.getDepartmentId() : 0 %>" },
+    <% } } %>
+];
+
+var hrAllLevels = [
+    <% if (jobLevels != null) { for (JobLevel jl : jobLevels) { %>
+    { value: "<%= jl.getLevelId() %>", text: "<%= jl.getLevelName().replace("\"", "\\\"") %> (Bậc <%= jl.getRankOrder() %>)", pos: "<%= jl.getPositionId() != null ? jl.getPositionId() : 0 %>" },
+    <% } } %>
+];
+
+function onHrModalPosChange() {
+    var posSelect = document.getElementById("hrModalPositionId");
+    var selectedPos = posSelect ? posSelect.value : "";
+    populateHrModalLevels(selectedPos);
+}
+
+function populateHrModalLevels(selectedPos) {
+    var lvlSelect = document.getElementById("hrModalLevelId");
+    if (!lvlSelect) return;
+    lvlSelect.innerHTML = "";
+    var defOpt = document.createElement("option");
+    defOpt.value = "";
+    defOpt.text = "-- Chọn Cấp Bậc --";
+    lvlSelect.appendChild(defOpt);
+
+    if (!selectedPos || selectedPos === "" || selectedPos === "0") {
+        return;
+    }
+
+    var matched = hrAllLevels.filter(function(item) {
+        return String(item.pos) === String(selectedPos);
+    });
+
+    if (matched.length === 0) {
+        matched = hrAllLevels.filter(function(item) {
+            return item.pos === "0" || !item.pos;
+        });
+    }
+
+    matched.forEach(function(item) {
+        var opt = document.createElement("option");
+        opt.value = item.value;
+        opt.text = item.text;
+        lvlSelect.appendChild(opt);
+    });
+}
+
 function openManagerModal(reqId, status, empName) {
     document.getElementById("mgrModalReqId").value = reqId;
     document.getElementById("mgrModalStatus").value = status;
@@ -283,9 +332,44 @@ function closeManagerModal() {
     document.getElementById("managerModal").style.display = "none";
 }
 
-function openHrModal(reqId, empName, deptName, posName) {
+function openHrModal(reqId, empName, deptName, posName, deptId, targetPosId) {
     document.getElementById("hrModalReqId").value = reqId;
-    document.getElementById("hrModalDesc").innerHTML = "Thực hiện chuyển nhân sự <b>" + empName + "</b> sang phòng ban <b>" + deptName + "</b> (Vị trí: " + (posName ? posName : "Theo sắp xếp") + ").";
+    document.getElementById("hrModalDesc").innerHTML = "Thực hiện chuyển nhân sự <b>" + empName + "</b> sang phòng ban <b>" + deptName + "</b>.";
+    
+    var posSelect = document.getElementById("hrModalPositionId");
+    if (posSelect) {
+        posSelect.innerHTML = "";
+        var defOpt = document.createElement("option");
+        defOpt.value = "";
+        defOpt.text = "-- Chọn Vị Trí Chuyên Môn --";
+        posSelect.appendChild(defOpt);
+
+        var deptPosList = hrAllPositions.filter(function(item) {
+            return String(item.dept) === String(deptId) || item.dept === "0";
+        });
+
+        if (deptPosList.length === 0) {
+            deptPosList = hrAllPositions;
+        }
+
+        deptPosList.forEach(function(item) {
+            var opt = document.createElement("option");
+            opt.value = item.value;
+            opt.text = item.text;
+            if (targetPosId && String(item.value) === String(targetPosId)) {
+                opt.selected = true;
+            }
+            posSelect.appendChild(opt);
+        });
+
+        if (targetPosId && targetPosId > 0) {
+            posSelect.value = String(targetPosId);
+        }
+    }
+
+    var effectivePos = (targetPosId && targetPosId > 0) ? String(targetPosId) : (posSelect ? posSelect.value : "");
+    populateHrModalLevels(effectivePos);
+
     document.getElementById("hrModal").style.display = "flex";
 }
 function closeHrModal() {
