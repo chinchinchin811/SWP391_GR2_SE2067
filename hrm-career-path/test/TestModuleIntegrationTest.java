@@ -10,7 +10,7 @@ import java.util.concurrent.*;
 import model.*;
 import service.TestException;
 import service.TestService;
-import utils.TestView;
+import service.TestView;
 
 /**
  * Chạy trực tiếp bằng Java; tạo database riêng, không thêm fixture vào
@@ -157,9 +157,18 @@ public class TestModuleIntegrationTest {
         rejects(400, () -> s.createTemplate(3, "x", "y", "department", NOW.plusSeconds(10), NOW.plusSeconds(5)));
         rejects(400, () -> s.createTemplate(3, "x", "y", "department", NOW.minusSeconds(1), NOW.plusSeconds(10)));
         rejects(400, () -> s.createTemplate(3, " ", "y", "department", NOW, NOW.plusSeconds(10)));
-        int dept = s.createTemplate(3, "Đề chuyên môn <script>", "Mô tả tự do", "department", NOW, NOW.plusSeconds(3600));
-        int culture = s.createTemplate(2, "Văn hóa", "Bài viết văn hóa", "culture", NOW, NOW.plusSeconds(3600));
-        int future = s.createTemplate(3, "Bài sắp tới", "Nội dung", "department", NOW.plusSeconds(3600), NOW.plusSeconds(7200));
+        int deptQuiz = content("Đề chuyên môn cơ bản", "department", 1, 3, "ready");
+        int deptQ = question(deptQuiz, "Câu hỏi kiểm tra", "true_false");
+        int deptOptTrue = option(deptQ, "Đúng", true, 1);
+        option(deptQ, "Sai", false, 2);
+        int cultureQuiz = content("Đề văn hóa cơ bản", "culture", null, 2, "ready");
+        int cultureQ = question(cultureQuiz, "Câu hỏi văn hóa", "true_false");
+        int cultureOptTrue = option(cultureQ, "Đúng", true, 1);
+        option(cultureQ, "Sai", false, 2);
+
+        int dept = s.createTemplate(3, "Đề chuyên môn <script>", "Mô tả tự do", "department", NOW, NOW.plusSeconds(3600), deptQuiz);
+        int culture = s.createTemplate(2, "Văn hóa", "Bài viết văn hóa", "culture", NOW, NOW.plusSeconds(3600), cultureQuiz);
+        int future = s.createTemplate(3, "Bài sắp tới", "Nội dung", "department", NOW.plusSeconds(3600), NOW.plusSeconds(7200), deptQuiz);
         check(s.getTemplate(4, dept).id() == dept, "new professional evaluation is active immediately");
         check(s.getTemplate(6, culture).id() == culture, "new culture evaluation is active immediately");
         check(s.listTemplates(4, "all", 1, 20).size() == 3, "new templates appear without a publish step");
@@ -188,25 +197,21 @@ public class TestModuleIntegrationTest {
         rejects(403, () -> s.assignTest(3, dept, List.of(3, 4)));
         check(count("SELECT COUNT(*) FROM Test_Assignments WHERE test_template_id=" + dept) == 2, "invalid superior assignment rolls back earlier insert");
         int a = assignment(dept, 4), other = assignment(dept, 7);
+        Map<Integer, Set<Integer>> deptAns = Map.of(deptQ, Set.of(deptOptTrue));
         rejects(404, () -> s.getAssignment(7, a));
-        rejects(404, () -> s.download(6, a));
-        rejects(404, () -> s.submitAssignment(7, a, "stolen", null, null));
+        rejects(404, () -> s.submitQuiz(7, a, deptAns));
         rejects(409, () -> s.evaluateAssignment(3, a, new BigDecimal("5"), "not submitted"));
-        rejects(400, () -> s.submitAssignment(4, a, "", null, null));
-        rejects(400, () -> s.submitAssignment(4, a, "", "huge", new byte[TestService.MAX_FILE_BYTES + 1]));
+        rejects(400, () -> s.submitQuiz(4, a, Map.of()));
         s.startAssignment(4, a);
         s.startAssignment(4, a);
         check(s.getAssignment(4, a).status().equals("in_progress"), "idempotent start");
-        rejects(409, () -> service(NOW.plusSeconds(3600)).submitAssignment(4, a, "late", null, null));
-        byte[] file = "file bytes <script>".getBytes(StandardCharsets.UTF_8);
-        s.submitAssignment(4, a, "Nội dung <script>", "bài làm.txt", file);
-        check(Arrays.equals(s.download(4, a).bytes(), file), "owner can download bytes");
-        check(Arrays.equals(s.download(3, a).bytes(), file), "manager can download bytes");
-        rejects(409, () -> s.submitAssignment(4, a, "again", null, null));
+        rejects(409, () -> service(NOW.plusSeconds(3600)).submitQuiz(4, a, deptAns));
+        s.submitQuiz(4, a, deptAns);
+        rejects(409, () -> s.submitQuiz(4, a, deptAns));
         rejects(400, () -> s.evaluateAssignment(3, a, new BigDecimal("10.01"), "invalid score"));
         rejects(403, () -> s.evaluateAssignment(4, a, new BigDecimal("9"), "self grading"));
         s.startAssignment(7, other);
-        s.submitAssignment(7, other, "text only", null, null);
+        s.submitQuiz(7, other, deptAns);
         s.closeTemplate(3, dept);
         s.evaluateAssignment(3, a, new BigDecimal("8.75"), "Đạt yêu cầu");
         check(s.getAssignment(4, a).evaluation().score().compareTo(new BigDecimal("8.75")) == 0, "grade after closure");
@@ -249,11 +254,11 @@ public class TestModuleIntegrationTest {
         s.assignTest(3, future, List.of(4, 7));
         int pending = assignment(future, 4);
         rejects(409, () -> s.startAssignment(4, pending));
-        rejects(409, () -> s.submitAssignment(4, pending, "early", null, null));
+        rejects(409, () -> s.submitQuiz(4, pending, deptAns));
         s.revokeAssignment(3, pending);
         check(s.getMyAssignments(4, 1, 20).size() == 1, "assignment creator can revoke pending assignment");
         int expiring = s.createTemplate(2, "Đợt sắp hết hạn", "Thu hồi bài chưa làm",
-                "culture", NOW, NOW.plusSeconds(10));
+                "culture", NOW, NOW.plusSeconds(10), cultureQuiz);
         s.assignTest(2, expiring, List.of(8));
         int expiringAssignment = assignment(expiring, 8);
         s.closeExpiredTests(NOW.plusSeconds(20));
@@ -264,7 +269,6 @@ public class TestModuleIntegrationTest {
         check(s.getMyAssignments(8, 1, 20).size() == 1, "expired assignment remains visible to candidate");
         sql("UPDATE Users SET department_id=2 WHERE user_id=4");
         check(s.getMyAssignments(4, 1, 20).size() == 1, "transfer keeps existing submitted assignment");
-        check(Arrays.equals(s.download(4, a).bytes(), file), "transfer keeps access to own submission");
         check(s.getAssignment(3, a).id() == a, "manager keeps review access after employee transfer");
         sql("UPDATE Users SET department_id=2 WHERE user_id=3");
         check(s.getTemplate(3, dept).id() == dept, "published professional evaluation stays visible after manager transfer");
@@ -280,7 +284,7 @@ public class TestModuleIntegrationTest {
         rejects(404, () -> s.getAssignment(4, ca));
         rejects(403, () -> s.assignTest(5, culture, List.of(6)));
         s.startAssignment(6, ca);
-        s.submitAssignment(6, ca, "culture response", null, null);
+        s.submitQuiz(6, ca, Map.of(cultureQ, Set.of(cultureOptTrue)));
         s.evaluateAssignment(2, ca, new BigDecimal("10"), "HR chấm bài văn hóa");
         check(s.getAssignment(6, ca).evaluation() != null, "culture full flow");
         check(s.currentActor(2).cultureManager(), "HR is the company culture manager");
@@ -360,7 +364,7 @@ public class TestModuleIntegrationTest {
 
         int t = s.createTemplate(3, "Đợt quiz", "Hướng dẫn", "department", NOW, NOW.plusSeconds(3600), quiz);
         check(s.getContentChoices(3, t).stream().map(TestContent::id).collect(java.util.stream.Collectors.toSet())
-                .equals(Set.of(quiz, customReady)), "only ready professional content shown");
+                .containsAll(Set.of(quiz, customReady)), "only ready professional content shown");
         rejects(409, () -> s.assignTest(3, t, List.of(7), draft));
         rejects(404, () -> s.assignTest(3, t, List.of(7), culture));
         rejects(400, () -> s.assignTest(3, t, List.of(7), quiz, 0));

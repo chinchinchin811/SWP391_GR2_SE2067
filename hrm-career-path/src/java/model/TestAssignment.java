@@ -3,15 +3,14 @@ package model;
 import java.time.Instant;
 
 /**
- * Không tải byte file ở trang danh sách; file chỉ đọc qua endpoint có kiểm tra
- * quyền.
+ * Thông tin bài được giao của người làm.
  */
 public record TestAssignment(int id, int templateId, int assigneeId, String assigneeName,
         String assigneeRole,
         int assignedBy, String assignedByRole,
         String title, String testType, Instant startTime, Instant endTime,
         int durationMinutes, Instant startedAt,
-        String status, Instant submittedAt, String content, String fileName,
+        String status, Instant submittedAt,
         TestEvaluation evaluation, Integer contentId, String contentKind, String contentTitle,
         java.math.BigDecimal quizScore) {
 

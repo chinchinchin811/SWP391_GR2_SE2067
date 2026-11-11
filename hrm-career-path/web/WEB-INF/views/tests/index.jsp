@@ -1,6 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="java.util.*,java.time.*,model.*,policy.TestPolicy,service.TestService" %>
-<%@ page import="static utils.TestView.*" %>
+<%@ page import="java.util.*,java.time.*,model.*,service.TestPolicy,service.TestService" %>
+<%@ page import="static service.TestView.*" %>
 <%
     String view = (String) request.getAttribute("testView");
     TestActor actor = (TestActor) request.getAttribute("testActor");
@@ -169,34 +169,52 @@
                 <% } %>
             </div>
         </section>
-        <% if (candidates != null) { %>
+        <% if (candidates != null) {
+            boolean contentLocked = (templateAssignments != null && !templateAssignments.isEmpty()) || candidates.isEmpty();
+            Integer activeContentId = (templateAssignments != null && !templateAssignments.isEmpty() && templateAssignments.get(0).contentId() != null)
+                    ? templateAssignments.get(0).contentId() : template.defaultContentId();
+            int activeDurationMinutes = (templateAssignments != null && !templateAssignments.isEmpty())
+                    ? templateAssignments.get(0).durationMinutes() : TestService.DEFAULT_DURATION_MINUTES;
+        %>
         <section class="card"><div class="card-header"><h2>Giao bài</h2></div><div class="card-body">
                 <form method="post" action="<%= base %>" class="test-form">
                     <input type="hidden" name="csrf" value="<%= h(csrf) %>">
                     <input type="hidden" name="id" value="<%= template.id() %>">
-                    <input type="hidden" name="durationMinutes" value="<%= TestService.DEFAULT_DURATION_MINUTES %>">
+                    <% if (contentLocked && activeContentId != null) { %>
+                    <input type="hidden" name="contentId" value="<%= activeContentId %>">
+                    <% } %>
+                    <% if (contentLocked) { %>
+                    <input type="hidden" name="durationMinutes" value="<%= activeDurationMinutes %>">
+                    <% } %>
                     <label>Nội dung giao
-                        <select name="contentId" required>
+                        <select <%= contentLocked ? "disabled" : "name=\"contentId\" required" %>>
                             <% List<TestContent> choices=(List<TestContent>)request.getAttribute("contentChoices");
-                           for (String kind : List.of("quiz","question")) { %>
-                            <optgroup label="<%= "quiz".equals(kind) ? "Đề trắc nghiệm" : "Đề tự luận" %>">
-                                <% for (TestContent item:choices) { if (kind.equals(item.kind())) { %>
-                                <option value="<%= item.id() %>" <%= Objects.equals(template.defaultContentId(),item.id())?"selected":"" %>><%= h(item.title()) %></option>
-                                <% } } %>
-                            </optgroup><% } %>
+                               if (choices != null) for (TestContent item:choices) { if ("quiz".equals(item.kind())) { %>
+                            <option value="<%= item.id() %>" <%= Objects.equals(activeContentId,item.id())?"selected":"" %>><%= h(item.title()) %></option>
+                            <% } } %>
                         </select>
                     </label>
-                    <fieldset class="test-candidates"><legend>Người được giao</legend>
-                        <% if (candidates.isEmpty()) { %><p>Không còn người phù hợp chưa được giao.</p><% } %>
-                        <% for (TestActor candidate : candidates) { %>
-                        <label><input type="checkbox" name="assigneeId" value="<%= candidate.id() %>">
-                            <%= h(candidate.name()) %> · #<%= candidate.id() %><%= candidate.departmentId() == null ? "" : " · Phòng #" + candidate.departmentId() %></label>
-                            <% } %>
-                    </fieldset>
+                    <label>Thời gian làm bài (phút)
+                        <input type="number" min="<%= TestService.MIN_DURATION_MINUTES %>"
+                               max="<%= TestService.MAX_DURATION_MINUTES %>" step="1"
+                               value="<%= activeDurationMinutes %>"
+                               <%= contentLocked ? "disabled" : "name=\"durationMinutes\" required" %>>
+                    </label>
+                    <div class="test-candidates-field">
+                        <span class="test-candidates-label">Người được giao</span>
+                        <div class="test-candidates">
+                            <% if (candidates.isEmpty()) { %><p>Không còn người phù hợp chưa được giao.</p><% } %>
+                            <% for (TestActor candidate : candidates) { %>
+                            <label><input type="checkbox" name="assigneeId" value="<%= candidate.id() %>">
+                                <%= h(candidate.name()) %> · #<%= candidate.id() %><%= candidate.departmentId() == null ? "" : " · Phòng #" + candidate.departmentId() %></label>
+                                <% } %>
+                        </div>
+                    </div>
                     <div class="test-form-actions">
                         <button type="submit" class="btn btn-danger test-cancel-button" name="action" value="close" formnovalidate
                                 onclick="return confirm('Bạn có chắc muốn hủy đợt thi này?');">Hủy đợt thi</button>
-                        <button type="submit" class="btn btn-primary" name="action" value="assign" <%= candidates.isEmpty() ? "disabled" : "" %>>Giao cho người đã chọn</button>
+                        <button type="submit" class="btn btn-primary" name="action" value="assign" <%= candidates.isEmpty() ? "disabled" : "" %>>Giao bài</button>
+                        <button type="button" class="btn btn-secondary" id="selectAllCandidatesBtn" onclick="toggleAllCandidates(this)" <%= candidates.isEmpty() ? "disabled" : "" %>>Chọn tất cả nhân viên</button>
                     </div>
                 </form>
             </div></section><% } %>
@@ -254,7 +272,7 @@
                                 <% for (TestAssignment a : assignments) { %>
                         <tr><td><%= h(a.title()) %></td>
                             <td><%= "culture".equals(a.testType()) ? "Văn hóa chung" : "Đánh giá chuyên môn" %></td>
-                            <td><%= a.contentId()==null ? "—" : h(a.contentTitle()) %><% if(a.contentId()!=null) { %><br><small><%= "quiz".equals(a.contentKind()) ? "Trắc nghiệm" : "Câu hỏi" %></small><% } %></td>
+                            <td><%= a.contentId()==null ? "—" : h(a.contentTitle()) %><% if(a.contentId()!=null) { %><br><small>Trắc nghiệm</small><% } %></td>
                             <td><%= h(a.assigneeName()) %></td><td><%= time(a.startTime()) %></td><td><%= time(a.endTime()) %></td>
                             <td><%= a.durationMinutes() %> phút</td><td><%= a.timeExpired(now) ? "Hết giờ" : h(status(a.status())) %></td>
                             <td><%= time(a.submittedAt()) %></td><td><%= a.evaluation() == null ? "—" : h(a.evaluation().score()) %></td>
@@ -291,7 +309,7 @@
                 <% } %>
                 <div class="test-prose"><%= h(template.description()) %></div>
                 <% if (assignment.contentId()!=null) { %>
-                <h3><%= "quiz".equals(assignment.contentKind()) ? "Bộ đề trắc nghiệm: " : "Câu hỏi tự luận: " %><%= h(assignment.contentTitle()) %></h3>
+                <h3>Bộ đề trắc nghiệm: <%= h(assignment.contentTitle()) %></h3>
                 <% if (assignedContent!=null) { %>
                 <div class="test-prose"><%= h(assignedContent.content().prompt()) %></div>
                 <% } else if("pending".equals(assignment.status()) && !now.isBefore(template.endTime())) { %>
@@ -313,7 +331,7 @@
                                                           <%= canAnswer ? (!q.multipleChoice() ? "required" : "") : "disabled" %>>
                             <%= (char)('A'+optionNumber++) %>. <%= h(option.text()) %></label>
                             <% } %>
-                            <% if (assignment.assigneeId() != actor.id() && !q.correctOptionIds().isEmpty()) { %><p>Đáp án đúng (người quản lý):
+                            <% if (assignment.assigneeId() != actor.id() && !q.correctOptionIds().isEmpty()) { %><p>Đáp án đúng:
                             <% int correctNumber=0; for(TestQuestionOption option:q.options()) { if(Boolean.TRUE.equals(option.correct())) { if(correctNumber++>0){ %>, <% } %><%= h(option.text()) %><% } } %>
                         </p><% } %>
                     </fieldset><% } %>
@@ -328,16 +346,6 @@
                 </form>
                 <p>Hãy bấm “Bắt đầu làm” để mở nội dung trả lời.</p>
                 <% } %>
-                <% if (canSubmitTest && ownAssignment && startedAssignment && !"quiz".equals(assignment.contentKind())) { %>
-                <form method="post" action="<%= base %>" enctype="multipart/form-data" class="test-form" data-timed-submission>
-                    <input type="hidden" name="csrf" value="<%= h(csrf) %>"><input type="hidden" name="action" value="submit">
-                    <input type="hidden" name="id" value="<%= assignment.id() %>">
-                    <label>Nội dung bài làm <textarea name="content" rows="10" maxlength="50000"></textarea></label>
-                    <label>File bài làm (tối đa 5 MiB) <input type="file" name="file"></label>
-                    <p>Nhập nội dung hoặc đính kèm file. Sau khi nộp, bài không thể sửa.</p>
-                    <button class="btn btn-primary">Nộp bài</button>
-                </form>
-                <% } %>
                 <% if (ownAssignment && ("pending".equals(assignment.status()) || "in_progress".equals(assignment.status()))
                     && !canStartTest && !canSubmitTest) { %>
                 <p class="alert"><%= assignment.timeExpired(now)
@@ -346,9 +354,6 @@
                     <% } %>
                     <% if (assignment.submittedAt() != null) { %>
                 <h3>Bài đã nộp · <%= time(assignment.submittedAt()) %></h3>
-                <div class="test-prose"><%= h(assignment.content()) %></div>
-                <% if (assignment.fileName() != null) { %>
-                <p><a href="<%= base %>?action=download&amp;id=<%= assignment.id() %>">Tải file: <%= h(assignment.fileName()) %></a></p><% } %>
                 <% } %>
                 <% if (assignment.evaluation() != null) { %>
                 <h3>Kết quả: <%= h(assignment.evaluation().score()) %> / 10</h3>
@@ -377,6 +382,20 @@
     </div>
 </main>
 <script>
+    function toggleAllCandidates(button) {
+        var checkboxes = document.querySelectorAll('.test-candidates input[name="assigneeId"]');
+        if (!checkboxes.length)
+            return;
+        var allChecked = Array.prototype.every.call(checkboxes, function (cb) {
+            return cb.checked;
+        });
+        Array.prototype.forEach.call(checkboxes, function (cb) {
+            cb.checked = !allChecked;
+        });
+        if (button) {
+            button.textContent = allChecked ? 'Chọn tất cả nhân viên' : 'Bỏ chọn tất cả';
+        }
+    }
     function syncTestCreateForm() {
         var type = document.getElementById('testType'), mode = document.getElementById('contentMode');
         if (!type || !mode)

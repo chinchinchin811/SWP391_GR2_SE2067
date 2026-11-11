@@ -1,6 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ page import="java.util.*,model.*,policy.TestPolicy,service.TestService" %>
-<%@ page import="static utils.TestView.*" %>
+<%@ page import="java.util.*,model.*,service.TestPolicy,service.TestService" %>
+<%@ page import="static service.TestView.*" %>
 <%!
     private String questionType(String type) {
         if ("true_false".equals(type)) return "Đúng / Sai";

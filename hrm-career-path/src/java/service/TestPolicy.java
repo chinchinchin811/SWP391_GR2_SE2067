@@ -1,4 +1,4 @@
-package policy;
+package service;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -13,7 +13,9 @@ import model.TestTemplate;
  */
 public final class TestPolicy {
 
-    /** HR quản lý Văn hóa; MANAGER quản lý Chuyên môn; mentor quản lý đề lớp. */
+    /**
+     * HR quản lý Văn hóa; MANAGER quản lý Chuyên môn; mentor quản lý đề lớp.
+     */
     public boolean canManage(TestActor actor, TestTemplate t) {
         if (t.classId() != null) {
             return "learning".equals(t.type()) && actor.mentoredClassIds().contains(t.classId());
@@ -28,8 +30,8 @@ public final class TestPolicy {
     }
 
     /**
-     * HR được quản lý toàn bộ nội dung văn hóa và Học liệu của phòng HR;
-     * các vai trò khác chỉ sửa bộ đề do mình tạo.
+     * HR được quản lý toàn bộ nội dung văn hóa và Học liệu của phòng HR; các
+     * vai trò khác chỉ sửa bộ đề do mình tạo.
      */
     public boolean canEditContent(TestActor actor, TestContent content) {
         if (actor.cultureManager() && "culture".equals(content.type())) {
