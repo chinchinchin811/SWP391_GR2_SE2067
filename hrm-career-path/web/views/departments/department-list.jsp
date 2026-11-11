@@ -67,26 +67,16 @@
                             <td>
                                 <% boolean hasManager = (d.getManagerName() != null && !d.getManagerName().trim().isEmpty() && !"Chưa bổ nhiệm".equalsIgnoreCase(d.getManagerName().trim())); %>
                                 <% if (hasManager) { %>
-                                <div class="user-cell">
-                                    <div class="avatar-sm">
-                                        <%= d.getManagerName().substring(0, 1).toUpperCase() %>
-                                    </div>
-                                    <div>
-                                        <div class="user-fullname"><%= d.getManagerName() %></div>
-                                        <div class="user-sub"><span class="badge badge-manager" style="font-size: 10px; padding: 1px 6px;">Trưởng phòng</span></div>
-                                    </div>
-                                </div>
+                                    <span style="font-weight: 500; color: #1e293b;"><%= d.getManagerName() %></span>
                                 <% } else { %>
                                     <% if (roleId == 1 || roleId == 2) { %>
-                                    <div style="display: flex; align-items: center; justify-content: center;">
-                                        <button type="button" class="btn btn-sm btn-primary" style="padding: 4px 12px; font-size: 12px; font-weight: 500;"
-                                                title="Bổ nhiệm Trưởng phòng cho phòng ban này"
-                                                onclick="openAssignModal(<%= d.getDepartmentId() %>, '<%= d.getDepartmentName().replace("'", "\\'") %>', 0)">
-                                            <i class="fa-solid fa-user-plus"></i> Bổ nhiệm
-                                        </button>
-                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" style="padding: 3px 10px; font-size: 12px; font-weight: 500;"
+                                            title="Bổ nhiệm Trưởng phòng cho phòng ban này"
+                                            onclick="openAssignModal(<%= d.getDepartmentId() %>, '<%= d.getDepartmentName().replace("'", "\\'") %>', 0)">
+                                        <i class="fa-solid fa-user-plus"></i> Bổ nhiệm
+                                    </button>
                                     <% } else { %>
-                                    <div style="text-align: center; color: #94a3b8; font-size: 13px;">Chưa bổ nhiệm</div>
+                                    <span style="color: #94a3b8; font-size: 13px;">Chưa bổ nhiệm</span>
                                     <% } %>
                                 <% } %>
                             </td>
