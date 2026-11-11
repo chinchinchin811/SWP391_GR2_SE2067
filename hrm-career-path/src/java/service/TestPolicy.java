@@ -13,9 +13,7 @@ import model.TestTemplate;
  */
 public final class TestPolicy {
 
-    /**
-     * HR quản lý Văn hóa; MANAGER quản lý Chuyên môn; mentor quản lý đề lớp.
-     */
+    /** HR quản lý Văn hóa; MANAGER quản lý Chuyên môn; mentor quản lý đề lớp. */
     public boolean canManage(TestActor actor, TestTemplate t) {
         if (t.classId() != null) {
             return "learning".equals(t.type()) && actor.mentoredClassIds().contains(t.classId());
@@ -30,8 +28,8 @@ public final class TestPolicy {
     }
 
     /**
-     * HR được quản lý toàn bộ nội dung văn hóa và Học liệu của phòng HR; các
-     * vai trò khác chỉ sửa bộ đề do mình tạo.
+     * HR được quản lý toàn bộ nội dung văn hóa và Học liệu của phòng HR;
+     * các vai trò khác chỉ sửa bộ đề do mình tạo.
      */
     public boolean canEditContent(TestActor actor, TestContent content) {
         if (actor.cultureManager() && "culture".equals(content.type())) {
@@ -94,13 +92,15 @@ public final class TestPolicy {
     }
 
     /**
-     * Hạn nộp cá nhân không vượt quá giờ đóng chung của đợt.
+     * Thời gian làm bài tính riêng từ lúc nhân viên bấm bắt đầu làm cho đến hết
+     * thời lượng (durationMinutes) của bài test.
      */
     public boolean canSubmit(TestActor actor, TestAssignment a, TestTemplate t, Instant now) {
-        return a.assigneeId() == actor.id() && canView(actor, t) && "published".equals(t.status())
-                && !now.isBefore(t.startTime()) && now.isBefore(t.endTime())
+        return a.assigneeId() == actor.id() && canView(actor, t)
+                && ("published".equals(t.status()) || !now.isBefore(t.endTime()))
+                && !now.isBefore(t.startTime())
                 && "in_progress".equals(a.status())
-                && (a.startedAt() == null || now.isBefore(a.submissionDeadline()));
+                && a.startedAt() != null && now.isBefore(a.submissionDeadline());
     }
 
     /**

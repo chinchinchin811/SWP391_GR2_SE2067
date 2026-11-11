@@ -15,14 +15,14 @@ public record TestAssignment(int id, int templateId, int assigneeId, String assi
         java.math.BigDecimal quizScore) {
 
     /**
-     * Hạn cá nhân không bao giờ vượt quá giờ đóng chung của đợt giao bài.
+     * Hạn nộp cá nhân tính riêng từ thời điểm nhân viên bấm bắt đầu làm bài
+     * cộng với thời lượng làm bài (durationMinutes).
      */
     public Instant submissionDeadline() {
         if (startedAt == null) {
             return null;
         }
-        Instant personalDeadline = startedAt.plusSeconds(durationMinutes * 60L);
-        return personalDeadline.isBefore(endTime) ? personalDeadline : endTime;
+        return startedAt.plusSeconds(durationMinutes * 60L);
     }
 
     public boolean timeExpired(Instant now) {
