@@ -64,7 +64,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="departmentId">Phòng ban mới:</label>
-                            <select id="departmentId" name="departmentId" class="form-control" onchange="filterAssignPositions(false)">
+                            <select id="departmentId" name="departmentId" class="form-control" onchange="onAssignDeptChange()">
                                 <option value="0" <%= (emp.getDepartmentId() == null || emp.getDepartmentId() == 0) ? "selected" : "" %>>-- Giữ nguyên hoặc Chưa phân --</option>
                                 <%
                                     if (departments != null) {
@@ -81,7 +81,7 @@
 
                         <div class="form-group">
                             <label for="positionId">Vị trí chuyên môn mới:</label>
-                            <select id="positionId" name="positionId" class="form-control">
+                            <select id="positionId" name="positionId" class="form-control" onchange="filterAssignLevels(false)">
                                 <option value="0" data-dept="0">-- Giữ nguyên hoặc Chưa phân --</option>
                                 <%
                                     if (positions != null) {
@@ -107,13 +107,14 @@
                         <div class="form-group">
                             <label for="levelId">Cấp bậc mới:</label>
                             <select id="levelId" name="levelId" class="form-control">
-                                <option value="0">-- Giữ nguyên hoặc Chưa phân --</option>
+                                <option value="0" data-pos="0">-- Giữ nguyên hoặc Chưa phân --</option>
                                 <%
                                     if (jobLevels != null) {
                                         for (JobLevel lvl : jobLevels) {
+                                            int lPosId = (lvl.getPositionId() != null) ? lvl.getPositionId() : 0;
                                             boolean isSel = (emp.getLevelId() != null && emp.getLevelId().equals(lvl.getLevelId()));
                                 %>
-                                <option value="<%= lvl.getLevelId() %>" <%= isSel ? "selected" : "" %>><%= lvl.getLevelName() %></option>
+                                <option value="<%= lvl.getLevelId() %>" data-pos="<%= lPosId %>" <%= isSel ? "selected" : "" %>><%= lvl.getLevelName() %></option>
                                 <%
                                         }
                                     }
@@ -178,8 +179,69 @@
         }
     }
 
+    function filterAssignLevels(preserveSelection) {
+        var posSelect = document.getElementById("positionId");
+        var levelSelect = document.getElementById("levelId");
+        if (!posSelect || !levelSelect)
+            return;
+
+        var selectedPos = posSelect.value;
+        var currentLevel = levelSelect.value;
+        var hasMatchingOption = false;
+
+        var matchingCount = 0;
+        for (var i = 0; i < levelSelect.options.length; i++) {
+            var opt = levelSelect.options[i];
+            var optPos = opt.getAttribute("data-pos");
+            if (opt.value !== "0" && optPos === selectedPos) {
+                matchingCount++;
+            }
+        }
+
+        for (var i = 0; i < levelSelect.options.length; i++) {
+            var opt = levelSelect.options[i];
+            var optPos = opt.getAttribute("data-pos");
+
+            if (opt.value === "0") {
+                opt.style.display = "";
+                opt.hidden = false;
+            } else if (selectedPos === "0" || selectedPos === "") {
+                opt.style.display = "";
+                opt.hidden = false;
+                if (opt.value === currentLevel) {
+                    hasMatchingOption = true;
+                }
+            } else if (matchingCount > 0 && optPos === selectedPos) {
+                opt.style.display = "";
+                opt.hidden = false;
+                if (opt.value === currentLevel) {
+                    hasMatchingOption = true;
+                }
+            } else if (matchingCount === 0 && optPos === "0") {
+                opt.style.display = "";
+                opt.hidden = false;
+                if (opt.value === currentLevel) {
+                    hasMatchingOption = true;
+                }
+            } else {
+                opt.style.display = "none";
+                opt.hidden = true;
+            }
+        }
+
+        if (!hasMatchingOption && !preserveSelection && selectedPos !== "0") {
+            levelSelect.value = "0";
+        }
+    }
+
+    function onAssignDeptChange() {
+        filterAssignPositions(false);
+        filterAssignLevels(false);
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
         filterAssignPositions(true);
+        filterAssignLevels(true);
     });
 </script>
 
