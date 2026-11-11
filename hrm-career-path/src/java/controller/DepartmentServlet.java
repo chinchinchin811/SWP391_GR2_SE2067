@@ -283,9 +283,16 @@ public class DepartmentServlet extends HttpServlet {
 
         try {
             int deptId = Integer.parseInt(deptIdStr);
+            Department targetDept = departmentDAO.getDepartmentById(deptId);
             Integer managerId = null;
             if (managerIdStr != null && !managerIdStr.isEmpty() && !managerIdStr.equals("0")) {
                 int mid = Integer.parseInt(managerIdStr);
+                if (targetDept != null && !targetDept.isStatus()) {
+                    request.getSession().setAttribute("errorMessage", "Phòng ban '" + targetDept.getDepartmentName()
+                            + "' đang ở trạng thái Tạm ngưng! Không thể bổ nhiệm Trưởng phòng cho đến khi phòng ban được kích hoạt lại.");
+                    response.sendRedirect(request.getContextPath() + "/departments");
+                    return;
+                }
                 User cand = userDAO.getUserById(mid);
                 if (cand != null && cand.getRoleId() == 1) {
                     request.getSession().setAttribute("errorMessage", "Quản trị viên (Admin) không thể được bổ nhiệm làm Trưởng phòng!");

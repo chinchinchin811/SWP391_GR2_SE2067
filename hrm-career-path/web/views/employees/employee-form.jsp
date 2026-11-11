@@ -258,12 +258,16 @@
                                         for (Department d : departments) {
                                             boolean hasMgr = (d.getManagerName() != null && !d.getManagerName().trim().isEmpty());
                                             String mgrInfo = hasMgr ? " (Đã có TP: " + d.getManagerName() + ")" : " (Chưa có TP)";
+                                            boolean isInactive = !d.isStatus();
+                                            boolean isCurrentDept = (emp != null && emp.getDepartmentId() != null && emp.getDepartmentId().equals(d.getDepartmentId()));
                                 %>
                                 <option value="<%= d.getDepartmentId() %>" 
                                         data-has-manager="<%= hasMgr %>" 
                                         data-manager-name="<%= hasMgr ? d.getManagerName() : "" %>"
-                                        <%= (emp != null && emp.getDepartmentId() != null && emp.getDepartmentId().equals(d.getDepartmentId())) ? "selected" : "" %>>
-                                    <%= d.getDepartmentName() %><%= mgrInfo %>
+                                        data-status="<%= d.isStatus() %>"
+                                        <%= (isInactive && !isCurrentDept) ? "disabled style='color: #94a3b8; background-color: #f1f5f9;'" : "" %>
+                                        <%= isCurrentDept ? "selected" : "" %>>
+                                    <%= d.getDepartmentName() %><%= isInactive ? " (Tạm ngưng - Không thể tiếp nhận)" : mgrInfo %>
                                 </option>
                                 <%
                                         }
@@ -384,6 +388,13 @@
 
         var selectedRole = roleSelect.value;
         var selectedDeptOpt = deptSelect.options[deptSelect.selectedIndex];
+
+        if (selectedDeptOpt && selectedDeptOpt.getAttribute("data-status") === "false") {
+            alertEl.style.display = "block";
+            alertEl.style.color = "#dc2626";
+            alertEl.innerText = "⚠ Phòng ban này đang Tạm ngưng, không thể phân bổ hoặc tiếp nhận nhân sự!";
+            return;
+        }
 
         if (selectedRole === "3") { // MANAGER
             if (deptLabel)
@@ -712,6 +723,15 @@
 
         var roleSelect = document.getElementById("roleId");
         var deptSelect = document.getElementById("departmentId");
+        if (deptSelect && deptSelect.value && deptSelect.value !== "0") {
+            var selectedOpt = deptSelect.options[deptSelect.selectedIndex];
+            if (selectedOpt && selectedOpt.getAttribute("data-status") === "false") {
+                alert("Phòng ban '" + selectedOpt.text.trim() + "' đang ở trạng thái Tạm ngưng! Không thể phân bổ hoặc tiếp nhận nhân sự mới cho đến khi được kích hoạt lại.");
+                deptSelect.focus();
+                return false;
+            }
+        }
+
         if (roleSelect && roleSelect.value === "3") { // MANAGER
             if (deptSelect && (deptSelect.value === "0" || deptSelect.value === "")) {
                 alert("Trưởng phòng bắt buộc phải chọn một phòng ban cụ thể!");

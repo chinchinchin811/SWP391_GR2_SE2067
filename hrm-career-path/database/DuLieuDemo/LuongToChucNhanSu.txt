@@ -1,77 +1,434 @@
-1) Add Department
+================================================================================
+HỆ THỐNG QUẢN LÝ LỘ TRÌNH CÔNG DANH (CPMS)
+TÀI LIỆU DỮ LIỆU MẪU KIỂM THỬ: LUỒNG 1 - TỔ CHỨC PHÒNG BAN & NHÂN SỰ
+(Department & Employee Organization Workflow)
+================================================================================
 
-    Mẫu 1:Phòng Nghiên Cứu & Phát Triển (R&D) – Trạng thái hoạt động, chưa gán Trưởng phòng
-    Tên Phòng Ban (*): Phòng Nghiên Cứu & Phát Triển (R&D)
-    Trưởng Phòng (Manager): -- Chưa bổ nhiệm --
-    Mô Tả Chức Năng: Nghiên cứu công nghệ mới, ứng dụng AI và phát triển các sản phẩm phần mềm mẫu (PoC) cho doanh nghiệp.
-    Trạng Thái: Đang hoạt động
+Tài liệu này cung cấp đầy đủ các bộ dữ liệu mẫu sẵn sàng dùng để sao chép (copy - paste)
+khi thực hiện kiểm thử thủ công (Manual Testing) hoặc tự động hóa (Automation Testing) 
+trên giao diện web của Hệ thống CPMS theo đúng luồng hoạt động chuẩn:
+Admin Tạo Phòng Ban -> Cập Nhật Phòng Ban -> Tạo Vị Trí & Cấp Bậc -> 
+Tạo Lộ Trình Công Danh (Career Path) -> HR Bổ Nhiệm Quản Lý -> HR Thêm Nhân Viên Mới.
 
-    Mẫu 2: Phòng Đảm Bảo Chất Lượng & Tuân Thủ (QA & QC) – Có bổ nhiệm Trưởng phòng
-    Tên Phòng Ban (*): Phòng Đảm Bảo Chất Lượng & Tuân Thủ (QA/QC)
-    Trưởng Phòng (Manager): Chọn một nhân sự bất kỳ trong danh sách (ví dụ: Trần Văn Minh (MANAGER) hoặc nhân sự khả dụng)
-    Mô Tả Chức Năng: Chịu trách nhiệm kiểm thử tự động, đánh giá chất lượng phần mềm và kiểm soát tuân thủ quy trình phát triển Agile/Scrum.
-    Trạng Thái: Đang hoạt động
+--------------------------------------------------------------------------------
+MỤC LỤC
+I. Danh sách Tài khoản Đăng nhập Kiểm thử
+II. Bước 1: Admin Tạo Phòng Ban Mới (Create Department)
+III. Bước 2: Admin Cập Nhật Phòng Ban (Update Department)
+IV. Bước 3: Admin Tạo Vị Trí & 6 Cấp Bậc Ngạch (Create Position & Levels)
+V. Bước 4: Admin Thiết Lập Lộ Trình & Tiêu Chuẩn Thăng Tiến (Create Career Path & Criteria)
+VI. Bước 5: Manager Đề Xuất Vị Trí & Admin Phê Duyệt / Giải Trình (Position Requests & Decision)
+VII. Bước 6: HR Bổ Nhiệm Trưởng Phòng (Add / Assign Manager)
+VIII. Bước 7: HR Thêm Mới Nhân Sự & Onboarding (Add New Employee)
+--------------------------------------------------------------------------------
 
-    Mẫu 3: Phòng Chăm Sóc Khách Hàng (Customer Success)
-    Tên Phòng Ban (*): Phòng Chăm Sóc Khách Hàng & Vận Hành (CS)
-    Trưởng Phòng (Manager): -- Chưa bổ nhiệm --
-    Mô Tả Chức Năng: Tiếp nhận phản hồi, hỗ trợ kỹ thuật khách hàng 24/7 và đảm bảo trải nghiệm người dùng tối ưu sau triển khai.
-    Trạng Thái: Đang hoạt động
 
-    Mẫu 4: Phòng ban thử nghiệm – Trạng thái Tạm ngưng (Inactive)
-    Tên Phòng Ban (*): Ban Quản Lý Dự Án Nâng Cấp Hệ Thống (PMO)
-    Trưởng Phòng (Manager): -- Chưa bổ nhiệm --
-    Mô Tả Chức Năng: Tổ chức tạm thời phụ trách đề án số hóa quy trình nội bộ quý 4, dự kiến kích hoạt chính thức vào tháng tới.
-    Trạng Thái: Tạm ngưng
+================================================================================
+I. DANH SÁCH TÀI KHOẢN ĐĂNG NHẬP KIỂM THỬ TRÊN HỆ THỐNG
+================================================================================
+1. Tài khoản Quản trị viên (Admin - Phụ trách Phòng ban, Vị trí, Lộ trình, Duyệt đề xuất):
+   - Tên đăng nhập: admin
+   - Mật khẩu: 123
+   - Quyền hạn: Toàn quyền cấu hình sơ đồ tổ chức, vị trí, barem thăng tiến, duyệt mở vị trí mới.
 
-2) Add Manager
-Mẫu 1: Đề xuất vị trí AI / Machine Learning Engineer (Phòng IT)
-    Phòng Ban Đề Xuất: Phòng Kỹ Thuật (IT) (Hệ thống tự động điền)
-    Tên Vị Trí Chuyên Môn Đề Xuất (*): AI / Machine Learning Engineer
-    Mô Tả Vai Trò & Trách Nhiệm Vị Trí: Nghiên cứu mô hình học máy, phát triển và tích hợp các giải pháp AI (LLM, xử lý ngôn ngữ tự nhiên) vào sản phẩm phần mềm của công ty. Phối hợp với đội ngũ Backend để tối ưu hiệu năng mô hình.
-    Lý Do Cần Mở Vị Trí Mới (*): Trong quý 4 công ty mở rộng sang mảng sản phẩm thông minh cho doanh nghiệp, hiện tại khối IT chưa có nhân sự chuyên sâu về Data Science và AI dẫn đến việc phụ thuộc đối tác bên ngoài.
+2. Tài khoản Nhân sự (HR - Phụ trách Bổ nhiệm Trưởng phòng, Tuyển dụng/Thêm mới nhân sự):
+   - Tên đăng nhập: hr_manager
+   - Mật khẩu: 123
+   - Họ và tên: Phạm Thu Hà
 
-Mẫu 2: Đề xuất vị trí Security & Compliance Officer (Phòng IT)
-    Phòng Ban Đề Xuất: Phòng Kỹ Thuật (IT)
-    Tên Vị Trí Chuyên Môn Đề Xuất (*): Security & Compliance Officer
-    Mô Tả Vai Trò & Trách Nhiệm Vị Trí: Đánh giá lỗ hổng bảo mật, rà soát mã nguồn định kỳ, thiết lập chính sách an toàn thông tin theo chuẩn ISO 27001 và hỗ trợ kiểm thử xâm nhập (Penetration Testing).
-    Lý Do Cần Mở Vị Trí Mới (*): Hệ thống vừa ký hợp đồng với khách hàng khối tài chính ngân hàng, đòi hỏi phải có chuyên viên an toàn thông tin chuyên trách để đáp ứng điều kiện bảo mật của hợp đồng.    
+3. Tài khoản Trưởng phòng Đơn vị (Manager - Phụ trách Đề xuất mở vị trí mới):
+   - Trưởng phòng Kỹ Thuật (IT): manager_it / 123 (Trần Văn Minh)
+   - Trưởng phòng Kinh Doanh (Sales): manager_sales / 123 (Trần Thị Bích)
+   - Trưởng phòng Marketing: manager_mkt / 123 (Lê Hoàng Nam)
+   - Trưởng phòng Kế Toán: manager_acc / 123 (Đỗ Thị Mai)
 
-3) Explain Decision về Position của Admin
-Phương án 1:
-Trường hợp 1: Phê Duyệt (APPROVED)
-Hành động: Bấm nút Phê Duyệt & Tạo Vị Trí (APPROVED)
-Ý kiến / Lý do giải trình gửi tới Trưởng phòng (decisionNote):
-Đồng ý phê duyệt đề xuất bổ sung vị trí AI / Machine Learning Engineer vào cơ cấu Phòng Kỹ Thuật (IT). Giao Phòng Nhân sự (HR) phối hợp cùng Trưởng phòng IT lên bản mô tả công việc (JD) chi tiết và lập kế hoạch tuyển dụng trong quý 4 theo hạn mức ngân sách đã phê duyệt.
-Trường hợp 2: Từ Chối (REJECTED)
-Hành động: Bấm nút Từ Chối (REJECTED)
-Ý kiến / Lý do giải trình gửi tới Trưởng phòng (decisionNote):
-Đề xuất chưa được thông qua. Lý do: Nhu cầu tuyển dụng vị trí AI / Machine Learning Engineer chưa phù hợp với chiến lược phát triển sản phẩm của công ty trong năm nay. Đề nghị Trưởng phòng xem xét lại đề án và điều chỉnh mục tiêu cho phù hợp với nguồn lực hiện có.
 
-5) Mẫu add employee
- Mẫu 1: Thêm mới Lập trình viên Frontend (Fresher)
-Tên đăng nhập (Username) (*): fe_quocviet
-Mật khẩu khởi tạo: 123 (hoặc để trống tự nhận mặc định)
-Họ và Tên (*): Vũ Quốc Việt
-Email (*): viet.vq@hrm.com
-Số điện thoại: 0901234588 (10 số bắt đầu bằng 0)
-Giới tính: Nam
-Ngày sinh (*): 2002-09-15 (Đủ trên 18 tuổi)
-Vai trò (*): EMPLOYEE
-Phòng ban: Phòng Kỹ Thuật (IT)
-Vị trí chuyên môn: Frontend Developer
-Cấp bậc khởi điểm: Fresher
+================================================================================
+II. BƯỚC 1: ADMIN TẠO PHÒNG BAN MỚI (CREATE DEPARTMENT)
+================================================================================
+Menu truy cập: Quản Trị Hệ Thống -> Danh Sách Phòng Ban -> Nút "Tạo Phòng Ban Mới"
+URL: http://localhost:8084/hrm-career-path/departments?action=create
 
- Mẫu 2: Thêm mới Chuyên viên Tuyển dụng (Junior)
-Tên đăng nhập (Username) (*): hr_yenlinh
-Mật khẩu khởi tạo: 123
-Họ và Tên (*): Nguyễn Yến Linh
-Email (*): linh.ny@hrm.com
-Số điện thoại: 0901234599
-Giới tính: Nữ
-Ngày sinh (*): 1999-04-20
-Vai trò (*): EMPLOYEE
-Phòng ban: Phòng Nhân Sự (HR)
-Vị trí chuyên môn: Talent Acquisition Specialist
-Cấp bậc khởi điểm: Junior
+--- [A. CÁC BỘ DỮ LIỆU HỢP LỆ (POSITIVE CASES)] ---
 
+Mẫu 1: Phòng Nghiên Cứu & Phát Triển (R&D) – Trạng thái Hoạt động
+- Tên Phòng Ban (*): Phòng Nghiên Cứu & Phát Triển (R&D)
+- Mô Tả Chức Năng: Nghiên cứu công nghệ lõi mới, ứng dụng trí tuệ nhân tạo (AI/ML) và xây dựng các sản phẩm phần mềm mẫu (PoC) đột phá cho doanh nghiệp.
+- Trạng Thái: Đang hoạt động
+- Kết quả mong đợi: Tạo phòng ban thành công, hệ thống chuyển về trang danh sách phòng ban kèm thông báo xanh.
+
+Mẫu 2: Phòng Đảm Bảo Chất Lượng & Tuân Thủ (QA/QC) – Trạng thái Hoạt động
+- Tên Phòng Ban (*): Phòng Đảm Bảo Chất Lượng & Tuân Thủ (QA/QC)
+- Mô Tả Chức Năng: Chịu trách nhiệm kiểm thử tự động (Automation Test), đánh giá chất lượng phần mềm theo tiêu chuẩn ISO và giám sát tuân thủ quy trình Agile/Scrum.
+- Trạng Thái: Đang hoạt động
+
+Mẫu 3: Phòng Chăm Sóc Khách Hàng & Vận Hành (CS) – Trạng thái Hoạt động
+- Tên Phòng Ban (*): Phòng Chăm Sóc Khách Hàng & Vận Hành (CS)
+- Mô Tả Chức Năng: Tiếp nhận phản hồi, xử lý khiếu nại, hỗ trợ kỹ thuật khách hàng 24/7 và giám sát chất lượng trải nghiệm người dùng sau triển khai.
+- Trạng Thái: Đang hoạt động
+
+Mẫu 4: Ban Quản Lý Dự Án Nâng Cấp Hệ Thống (PMO) – Trạng thái Tạm ngưng (Inactive)
+- Tên Phòng Ban (*): Ban Quản Lý Dự Án Nâng Cấp Hệ Thống (PMO)
+- Mô Tả Chức Năng: Ban chỉ đạo lâm thời phụ trách dự án chuyển đổi số và nâng cấp máy chủ nội bộ quý 4, dự kiến kích hoạt chính thức vào quý 1 năm sau.
+- Trạng Thái: Tạm ngưng
+
+--- [B. CÁC BỘ DỮ LIỆU KIỂM TRA BẮT LỖI (NEGATIVE VALIDATION CASES)] ---
+
+Test Case 1: Bỏ trống tên phòng ban
+- Tên Phòng Ban (*): (Để trống)
+- Mô Tả Chức Năng: Thử nghiệm không nhập tên
+- Kết quả mong đợi: Trình duyệt hiển thị cảnh báo HTML5 required "Vui lòng nhập trường này" hoặc hệ thống báo lỗi đỏ.
+
+Test Case 2: Trùng lặp tên phòng ban đã tồn tại
+- Tên Phòng Ban (*): Kỹ Thuật (IT)
+- Mô Tả Chức Năng: Phòng kỹ thuật số 2
+- Kết quả mong đợi: Hệ thống báo lỗi đỏ "Tên phòng ban đã tồn tại trong hệ thống!".
+
+Test Case 3: Nhập toàn dấu cách (Whitespace)
+- Tên Phòng Ban (*): "     "
+- Kết quả mong đợi: Hệ thống phát hiện dữ liệu rỗng và báo lỗi yêu cầu nhập tên hợp lệ.
+
+
+================================================================================
+III. BƯỚC 2: ADMIN CẬP NHẬT PHÒNG BAN (UPDATE DEPARTMENT)
+================================================================================
+Menu truy cập: Danh Sách Phòng Ban -> Cột Hành động -> Bấm nút "Sửa"
+URL: http://localhost:8084/hrm-career-path/departments?action=edit&id={departmentId}
+
+Mẫu 1: Cập nhật điều chỉnh tên và mở rộng chức năng
+- Chọn phòng ban: Ban Quản Lý Dự Án Nâng Cấp Hệ Thống (PMO)
+- Tên Phòng Ban (*): Trung Tâm Chuyển Đổi Số & Đổi Mới Sáng Tạo (DX Center)
+- Mô Tả Chức Năng: Mở rộng phạm vi từ ban dự án lâm thời thành trung tâm chuyên trách nghiên cứu tự động hóa quy trình nghiệp vụ và điện toán đám mây.
+- Trạng Thái: Chuyển từ "Tạm ngưng" sang "Đang hoạt động"
+- Kết quả mong đợi: Cập nhật thành công, tên mới hiển thị trên toàn hệ thống và cho phép phân bổ nhân sự.
+
+Mẫu 2: Tạm ngưng hoạt động phòng ban
+- Chọn phòng ban: Một phòng ban thử nghiệm không còn nhu cầu
+- Trạng Thái: Chuyển sang "Tạm ngưng"
+- Kết quả mong đợi: Phòng ban chuyển trạng thái Tạm ngưng màu xám, hệ thống chặn không cho gán thêm nhân sự mới vào phòng này.
+
+
+================================================================================
+IV. BƯỚC 3: ADMIN TẠO VỊ TRÍ & 6 CẤP BẬC NGẠCH (CREATE POSITION & LEVELS)
+================================================================================
+Menu truy cập: Quản Trị Hệ Thống -> Danh Sách Vị Trí -> Nút "Tạo Vị Trí Mới"
+URL: http://localhost:8084/hrm-career-path/positions?action=create
+
+--- [A. TẠO VỊ TRÍ MỚI (POSITION FORM)] ---
+
+Mẫu Vị trí 1: Kỹ sư Trí Tuệ Nhân Tạo (Phòng R&D)
+- Tên Vị Trí / Chức Danh (*): AI / Machine Learning Engineer
+- Phòng Ban: Phòng Nghiên Cứu & Phát Triển (R&D) (hoặc Phòng Kỹ Thuật (IT))
+- Mô Tả Chuyên Môn: Nghiên cứu, huấn luyện và tối ưu các mô hình học máy (Machine Learning), xử lý ngôn ngữ tự nhiên (NLP) và triển khai ứng dụng AI vào hệ thống sản phẩm.
+- Trạng Thái: Đang áp dụng
+
+Mẫu Vị trí 2: Kỹ sư Lập Trình Nhúng & IoT (Phòng R&D)
+- Tên Vị Trí / Chức Danh (*): Embedded & IoT Developer
+- Phòng Ban: Phòng Nghiên Cứu & Phát Triển (R&D)
+- Mô Tả Chuyên Môn: Thiết kế vi mạch, lập trình firmware C/C++ trên các vi điều khiển ARM/ESP32 và phát triển giải pháp IoT công nghiệp.
+- Trạng Thái: Đang áp dụng
+
+Mẫu Vị trí 3: Kỹ sư Kiểm Thử Tự Động (Phòng QA/QC)
+- Tên Vị Trí / Chức Danh (*): Automation QA Engineer
+- Phòng Ban: Phòng Đảm Bảo Chất Lượng & Tuân Thủ (QA/QC)
+- Mô Tả Chuyên Môn: Xây dựng kịch bản kiểm thử tự động end-to-end với Selenium/Playwright, kiểm thử tải JMeter và tích hợp kiểm thử vào luồng CI/CD.
+- Trạng Thái: Đang áp dụng
+
+--- [B. CẤU HÌNH 6 CẤP BẬC NGẠCH CHUẨN (JOB LEVELS)] ---
+Sau khi tạo vị trí, truy cập trang "Chi Tiết Vị Trí" -> Bấm nút "Thêm Cấp Bậc Mới" (hoặc "Sao chép 6 cấp bậc mặc định"):
+
+Bộ 6 cấp bậc ngạch chuẩn cho vị trí: "AI / Machine Learning Engineer":
+- Bậc 1:
+  + Tên cấp bậc (*): Intern
+  + Thứ tự bậc (Rank Order) (*): 1
+  + Mô tả cấp bậc: Thực tập sinh AI, nắm vững kiến thức toán đại số tuyến tính, xác suất thống kê và cú pháp lập trình Python cơ bản (Numpy, Pandas).
+- Bậc 2:
+  + Tên cấp bậc (*): Fresher
+  + Thứ tự bậc (*): 2
+  + Mô tả cấp bậc: Kỹ sư AI mới vào nghề, làm quen tiền xử lý dữ liệu lớn, xây dựng model cơ bản với Scikit-Learn và PyTorch dưới sự kèm cặp của Mentor.
+- Bậc 3:
+  + Tên cấp bậc (*): Junior
+  + Thứ tự bậc (*): 3
+  + Mô tả cấp bậc: Kỹ sư từ 1-2 năm kinh nghiệm, tự chủ huấn luyện và tinh chỉnh (fine-tune) mô hình Deep Learning, xây dựng pipeline thu thập dữ liệu tự động.
+- Bậc 4:
+  + Tên cấp bậc (*): Middle
+  + Thứ tự bậc (*): 4
+  + Mô tả cấp bậc: Chuyên viên AI từ 2-4 năm kinh nghiệm, tối ưu hóa suy luận (Inference Optimization), đóng gói mô hình REST API với FastAPI/Docker và theo dõi Model Drift.
+- Bậc 5:
+  + Tên cấp bậc (*): Senior
+  + Thứ tự bậc (*): 5
+  + Mô tả cấp bậc: Chuyên gia AI từ 4+ năm kinh nghiệm, thiết kế kiến trúc hệ thống MLOps hoàn chỉnh, tích hợp kỹ thuật RAG và Large Language Models (LLM) vào sản phẩm.
+- Bậc 6:
+  + Tên cấp bậc (*): Lead
+  + Thứ tự bậc (*): 6
+  + Mô tả cấp bậc: Trưởng nhóm nghiên cứu AI, hoạch định chiến lược công nghệ cốt lõi và kiểm soát chất lượng các đề tài nghiên cứu thử nghiệm (PoC).
+
+--- [C. CÁC BỘ DỮ LIỆU KIỂM TRA BẮT LỖI VỊ TRÍ & BẬC] ---
+- Test Case 1: Để trống tên vị trí -> Báo lỗi "Vui lòng nhập tên vị trí".
+- Test Case 2: Trùng lặp tên vị trí trong cùng phòng ban -> Báo lỗi "Vị trí đã tồn tại trong phòng ban này".
+- Test Case 3: Thêm cấp bậc trùng Thứ tự bậc (Rank Order) -> Báo lỗi "Thứ tự cấp bậc này đã tồn tại, vui lòng chọn số thứ tự khác".
+
+
+================================================================================
+V. BƯỚC 4: ADMIN THIẾT LẬP LỘ TRÌNH & BAREM THĂNG TIẾN (CREATE CAREER PATH & CRITERIA)
+================================================================================
+Menu truy cập: Chi Tiết Vị Trí (Ví dụ: AI / Machine Learning Engineer) -> Tab "Lộ Trình & Tiêu Chuẩn Thăng Cấp"
+Thao tác: Bấm nút "Thiết Lập Tiêu Chuẩn Thăng Cấp" để mở Modal cấu hình Barem.
+
+--- [A. CHẶNG 1: THĂNG CẤP TỪ INTERN LÊN FRESHER] ---
+1. Thông tin Barem nấc thang:
+   - Cấp bậc xuất phát (From Level) (*): Intern (Bậc 1)
+   - Cấp bậc đích (To Level) (*): Fresher (Bậc 2)
+   - Điểm kiểm tra kiến thức sát hạch tối thiểu (%): 70.0
+   - Điểm đánh giá năng lực thực tế từ Trưởng phòng (1 - 10) (*): 7.0
+   - Tóm tắt năng lực cốt lõi (*):
+     Nắm vững giải thuật phân loại/hồi quy dữ liệu, hoàn thành ít nhất 1 bài toán thực tế và đạt bài test chuyên môn đầu vào Fresher.
+   - Bấm nút: "Lưu Barem Nấc Thang"
+
+2. Danh sách 3 Tiêu chí minh chứng cụ thể (Bấm "Thêm Tiêu Chí Yêu Cầu"):
+   - Minh chứng 1 (Dự án thực tế):
+     + Tiêu đề minh chứng (*): Báo cáo kết quả dự án Mini-PoC tiền xử lý dữ liệu
+     + Phân loại minh chứng (*): Kinh nghiệm dự án thực tế (PROJECT_EXPERIENCE)
+     + Mô tả yêu cầu: Viết script làm sạch dữ liệu bảng với Pandas, xử lý Missing Value, Outliers và vẽ biểu đồ tương quan ma trận.
+     + Bắt buộc hoàn thành (*): Có (Tích chọn Bắt buộc)
+   - Minh chứng 2 (Chứng chỉ):
+     + Tiêu đề minh chứng (*): Chứng chỉ hoàn thành khóa Python Data Science & ML
+     + Phân loại minh chứng (*): Bằng cấp & Chứng chỉ chuyên môn (CERTIFICATE)
+     + Mô tả yêu cầu: Chứng chỉ từ Coursera/DeepLearning.AI hoặc khóa học nội bộ với điểm kiểm tra trên 80%.
+     + Bắt buộc hoàn thành (*): Có
+   - Minh chứng 3 (Khác):
+     + Tiêu đề minh chứng (*): Báo cáo thuyết trình kỹ thuật về quy trình chuẩn hóa dữ liệu
+     + Phân loại minh chứng (*): Tiêu chí chuyên môn khác (OTHER)
+     + Mô tả yêu cầu: Trình bày giải pháp làm sạch dữ liệu trước nhóm nghiên cứu và giải thích căn cứ lựa chọn mô hình.
+     + Bắt buộc hoàn thành (*): Không (Tự chọn / Bổ trợ)
+
+--- [B. CHẶNG 2: THĂNG CẤP TỪ FRESHER LÊN JUNIOR] ---
+1. Thông tin Barem nấc thang:
+   - Cấp bậc xuất phát (*): Fresher (Bậc 2)
+   - Cấp bậc đích (*): Junior (Bậc 3)
+   - Điểm kiểm tra kiến thức sát hạch tối thiểu (%): 75.0
+   - Điểm đánh giá năng lực thực tế từ Trưởng phòng (*): 7.5
+   - Tóm tắt năng lực cốt lõi (*):
+     Tự chủ xây dựng Feature Store, huấn luyện mô hình học sâu (Deep Learning) trên GPU Server và triển khai dịch vụ dự đoán qua API.
+2. Danh sách Tiêu chí minh chứng:
+   - Minh chứng 1: Xây dựng Pipeline dữ liệu và huấn luyện mô hình PyTorch (PROJECT_EXPERIENCE - Bắt buộc)
+   - Minh chứng 2: Chứng chỉ AWS Certified Machine Learning hoặc GCP Data Engineer (CERTIFICATE - Tự chọn)
+   - Minh chứng 3: Đóng góp tối thiểu 1 Module AI hoạt động ổn định trên môi trường Staging (PROJECT_EXPERIENCE - Bắt buộc)
+
+
+================================================================================
+VI. BƯỚC 5: MANAGER ĐỀ XUẤT VỊ TRÍ & ADMIN PHÊ DUYỆT / GIẢI TRÌNH (POSITION REQUESTS & DECISION)
+================================================================================
+
+--- [A. TRƯỞNG PHÒNG TẠO PHIẾU ĐỀ XUẤT VỊ TRÍ MỚI] ---
+Đăng nhập tài khoản Trưởng phòng: manager_it / 123
+Truy cập: Phòng Ban Phụ Trách -> Đề Xuất Vị Trí Mới
+URL: http://localhost:8084/hrm-career-path/positions?action=createRequest
+
+Mẫu đề xuất 1: Đề xuất vị trí Security & Compliance Officer (Phòng IT)
+- Phòng Ban Đề Xuất: Phòng Kỹ Thuật (IT) (Hệ thống tự nhận diện theo quyền Manager)
+- Tên Vị Trí Chuyên Môn Đề Xuất (*): Security & Compliance Officer
+- Mô Tả Vai Trò & Trách Nhiệm Vị Trí:
+  Đánh giá lỗ hổng bảo mật, rà soát mã nguồn định kỳ, thiết lập chính sách an toàn thông tin theo chuẩn ISO 27001 và hỗ trợ kiểm thử xâm nhập (Penetration Testing).
+- Lý Do Cần Mở Vị Trí Mới (*):
+  Hệ thống vừa ký hợp đồng với khách hàng khối tài chính ngân hàng, đòi hỏi phải có chuyên viên an toàn thông tin chuyên trách để đáp ứng điều kiện bảo mật của hợp đồng.
+
+Mẫu đề xuất 2: Đề xuất vị trí Enterprise Solution Consultant (Phòng Sales - Đăng nhập: manager_sales)
+- Phòng Ban Đề Xuất: Phòng Kinh Doanh (Sales)
+- Tên Vị Trí Chuyên Môn Đề Xuất (*): Enterprise Solution Consultant
+- Mô Tả Vai Trò & Trách Nhiệm:
+  Tư vấn giải pháp phần mềm doanh nghiệp cho khách hàng tập đoàn, xây dựng bản đề xuất kỹ thuật (RFP) và hỗ trợ tiền triển khai.
+- Lý Do Cần Mở Vị Trí Mới (*):
+  Số lượng khách hàng quy mô lớn tăng trưởng 40% trong quý 3, đội ngũ sales hiện tại chưa đủ kiến thức công nghệ chuyên sâu để giải trình kỹ thuật với ban giám đốc khách hàng.
+
+Mẫu đề xuất 3: Đề xuất vị trí PR & Event Specialist (Phòng Marketing - Đăng nhập: manager_mkt)
+- Phòng Ban Đề Xuất: Phòng Marketing & Truyền Thông
+- Tên Vị Trí Chuyên Môn Đề Xuất (*): PR & Event Specialist
+- Mô Tả Vai Trò & Trách Nhiệm:
+  Chuyên trách tổ chức sự kiện hội thảo trực tiếp (Offline Events) và phụ trách quan hệ báo chí truyền thông đại chúng.
+- Lý Do Cần Mở Vị Trí Mới (*):
+  Mong muốn mở rộng nhận diện thương hiệu ra kênh truyền thông truyền thống và tổ chức chuỗi hội thảo công nghệ quý 4.
+
+--- [B. ADMIN XEM XÉT & NHẬP Ý KIẾN GIẢI TRÌNH QUYẾT ĐỊNH (DECISION NOTE)] ---
+Đăng nhập tài khoản: admin / 123
+Truy cập: Quản Trị Hệ Thống -> Yêu Cầu Mở Vị Trí
+URL: http://localhost:8084/hrm-career-path/positions?action=requests
+
+Mẫu 1: Phê Duyệt Đề Xuất (APPROVED)
+- Chọn phiếu: Security & Compliance Officer (hoặc Enterprise Solution Consultant)
+- Hành động: Bấm nút "Phê Duyệt & Tạo Vị Trí"
+- Ý kiến / Lý do giải trình gửi tới Trưởng phòng (decisionNote):
+  Đồng ý phê duyệt đề xuất bổ sung vị trí Security & Compliance Officer vào cơ cấu Phòng Kỹ Thuật (IT). Giao Phòng Nhân Sự (HR) phối hợp cùng Trưởng phòng xây dựng bảng mô tả công việc (JD) chi tiết và lập kế hoạch tuyển dụng trong quý 4 theo hạn mức ngân sách đã phê duyệt.
+- Kết quả: Trạng thái đề xuất chuyển thành "APPROVED" màu xanh, vị trí mới được tạo trong danh mục.
+
+Mẫu 2: Từ Chối Đề Xuất (REJECTED)
+- Chọn phiếu: PR & Event Specialist
+- Hành động: Bấm nút "Từ Chối Đề Xuất"
+- Ý kiến / Lý do giải trình gửi tới Trưởng phòng (decisionNote):
+  Đề xuất chưa được thông qua. Lý do: Chiến lược phát triển sản phẩm năm nay tập trung vào tiếp thị số (Digital Marketing / B2B SaaS) trên môi trường trực tuyến. Đề nghị Trưởng phòng điều chỉnh mục tiêu và ưu tiên nguồn lực cho các kênh nội dung số hiện tại.
+- Kết quả: Trạng thái đề xuất chuyển thành "REJECTED" màu đỏ kèm thông điệp giải trình rõ ràng cho Trưởng phòng.
+
+
+================================================================================
+VII. BƯỚC 6: HR BỔ NHIỆM TRƯỞNG PHÒNG (ADD / ASSIGN MANAGER)
+================================================================================
+Đăng nhập tài khoản: hr_manager / 123 (Phạm Thu Hà)
+
+--- [PHƯƠNG ÁN 1: BỔ NHIỆM TẠI TRANG CHỈNH SỬA PHÒNG BAN] ---
+Menu truy cập: Danh Sách Phòng Ban -> Bấm nút "Sửa" tại phòng ban chưa có quản lý
+URL: http://localhost:8084/hrm-career-path/departments?action=edit&id={departmentId}
+
+Mẫu thao tác:
+- Phòng ban cần bổ nhiệm: Phòng Nghiên Cứu & Phát Triển (R&D)
+- Ô chọn Trưởng Phòng: Chọn một ứng viên Quản lý khả dụng trong danh sách thả xuống
+  (Ví dụ: Chọn "Trần Văn Minh" hoặc ứng viên Manager chưa quản lý đơn vị nào)
+- Bấm nút: "Lưu Thay Đổi"
+- Kết quả mong đợi: Phòng ban hiển thị tên Trưởng phòng mới; hệ thống cập nhật phòng ban quản lý cho nhân sự đó.
+
+--- [PHƯƠNG ÁN 2: THÊM MỚI NHÂN SỰ VỚI VAI TRÒ TRƯỞNG PHÒNG (MANAGER)] ---
+Menu truy cập: Quản Lý Nhân Sự -> Thêm Mới Nhân Viên
+URL: http://localhost:8084/hrm-career-path/employees?action=create
+
+Mẫu Ứng viên Trưởng phòng 1:
+- Tên đăng nhập (Username) (*): mgr_lelong
+- Mật khẩu khởi tạo: 123
+- Họ và Tên (*): Lê Hoàng Long
+- Email (*): long.lh@hrm.com
+- Số điện thoại: 0987654311
+- Giới tính: Nam
+- Ngày sinh (*): 15/06/1988
+- Vai trò (*): MANAGER (Chọn vai trò Quản lý)
+- Phòng ban (*): Phòng Nghiên Cứu & Phát Triển (R&D)
+- Ngày bắt đầu làm việc: (Để trống hoặc nhập ngày hiện tại)
+
+Mẫu Ứng viên Trưởng phòng 2:
+- Tên đăng nhập (*): mgr_thuha
+- Mật khẩu: 123
+- Họ và Tên (*): Ngô Thu Hà
+- Email (*): ha.ngo@hrm.com
+- Số điện thoại: 0987654322
+- Giới tính: Nữ
+- Ngày sinh (*): 22/09/1990
+- Vai trò (*): MANAGER
+- Phòng ban (*): Phòng Đảm Bảo Chất Lượng & Tuân Thủ (QA/QC)
+
+
+================================================================================
+VIII. BƯỚC 7: HR THÊM MỚI NHÂN SỰ & ONBOARDING (ADD NEW EMPLOYEE)
+================================================================================
+Đăng nhập tài khoản: hr_manager / 123
+Menu truy cập: Quản Lý Nhân Sự -> Nút "Thêm Mới Nhân Viên"
+URL: http://localhost:8084/hrm-career-path/employees?action=create
+
+--- [A. CÁC BỘ DỮ LIỆU HỢP LỆ (POSITIVE CASES) ĐẦY ĐỦ CÁC TRƯỜNG] ---
+
+Mẫu Nhân viên 1: Lập trình viên Frontend (Fresher) - Phòng Kỹ Thuật (IT)
+- Tên đăng nhập (Username) (*): fe_quocviet
+- Mật khẩu khởi tạo: 123 (hoặc để trống nhận mặc định)
+- Họ và Tên (*): Vũ Quốc Việt
+- Email (*): viet.vq@hrm.com
+- Số điện thoại: 0901234588 (10 chữ số bắt đầu bằng 0)
+- Giới tính: Nam
+- Ngày sinh (*) (dd/mm/yyyy): 15/09/2002 (Đủ 22 tuổi)
+- Vai trò (*): EMPLOYEE
+- Phòng ban: Phòng Kỹ Thuật (IT)
+- Vị trí chuyên môn: Frontend Developer
+- Cấp bậc khởi điểm: Fresher
+- Ngày bắt đầu làm việc (dd/mm/yyyy): 01/03/2024 (hoặc để trống nhận ngày hiện tại)
+- Kết quả mong đợi: Thêm nhân sự thành công, ghi nhận lịch sử biến động NEW_HIRE, tài khoản có thể đăng nhập ngay bằng mật khẩu 123.
+
+Mẫu Nhân viên 2: Kỹ sư AI / Machine Learning (Intern) - Phòng R&D
+- Tên đăng nhập (*): ai_trunghieu
+- Mật khẩu: 123
+- Họ và Tên (*): Đặng Trung Hiếu
+- Email (*): trunghieu.dt@hrm.com
+- Số điện thoại: 0901234577
+- Giới tính: Nam
+- Ngày sinh (*): 10/05/2003 (Đủ 21 tuổi)
+- Vai trò (*): EMPLOYEE
+- Phòng ban: Phòng Nghiên Cứu & Phát Triển (R&D)
+- Vị trí chuyên môn: AI / Machine Learning Engineer
+- Cấp bậc khởi điểm: Intern
+- Ngày bắt đầu làm việc: 15/06/2024
+
+Mẫu Nhân viên 3: Kỹ sư Automation QA (Junior) - Phòng QA/QC
+- Tên đăng nhập (*): qa_minhchau
+- Mật khẩu: 123
+- Họ và Tên (*): Hoàng Minh Châu
+- Email (*): chau.hm@hrm.com
+- Số điện thoại: 0901234566
+- Giới tính: Nữ
+- Ngày sinh (*): 20/11/2001 (Đủ 23 tuổi)
+- Vai trò (*): EMPLOYEE
+- Phòng ban: Phòng Đảm Bảo Chất Lượng & Tuân Thủ (QA/QC)
+- Vị trí chuyên môn: Automation QA Engineer
+- Cấp bậc khởi điểm: Junior
+- Ngày bắt đầu làm việc: 01/08/2023
+
+Mẫu Nhân viên 4: Chuyên viên Tuyển dụng (Junior) - Phòng Nhân Sự (HR)
+- Tên đăng nhập (*): hr_yenlinh
+- Mật khẩu: 123
+- Họ và Tên (*): Nguyễn Yến Linh
+- Email (*): linh.ny@hrm.com
+- Số điện thoại: 0901234599
+- Giới tính: Nữ
+- Ngày sinh (*): 20/04/1999 (Đủ 25 tuổi)
+- Vai trò (*): EMPLOYEE
+- Phòng ban: -- Chưa xếp phòng ban -- (hoặc phòng HR)
+- Vị trí chuyên môn: -- Chọn vị trí chuyên môn --
+- Cấp bậc khởi điểm: -- Chưa chọn cấp bậc --
+- Ngày bắt đầu làm việc: (Để trống)
+
+Mẫu Nhân viên 5: Chuyên viên Phát Triển Kinh Doanh (BDR - Fresher) - Phòng Sales
+- Tên đăng nhập (*): sales_tuankiet
+- Mật khẩu: 123
+- Họ và Tên (*): Lê Tuấn Kiệt
+- Email (*): kiet.lt@hrm.com
+- Số điện thoại: 0903456789
+- Giới tính: Nam
+- Ngày sinh (*): 05/12/2002
+- Vai trò (*): EMPLOYEE
+- Phòng ban: Phòng Kinh Doanh (Sales)
+- Vị trí chuyên môn: Business Development Rep (BDR)
+- Cấp bậc khởi điểm: Fresher
+- Ngày bắt đầu làm việc: 01/09/2024
+
+--- [B. CÁC BỘ DỮ LIỆU KIỂM TRA BẮT LỖI FORM (NEGATIVE VALIDATION CASES)] ---
+
+Test Case 1: Trùng Tên đăng nhập (Username)
+- Nhập Username: admin (hoặc hr_manager, dev_fresher)
+- Điền các trường còn lại hợp lệ
+- Kết quả mong đợi: Hệ thống báo lỗi đỏ "Tên đăng nhập đã tồn tại trong hệ thống!".
+
+Test Case 2: Trùng Email nhân sự
+- Nhập Email: ha.pt@hrm.com (email đã thuộc về hr_manager) hoặc an.nv@hrm.com
+- Điền các trường còn lại hợp lệ
+- Kết quả mong đợi: Hệ thống báo lỗi đỏ "Email đã được đăng ký bởi nhân sự khác!".
+
+Test Case 3: Ngày sinh dưới 18 tuổi (Tuổi lao động bất hợp pháp)
+- Nhập Ngày sinh: 15/08/2012 (ví dụ: nhân sự mới 12 tuổi)
+- Kết quả mong đợi: Hệ thống phát hiện ngày sinh không đủ 18 tuổi và chặn submit form kèm cảnh báo đỏ:
+  "Nhân viên phải từ đủ 18 tuổi trở lên (sinh trước ngày hiện tại trừ 18 năm)!".
+
+Test Case 4: Sai định dạng Số điện thoại
+- Nhập SĐT: "09123" (chỉ có 5 số) hoặc "1234567890" (10 số nhưng không bắt đầu bằng số 0) hoặc "0901abc456" (chứa chữ)
+- Kết quả mong đợi: Báo lỗi định dạng "Số điện thoại gồm 10 chữ số bắt đầu bằng số 0 (hoặc +84)".
+
+Test Case 5: Bỏ trống Ngày sinh hoặc trường bắt buộc
+- Để trống ô Ngày sinh -> Báo lỗi "Vui lòng nhập Ngày sinh!".
+- Để trống Họ tên -> Báo lỗi "Vui lòng nhập Họ và Tên!".
+- Để trống Username -> Báo lỗi "Vui lòng nhập Tên đăng nhập!".
+- Để trống Email -> Báo lỗi "Vui lòng nhập Email!".
+
+Test Case 6: Kiểm tra ô Ngày sinh phân đoạn (Segmented Date UX)
+- Thao tác: Gõ lần lượt vào ô ngày sinh: gõ "15" -> Hệ thống tự động nhảy sang ô tháng; gõ "09" -> Hệ thống tự động nhảy sang ô năm; gõ "2002".
+- Kết quả mong đợi: Dấu gạch chéo "/" vẫn cố định trên giao diện, không bị biến mất hoặc lỗi định dạng.
+
+Test Case 7: Kiểm tra trường "Ngày bắt đầu làm việc" là tùy chọn
+- Thao tác: Nhập đầy đủ thông tin nhân sự nhưng để trống hoàn toàn ô "Ngày bắt đầu làm việc".
+- Bấm nút: "Tạo Nhân Viên"
+- Kết quả mong đợi: Hệ thống KHÔNG báo lỗi "Vui lòng nhập Ngày bắt đầu làm việc!", cho phép lưu thành công và tự động lấy ngày hiện tại làm ngày vào làm.
+
+================================================================================
+KẾT THÚC TÀI LIỆU
+================================================================================

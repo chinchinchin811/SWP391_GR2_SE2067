@@ -342,6 +342,19 @@ public class EmployeeServlet extends HttpServlet {
             user.setHireDate(new Date(System.currentTimeMillis()));
         }
 
+        // 0. RÀNG BUỘC PHÒNG BAN TẠM NGƯNG: Không được phép gán nhân sự mới vào phòng ban đang Tạm ngưng
+        if (deptId != null && deptId > 0) {
+            Department chosenDept = departmentDAO.getDepartmentById(deptId);
+            if (chosenDept != null && !chosenDept.isStatus()) {
+                request.setAttribute("error", "Phòng ban '" + chosenDept.getDepartmentName()
+                        + "' đang ở trạng thái Tạm ngưng! Không thể phân bổ hoặc tiếp nhận nhân sự mới cho đến khi phòng ban được kích hoạt lại.");
+                request.setAttribute("employee", user);
+                loadFormData(request);
+                request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                return;
+            }
+        }
+
         // 1. RÀNG BUỘC ADMIN: Chỉ duy nhất 1 Admin trên toàn hệ thống
         if (roleId == 1) {
             if (userDAO.countAdmin() >= 1) {
@@ -637,6 +650,18 @@ public class EmployeeServlet extends HttpServlet {
             Integer newDeptId = parseInteger(deptIdStr);
             Integer newPosId = parseInteger(posIdStr);
             Integer newLevelId = parseInteger(levelIdStr);
+
+            // Kiểm tra phòng ban mới có đang Tạm ngưng không
+            if (newDeptId != null && newDeptId > 0 && (targetUser.getDepartmentId() == null || !newDeptId.equals(targetUser.getDepartmentId()))) {
+                Department newDept = departmentDAO.getDepartmentById(newDeptId);
+                if (newDept != null && !newDept.isStatus()) {
+                    request.getSession().setAttribute("errorMessage",
+                            "Phòng ban '" + newDept.getDepartmentName()
+                                    + "' đang ở trạng thái Tạm ngưng! Không thể điều chuyển hoặc tiếp nhận nhân sự cho đến khi phòng ban được kích hoạt lại.");
+                    response.sendRedirect(request.getContextPath() + "/employees?action=assign&id=" + userId);
+                    return;
+                }
+            }
 
             // Kiểm tra nếu nhân sự này đang là MANAGER mà điều chuyển sang phòng ban khác
             if (targetUser.getRoleId() == 3 && newDeptId != null && !newDeptId.equals(targetUser.getDepartmentId())) {

@@ -75,8 +75,11 @@
                                 <%
                                     if (departments != null) {
                                         for (Department d : departments) {
+                                            boolean isInactive = !d.isStatus();
                                 %>
-                                    <option value="<%= d.getDepartmentId() %>"><%= d.getDepartmentName() %></option>
+                                    <option value="<%= d.getDepartmentId() %>" <%= isInactive ? "disabled style='color: #94a3b8; background-color: #f1f5f9;'" : "" %>>
+                                        <%= d.getDepartmentName() %><%= isInactive ? " (Tạm ngưng - Không thể chuyển đến)" : "" %>
+                                    </option>
                                 <%
                                         }
                                     }

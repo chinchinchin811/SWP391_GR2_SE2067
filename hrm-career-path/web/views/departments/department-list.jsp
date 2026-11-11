@@ -70,11 +70,17 @@
                                     <span style="font-weight: 500; color: #1e293b;"><%= d.getManagerName() %></span>
                                 <% } else { %>
                                     <% if (roleId == 1 || roleId == 2) { %>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" style="padding: 3px 10px; font-size: 12px; font-weight: 500;"
-                                            title="Bổ nhiệm Trưởng phòng cho phòng ban này"
-                                            onclick="openAssignModal(<%= d.getDepartmentId() %>, '<%= d.getDepartmentName().replace("'", "\\'") %>', 0)">
-                                        <i class="fa-solid fa-user-plus"></i> Bổ nhiệm
-                                    </button>
+                                        <% if (!d.isStatus()) { %>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" style="padding: 3px 10px; font-size: 12px; font-weight: 500; opacity: 0.6; cursor: not-allowed;" disabled title="Phòng ban đang tạm ngưng, vui lòng kích hoạt lại để bổ nhiệm">
+                                            <i class="fa-solid fa-ban"></i> Tạm ngưng
+                                        </button>
+                                        <% } else { %>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" style="padding: 3px 10px; font-size: 12px; font-weight: 500;"
+                                                title="Bổ nhiệm Trưởng phòng cho phòng ban này"
+                                                onclick="openAssignModal(<%= d.getDepartmentId() %>, '<%= d.getDepartmentName().replace("'", "\\'") %>', 0)">
+                                            <i class="fa-solid fa-user-plus"></i> Bổ nhiệm
+                                        </button>
+                                        <% } %>
                                     <% } else { %>
                                     <span style="color: #94a3b8; font-size: 13px;">Chưa bổ nhiệm</span>
                                     <% } %>

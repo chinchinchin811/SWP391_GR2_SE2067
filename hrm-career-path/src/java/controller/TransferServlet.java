@@ -141,6 +141,13 @@ public class TransferServlet extends HttpServlet {
 
             try {
                 int targetDeptId = Integer.parseInt(targetDeptStr);
+                Department targetDept = departmentDAO.getDepartmentById(targetDeptId);
+                if (targetDept != null && !targetDept.isStatus()) {
+                    session.setAttribute("errorMessage", "Phòng ban '" + targetDept.getDepartmentName()
+                            + "' đang ở trạng thái Tạm ngưng! Không thể tạo nguyện vọng chuyển đến phòng ban này.");
+                    response.sendRedirect(request.getContextPath() + "/transfer?action=requestCreate");
+                    return;
+                }
                 Integer targetPosId = (targetPosStr != null && !targetPosStr.isEmpty() && !targetPosStr.equals("0"))
                         ? Integer.parseInt(targetPosStr) : null;
 
