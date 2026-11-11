@@ -72,12 +72,22 @@ public class CareerPathServlet extends HttpServlet {
         } else if ("submitSingleEvidence".equals(action)) {
             submitSingleEvidence(request, response, currentUser);
         } else if ("verifyEvidence".equals(action)) {
+            if (currentUser.getRoleId() != 3) {
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
+            }
             verifyEvidence(request, response, currentUser);
         } else if ("submitManagerReview".equals(action)) {
+            if (currentUser.getRoleId() != 3) {
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
+            }
             submitManagerReview(request, response, currentUser);
-        } else if ("hrDecision".equals(action)) {
-            submitHrDecision(request, response, currentUser);
         } else if ("reopenPromotion".equals(action)) {
+            if (currentUser.getRoleId() != 3) {
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
+            }
             reopenPromotion(request, response, currentUser);
         } else if ("submitDemoTestScore".equals(action)) {
             submitDemoTestScore(request, response, currentUser);
@@ -151,23 +161,17 @@ public class CareerPathServlet extends HttpServlet {
 
     private void showPromotionList(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws ServletException, IOException {
-        List<PromotionRequest> list;
-
-        if (currentUser.getRoleId() == 3) {
-            // Manager: Chỉ xem nhân viên trong phòng ban mình quản lý
-            Department dept = departmentDAO.getDepartmentByManagerId(currentUser.getUserId());
-            if (dept != null) {
-                list = careerProgressionDAO.getPromotionRequestsByDepartment(dept.getDepartmentId());
-            } else {
-                list = new java.util.ArrayList<>();
-            }
-        } else if (currentUser.getRoleId() == 1 || currentUser.getRoleId() == 2) {
-            // Admin hoặc HR: Xem toàn bộ các hồ sơ đề xuất
-            list = careerProgressionDAO.getAllPromotionRequests();
-        } else {
-            response.sendRedirect(request.getContextPath() + "/career-path");
+        if (currentUser.getRoleId() != 3) {
+            String target = (currentUser.getRoleId() == 4) ? "/career-path" : "/dashboard";
+            response.sendRedirect(request.getContextPath() + target);
             return;
         }
+
+        // Manager: Chỉ xem nhân viên trong phòng ban mình quản lý
+        Department dept = departmentDAO.getDepartmentByManagerId(currentUser.getUserId());
+        List<PromotionRequest> list = (dept != null)
+                ? careerProgressionDAO.getPromotionRequestsByDepartment(dept.getDepartmentId())
+                : new java.util.ArrayList<>();
 
         sortPromotionRequests(list);
         request.setAttribute("requests", list);
@@ -176,6 +180,12 @@ public class CareerPathServlet extends HttpServlet {
 
     private void showReviewDetail(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws ServletException, IOException {
+        if (currentUser.getRoleId() != 3) {
+            String target = (currentUser.getRoleId() == 4) ? "/career-path" : "/dashboard";
+            response.sendRedirect(request.getContextPath() + target);
+            return;
+        }
+
         String reqIdStr = request.getParameter("id");
         if (reqIdStr == null || reqIdStr.isEmpty()) {
             response.sendRedirect(request.getContextPath() + "/promotions");
@@ -386,37 +396,6 @@ public class CareerPathServlet extends HttpServlet {
                 }
             } else {
                 request.getSession().setAttribute("errorMessage", "Thao tác đánh giá thất bại!");
-            }
-            response.sendRedirect(request.getContextPath() + "/promotions?action=review&id=" + reqId);
-        } catch (Exception e) {
-            e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/promotions");
-        }
-    }
-
-    private void submitHrDecision(HttpServletRequest request, HttpServletResponse response, User currentUser)
-            throws IOException {
-        String reqIdStr = request.getParameter("requestId");
-        String decision = request.getParameter("hrDecision");
-        String notes = request.getParameter("hrNotes");
-
-        try {
-            int reqId = Integer.parseInt(reqIdStr);
-            PromotionRequest reqItem = careerProgressionDAO.getPromotionRequestById(reqId);
-            if (reqItem != null) {
-                boolean ok = careerProgressionDAO.hrApproveAndPromote(
-                        reqId, currentUser.getUserId(), decision, notes,
-                        reqItem.getUserId(), reqItem.getTargetLevelId(), reqItem.getCurrentLevelId(), reqItem.getPositionId()
-                );
-                if (ok) {
-                    if ("APPROVED".equalsIgnoreCase(decision)) {
-                        request.getSession().setAttribute("successMessage", "ĐÃ BAN HÀNH QUYẾT ĐỊNH BỔ NHIỆM & CẬP NHẬT CẤP BẬC MỚI THÀNH CÔNG CHO NHÂN SỰ!");
-                    } else {
-                        request.getSession().setAttribute("successMessage", "Đã từ chối bổ nhiệm.");
-                    }
-                } else {
-                    request.getSession().setAttribute("errorMessage", "Thao tác xử lý của HR thất bại!");
-                }
             }
             response.sendRedirect(request.getContextPath() + "/promotions?action=review&id=" + reqId);
         } catch (Exception e) {

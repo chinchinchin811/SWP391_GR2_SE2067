@@ -6,7 +6,7 @@
                     <% SimpleDateFormat sdfDateTime=new SimpleDateFormat("dd/MM/yyyy HH:mm"); User currentUser=(User)
                         session.getAttribute("currentUser"); int roleId=(currentUser !=null) ? currentUser.getRoleId() :
                         4; PromotionRequest reqItem=(PromotionRequest) request.getAttribute("requestItem"); boolean
-                        isManager=(roleId==3); boolean isHR=(roleId==1 || roleId==2);
+                        isManager=(roleId==3);
                         request.setAttribute("pageTitle", "Hồ Sơ Nâng Bậc #" + (reqItem !=null ? reqItem.getRequestId()
                         : "" ) + " | CPMS" ); String successMessage=(String) session.getAttribute("successMessage");
                         String errorMessage=(String) session.getAttribute("errorMessage");
@@ -148,12 +148,12 @@
                                                                         </td>
                                                                         <td
                                                                             style="padding: 14px 12px; text-align: center;">
-                                                                            <% if ((isManager || isHR) &&
+                                                                            <% if (isManager &&
                                                                                 !"APPROVED".equals(reqItem.getStatus())
                                                                                 &&
                                                                                 !"REJECTED".equals(reqItem.getStatus()))
                                                                                 { %>
-                                                                                <!-- Manager hoặc HR có thể bấm duyệt/hủy duyệt trực tiếp -->
+                                                                                <!-- Manager có thể bấm duyệt/hủy duyệt trực tiếp -->
                                                                                 <form
                                                                                     action="<%= request.getContextPath() %>/promotions"
                                                                                     method="POST"
@@ -335,73 +335,7 @@
                                                             </div>
                                                             <% } %>
 
-                                                                <!-- PHẦN 2: QUYẾT ĐỊNH BỔ NHIỆM CHÍNH THỨC CỦA HR -->
-                                                                <% if (isHR && !"APPROVED".equals(reqItem.getStatus())
-                                                                    && !"REJECTED".equals(reqItem.getStatus())) { %>
-                                                                    <div class="card"
-                                                                        style="background: #ffffff; border-radius: 10px; border: 2px solid #059669; padding: 24px;">
-                                                                        <h3
-                                                                            style="font-size: 16px; color: #047857; margin-bottom: 14px; font-weight: 700;">
-                                                                            Quyết Định Bổ Nhiệm &amp; Thăng Cấp (Phòng
-                                                                            Nhân Sự HR)
-                                                                        </h3>
-                                                                        <p
-                                                                            style="font-size: 13px; color: #64748b; margin-bottom: 18px;">
-                                                                            Khi HR bấm <b>"Phê Duyệt &amp; Ban Hành Bổ
-                                                                                Nhiệm"</b>, hệ thống sẽ tự động cập nhật
-                                                                            cấp bậc của nhân viên lên <strong>
-                                                                                <%= reqItem.getTargetLevelName() %>
-                                                                            </strong> và ghi vào Lịch sử nhân sự.
-                                                                        </p>
-
-                                                                        <form
-                                                                            action="<%= request.getContextPath() %>/promotions"
-                                                                            method="POST">
-                                                                            <input type="hidden" name="action"
-                                                                                value="hrDecision">
-                                                                            <input type="hidden" name="requestId"
-                                                                                value="<%= reqItem.getRequestId() %>">
-
-                                                                            <div class="form-group"
-                                                                                style="margin-bottom: 16px;">
-                                                                                <label
-                                                                                    style="display: block; font-weight: 700; font-size: 13px; margin-bottom: 6px;">Quyết
-                                                                                    Định Của HR (*):</label>
-                                                                                <select name="hrDecision"
-                                                                                    class="form-control"
-                                                                                    style="width: 100%; padding: 9px 12px; font-size: 14px;"
-                                                                                    required>
-                                                                                    <option value="APPROVED">PHÊ DUYỆT
-                                                                                        THĂNG CHỨC &amp; BAN HÀNH QUYẾT
-                                                                                        ĐỊNH</option>
-                                                                                    <option value="REJECTED">TỪ CHỐI BỔ
-                                                                                        NHIỆM</option>
-                                                                                </select>
-                                                                            </div>
-
-                                                                            <div class="form-group"
-                                                                                style="margin-bottom: 20px;">
-                                                                                <label
-                                                                                    style="display: block; font-weight: 700; font-size: 13px; margin-bottom: 6px;">Ghi
-                                                                                    Chú Quyết Định Bổ Nhiệm / Lý
-                                                                                    Do:</label>
-                                                                                <textarea name="hrNotes" rows="2"
-                                                                                    class="form-control"
-                                                                                    placeholder="Số quyết định, lý do hoặc thông điệp chúc mừng..."
-                                                                                    style="width: 100%; padding: 9px 12px; font-size: 13.5px;"></textarea>
-                                                                            </div>
-
-                                                                            <div style="text-align: right;">
-                                                                                <button type="submit"
-                                                                                    class="btn btn-primary"
-                                                                                    style="background: #059669; border-color: #059669; padding: 10px 24px; font-weight: 700; font-size: 14px;">
-                                                                                    Xác Nhận Ban Hành Quyết Định
-                                                                                </button>
-                                                                            </div>
-                                                                        </form>
-                                                                    </div>
-                                                                    <% } else if
-                                                                        ("APPROVED".equals(reqItem.getStatus())) { %>
+                                                                <% if ("APPROVED".equals(reqItem.getStatus())) { %>
                                                                         <div class="card"
                                                                             style="background: #ecfdf5; border-radius: 10px; border: 1px solid #a7f3d0; padding: 20px;">
                                                                             <h3
@@ -413,7 +347,7 @@
                                                                                 style="margin: 0; font-size: 13.5px; color: #047857;">
                                                                                 Quyết định được ký bởi: <strong>
                                                                                     <%= reqItem.getHrName() !=null ?
-                                                                                        reqItem.getHrName() : "HR" %>
+                                                                                        reqItem.getHrName() : "Hệ thống" %>
                                                                                 </strong>
                                                                                 vào ngày <%= reqItem.getHrActionDate()
                                                                                     !=null ?
@@ -423,7 +357,7 @@
                                                                                         !=null ? reqItem.getHrNotes()
                                                                                         : "" %>"
                                                                             </p>
-                                                                            <% if (isHR || isManager) { %>
+                                                                            <% if (isManager) { %>
                                                                                 <form
                                                                                     action="<%= request.getContextPath() %>/promotions"
                                                                                     method="POST"

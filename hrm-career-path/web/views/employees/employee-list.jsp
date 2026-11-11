@@ -161,9 +161,6 @@
                             </td>
                             <td style="text-align: center;">
                                 <% if (roleId == 2) { %>
-                                <a href="<%= request.getContextPath() %>/employees?action=assign&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-assign" title="Điều chuyển / Thăng chức">
-                                    <i class="fa-solid fa-arrows-rotate"></i> <span>Đổi vị trí</span>
-                                </a>
                                 <a href="<%= request.getContextPath() %>/employees?action=detail&id=<%= emp.getUserId() %>" class="btn btn-sm btn-action-view" title="Xem chi tiết">
                                     <i class="fa-regular fa-eye"></i> <span>Xem</span>
                                 </a>
