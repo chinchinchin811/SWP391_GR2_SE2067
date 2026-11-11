@@ -14,14 +14,6 @@ public final class TestDAO {
 
     private final Connection conn;
 
-    /**
-     * Giữ kiểu VARBINARY khi file null, tránh SQL Server nhận tham số NVARCHAR
-     * NULL.
-     */
-    public record Binary(byte[] value) {
-
-    }
-
     public TestDAO(Connection conn) {
         this.conn = conn;
     }
@@ -34,10 +26,6 @@ public final class TestDAO {
         try {
             for (int i = 0; i < args.length; i++) {
                 Object value = args[i];
-                if (value instanceof Binary) {
-                    ps.setBytes(i + 1, ((Binary) value).value());
-                    continue;
-                }
                 if (value instanceof Instant) {
                     value = LocalDateTime.ofInstant((Instant) value, ZoneOffset.UTC);
                 }
@@ -228,9 +216,8 @@ public final class TestDAO {
         args.add(size);
         String sql = "SELECT a.id,a.test_template_id,a.assignee_id,assignee_role.role_name AS assignee_role,"
                 + "a.assigned_by,giver_role.role_name AS assigned_by_role,a.duration_minutes,a.started_at,"
-                + "a.status,a.submitted_at,a.file_name,"
-                + (id != null ? "a.submission_content" : "CAST(NULL AS NVARCHAR(MAX)) AS submission_content")
-                + ",t.title,t.type AS test_type,t.start_time,t.end_time,u.full_name,"
+                + "a.status,a.submitted_at,"
+                + "t.title,t.type AS test_type,t.start_time,t.end_time,u.full_name,"
                 + "e.evaluator_id,e.score,e.comment,e.evaluated_at,a.content_id,a.quiz_score,"
                 + "b.kind AS content_kind,b.title AS content_title" + ASSIGNMENT_FROM
                 + "LEFT JOIN Test_Content b ON b.id=a.content_id "
@@ -247,7 +234,7 @@ public final class TestDAO {
                         rs.getString("title"), rs.getString("test_type"), instant(rs, "start_time"),
                         instant(rs, "end_time"), rs.getInt("duration_minutes"), instant(rs, "started_at"),
                         rs.getString("status"), instant(rs, "submitted_at"),
-                        rs.getString("submission_content"), rs.getString("file_name"), evaluation,
+                        evaluation,
                         (Integer) rs.getObject("content_id"), rs.getString("content_kind"),
                         rs.getString("content_title"), rs.getBigDecimal("quiz_score")));
             }
@@ -427,6 +414,17 @@ public final class TestDAO {
     }
 
     /**
+     * Lấy nội dung đã được giao trong đợt thi (nếu đã giao ít nhất 1 người) để
+     * khóa không cho đổi đề giữa chừng.
+     */
+    public Integer templateAssignedContentId(int templateId) throws SQLException {
+        try (PreparedStatement ps = prepare("SELECT TOP 1 content_id FROM Test_Assignments WHERE test_template_id=? AND is_deleted=0 AND content_id IS NOT NULL ORDER BY id DESC", templateId);
+                ResultSet rs = ps.executeQuery()) {
+            return rs.next() ? (Integer) rs.getObject(1) : null;
+        }
+    }
+
+    /**
      * Nội dung được giao chỉ tải qua assignment còn quyền; không mở kho cho
      * người làm.
      */
@@ -488,25 +486,6 @@ public final class TestDAO {
     }
 
     /**
-     * Tải file chỉ sau khi SQL kiểm tra cùng phạm vi với trang bài nộp.
-     */
-    public byte[] file(TestActor actor, int assignmentId) throws SQLException {
-        List<Object> args = new ArrayList<>();
-        String filter = assignmentScope(actor, args);
-        args.add(assignmentId);
-        try (PreparedStatement ps = prepare("SELECT a.file_data" + ASSIGNMENT_FROM + "WHERE " + filter + " AND a.id=?", args.toArray()); ResultSet rs = ps.executeQuery()) {
-            if (!rs.next()) {
-                throw new TestException(404, "Không tìm thấy file.");
-            }
-            byte[] bytes = rs.getBytes(1);
-            if (bytes == null) {
-                throw new TestException(404, "Bài nộp không có file.");
-            }
-            return bytes;
-        }
-    }
-
-    /**
      * Danh sách ứng viên chưa được giao, chỉ trong phạm vi đề người quản lý
      * được thao tác.
      */
@@ -514,15 +493,18 @@ public final class TestDAO {
         List<Object> args = new ArrayList<>();
         String filter = visible(actor, args) + " AND " + management(actor, args);
         args.add(t.id());
+        Integer targetDepartmentId = t.departmentId() != null ? t.departmentId()
+                : (actor.managedDepartmentId() != null ? actor.managedDepartmentId()
+                : ("MANAGER".equals(actor.role()) ? actor.departmentId() : null));
         String sql = "SELECT u.user_id,u.full_name,u.department_id FROM Users u JOIN Roles r ON r.role_id=u.role_id CROSS JOIN Test_Templates t WHERE "
                 + filter + " AND t.id=? AND u.is_deleted=0 AND u.status=1 "
                 + "AND r.role_name<>'ADMIN' "
                 + (t.classId() != null ? "AND EXISTS (SELECT 1 FROM Class_Enrollments ce WHERE ce.class_id=t.class_id AND ce.user_id=u.user_id) "
-                    : t.departmentId() != null ? "AND r.role_name='EMPLOYEE' AND u.department_id=? " : "")
+                    : targetDepartmentId != null ? "AND r.role_name='EMPLOYEE' AND u.department_id=? " : "")
                 + "AND NOT EXISTS (SELECT 1 FROM Test_Assignments a WHERE a.test_template_id=t.id AND a.assignee_id=u.user_id) "
                 + "ORDER BY u.full_name,u.user_id";
-        if (t.classId() == null && t.departmentId() != null) {
-            args.add(t.departmentId());
+        if (t.classId() == null && targetDepartmentId != null) {
+            args.add(targetDepartmentId);
         }
         List<TestActor> result = new ArrayList<>();
         try (PreparedStatement ps = prepare(sql, args.toArray()); ResultSet rs = ps.executeQuery()) {

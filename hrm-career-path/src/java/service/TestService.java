@@ -7,7 +7,6 @@ import java.sql.*;
 import java.time.*;
 import java.util.*;
 import model.*;
-import policy.TestPolicy;
 
 /**
  * Nghiệp vụ bài tự do; mọi entry point nhận userId từ session và đọc lại quyền
@@ -15,7 +14,6 @@ import policy.TestPolicy;
  */
 public final class TestService {
 
-    public static final int MAX_FILE_BYTES = 5 * 1024 * 1024;
     public static final int DEFAULT_DURATION_MINUTES = 30;
     public static final int MIN_DURATION_MINUTES = 1;
     public static final int MAX_DURATION_MINUTES = 60;
@@ -167,7 +165,7 @@ public final class TestService {
             if (!actor.cultureManager()) {
                 throw new TestException(403, "Chỉ HR hoặc Quản lý được tạo bài văn hóa.");
             }
-            return null;
+            return actor.managedDepartmentId();
         }
         if ("learning".equals(type) && actor.learningManager()) {
             return actor.learningDepartmentId();
@@ -246,7 +244,11 @@ public final class TestService {
             throw new TestException(400, "Bộ lọc không hợp lệ.");
         }
         int start = offset(page, size);
-        return transaction(dao -> dao.templates(dao.actor(userId), "upcoming".equals(scope), clock.instant(), null, null, start, size));
+        return transaction(dao -> {
+            Instant now = clock.instant();
+            dao.closeExpiredTests(now);
+            return dao.templates(dao.actor(userId), "upcoming".equals(scope), now, null, null, start, size);
+        });
     }
 
     /**
@@ -254,6 +256,7 @@ public final class TestService {
      */
     public TestTemplate getTemplate(int userId, int id) throws SQLException {
         return transaction(dao -> {
+            dao.closeExpiredTests(clock.instant());
             TestActor actor = dao.actor(userId);
             TestTemplate t = dao.template(actor, id);
             return t;
@@ -268,7 +271,11 @@ public final class TestService {
             throw new TestException(400, "Khoảng lịch phải từ 1 đến 366 ngày.");
         }
         int start = offset(page, size);
-        return transaction(dao -> dao.templates(dao.actor(userId), false, clock.instant(), from, to, start, size));
+        return transaction(dao -> {
+            Instant now = clock.instant();
+            dao.closeExpiredTests(now);
+            return dao.templates(dao.actor(userId), false, now, from, to, start, size);
+        });
     }
 
     /**
@@ -318,7 +325,13 @@ public final class TestService {
         transaction(dao -> {
             TestActor actor = dao.actor(userId);
             TestTemplate t = dao.template(actor, templateId);
-            Integer selectedContentId = contentId == null ? t.defaultContentId() : contentId;
+            Integer lockedContentId = dao.templateAssignedContentId(templateId);
+            Integer selectedContentId = contentId == null
+                    ? (lockedContentId != null ? lockedContentId : t.defaultContentId())
+                    : contentId;
+            if (lockedContentId != null && !Objects.equals(lockedContentId, selectedContentId)) {
+                throw new TestException(409, "Không thể thay đổi nội dung giao sau khi đã giao bài.");
+            }
             if (!policy.canAssign(actor, t, clock.instant())) {
                 throw new TestException(403, "Không có quyền giao bài hoặc đề đã hết hạn.");
             }
@@ -332,6 +345,9 @@ public final class TestService {
                     throw new TestException(403, "Bộ đề/câu hỏi phải cùng phạm vi với đợt giao bài.");
                 }
             }
+            Integer targetDepartmentId = t.departmentId() != null ? t.departmentId()
+                    : (actor.managedDepartmentId() != null ? actor.managedDepartmentId()
+                    : ("MANAGER".equals(actor.role()) ? actor.departmentId() : null));
             for (int id : ids) {
                 TestActor recipient = dao.actor(id);
                 if ("ADMIN".equals(recipient.role())) {
@@ -340,9 +356,9 @@ public final class TestService {
                 if (t.classId() != null && !dao.enrolled(t.classId(), id)) {
                     throw new TestException(403, "Chỉ được giao bài cho học viên thuộc lớp đào tạo này.");
                 }
-                if (t.classId() == null && t.departmentId() != null
+                if (t.classId() == null && targetDepartmentId != null
                         && (!"EMPLOYEE".equals(recipient.role())
-                        || !Objects.equals(t.departmentId(), recipient.departmentId()))) {
+                        || !Objects.equals(targetDepartmentId, recipient.departmentId()))) {
                     throw new TestException(403, "Chỉ được giao bài cho nhân viên trong phòng ban của đợt đánh giá.");
                 }
                 dao.insertId("INSERT INTO Test_Assignments(test_template_id,assignee_id,assigned_by,content_id,duration_minutes) "
@@ -440,37 +456,6 @@ public final class TestService {
     }
 
     /**
-     * Nộp văn bản hoặc file tối đa 5 MiB; file lưu riêng trong DB, không nhận
-     * file_url từ client.
-     */
-    public void submitAssignment(int userId, int id, String content, String filename, byte[] file) throws SQLException {
-        String body = text(content, 50000, false);
-        if (file != null && (file.length == 0 || file.length > MAX_FILE_BYTES)) {
-            throw new TestException(400, "File phải từ 1 byte đến 5 MiB.");
-        }
-        String safeName = file == null ? null : text(filename, 200, true).replaceAll("[\\\\/\\r\\n\\x00]", "_");
-        if (body.isEmpty() && file == null) {
-            throw new TestException(400, "Hãy nhập nội dung hoặc đính kèm file.");
-        }
-        transaction(dao -> {
-            TestActor actor = dao.actor(userId);
-            TestAssignment a = assignment(dao, actor, id);
-            TestTemplate t = dao.template(actor, a.templateId());
-            Instant now = clock.instant();
-            if (!policy.canSubmit(actor, a, t, now)) {
-                throw new TestException(409, "Bài đã nộp, chưa mở, hết hạn hoặc không thuộc về bạn.");
-            }
-            if ("quiz".equals(a.contentKind())) {
-                throw new TestException(400, "Bài trắc nghiệm phải nộp bằng các lựa chọn trả lời.");
-            }
-            changed(dao.execute("UPDATE Test_Assignments SET submission_content=?,file_name=?,file_data=?,submitted_at=?,status='submitted' "
-                    + "WHERE id=? AND assignee_id=? AND status='in_progress' AND is_deleted=0",
-                    body, safeName, new TestDAO.Binary(file), now, id, actor.id()));
-            return null;
-        });
-    }
-
-    /**
      * Chấm 0–10 với tối đa 2 chữ số thập phân; INSERT và đổi trạng thái cùng
      * transaction.
      */
@@ -511,23 +496,6 @@ public final class TestService {
             }
             changed(dao.execute("UPDATE Test_Assignments SET is_deleted=1 WHERE id=? AND status='pending' AND is_deleted=0", id));
             return null;
-        });
-    }
-
-    public record Download(String name, byte[] bytes) {
-
-    }
-
-    /**
-     * File luôn trả dạng attachment qua controller, không thực thi HTML/SVG
-     * người nộp gửi lên.
-     */
-    public Download download(int userId, int id) throws SQLException {
-        return transaction(dao -> {
-            TestActor actor = dao.actor(userId);
-            TestAssignment a = assignment(dao, actor, id);
-            byte[] bytes = dao.file(actor, id);
-            return new Download(a.fileName(), bytes);
         });
     }
 

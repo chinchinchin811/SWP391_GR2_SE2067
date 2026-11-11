@@ -1,12 +1,10 @@
 package controller;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.sql.SQLException;
@@ -14,7 +12,6 @@ import java.time.*;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import model.*;
-import policy.TestPolicy;
 import service.*;
 
 /**
@@ -22,7 +19,6 @@ import service.*;
  * trực tiếp.
  */
 @WebServlet(name = "TestServlet", urlPatterns = "/tests")
-@MultipartConfig(maxFileSize = 5242880, maxRequestSize = 6291456, fileSizeThreshold = 1048576)
 public class TestServlet extends HttpServlet {
 
     private final TestService service = new TestService();
@@ -235,15 +231,6 @@ public class TestServlet extends HttpServlet {
                     req.setAttribute("templates", service.getCalendar(userId, from.atStartOfDay(ZONE).toInstant(), to.atStartOfDay(ZONE).toInstant(), page, 20));
                     break;
                 }
-                case "download": {
-                    TestService.Download file = service.download(userId, integer(req.getParameter("id")));
-                    res.setContentType("application/octet-stream");
-                    res.setHeader("Content-Disposition", "attachment; filename=\"submission\"; filename*=UTF-8''"
-                            + URLEncoder.encode(file.name(), StandardCharsets.UTF_8).replace("+", "%20"));
-                    res.setContentLength(file.bytes().length);
-                    res.getOutputStream().write(file.bytes());
-                    return;
-                }
                 default:
                     throw new TestException(404, "Trang không tồn tại.");
             }
@@ -352,20 +339,6 @@ public class TestServlet extends HttpServlet {
                         next = "assignment&id=" + id;
                         break;
                     }
-                    case "submit": {
-                        Part part = req.getPart("file");
-                        byte[] bytes = null;
-                        String name = null;
-                        if (part != null && part.getSize() > 0) {
-                            name = part.getSubmittedFileName();
-                            try (var stream = part.getInputStream()) {
-                                bytes = stream.readNBytes(TestService.MAX_FILE_BYTES + 1);
-                            }
-                        }
-                        service.submitAssignment(userId, id, req.getParameter("content"), name, bytes);
-                        next = "assignment&id=" + id;
-                        break;
-                    }
                     case "evaluate": {
                         BigDecimal score;
                         try {
@@ -390,8 +363,6 @@ public class TestServlet extends HttpServlet {
             res.setHeader("Location", req.getContextPath() + "/tests?action=" + next);
         } catch (TestException e) {
             error(req, res, e.status(), e.getMessage());
-        } catch (IllegalStateException e) {
-            error(req, res, 413, "File vượt giới hạn 5 MiB hoặc biểu mẫu quá lớn.");
         } catch (SQLException e) {
             log("Test module write failed", e);
             error(req, res, 503, "Không thể lưu thay đổi. Dữ liệu chưa được ghi; hãy thử lại sau.");

@@ -200,7 +200,7 @@ public class TestModuleHttpTest {
         DateTimeFormatter timeFmt = DateTimeFormatter.ofPattern("HH:mm");
         String title = "Đề tiếng Việt <script>alert(1)</script>";
         String template = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", title, "description", "Yêu cầu <img src=x onerror=alert(1)>",
-                "type", "department", "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(10).format(dateFmt), "startTime", now.plusMinutes(10).format(timeFmt),
+                "type", "department", "contentId", String.valueOf(quizContentId), "startDate", now.plusMinutes(10).format(dateFmt), "startTime", now.plusMinutes(10).format(timeFmt),
                 "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
         HttpResponse<String> upcomingDetail = get(manager, "/hrm/tests?action=detail&id=" + template);
         check(upcomingDetail.statusCode() == 200
@@ -208,7 +208,7 @@ public class TestModuleHttpTest {
                 && upcomingDetail.body().contains("Yêu cầu &lt;img")
                 && upcomingDetail.body().contains("Giao bài")
                 && upcomingDetail.body().contains("Hủy đợt thi")
-                && upcomingDetail.body().contains("Giao cho người đã chọn")
+                && upcomingDetail.body().contains("Chọn tất cả nhân viên")
                 && !upcomingDetail.body().contains("Công bố đề")
                 && !upcomingDetail.body().contains("Thao tác đợt giao bài")
                 && upcomingDetail.body().contains("Người được giao &amp; Kết quả"),
@@ -234,7 +234,7 @@ public class TestModuleHttpTest {
                 && detail.body().contains("Người được giao &amp; Kết quả")
                 && detail.body().contains("test-cancel-button")
                 && detail.body().contains("Hủy đợt thi")
-                && detail.body().contains("Giao cho người đã chọn"),
+                && detail.body().contains("Chọn tất cả nhân viên"),
                 "detail renders summary, assignment controls and participant results");
         check(!detail.body().contains("value=\"archive\"") && !detail.body().contains("Lưu trữ đề"),
                 "template archive action removed");
@@ -257,43 +257,28 @@ public class TestModuleHttpTest {
         check(assignmentFromList.statusCode() == 200 && assignmentFromList.body().contains("Chưa làm")
                 && assignmentFromList.body().contains("Bắt đầu làm")
                 && assignmentFromList.body().contains("15 phút")
-                && assignmentFromList.body().contains("Câu tình huống"),
+                && assignmentFromList.body().contains("Bộ đề HTTP"),
                 "assignee opening a template from the shared list sees assignment detail");
         HttpResponse<String> mine = get(member, "/hrm/tests?action=assignment&id=" + assignment);
         check(mine.statusCode() == 200 && mine.body().contains("Chưa làm")
-                && mine.body().contains("Bắt đầu làm") && !mine.body().contains("multipart/form-data"),
+                && mine.body().contains("Bắt đầu làm"),
                 "pending assignment only renders start action");
         String memberToken = csrf(mine.body());
         check(post(member, "/hrm/tests", "csrf", memberToken, "action", "start", "id", assignment).statusCode() == 303,
                 "start assignment");
         mine = get(member, "/hrm/tests?action=assignment&id=" + assignment);
-        check(mine.body().contains("multipart/form-data"), "started assignment renders submission form");
         check(!mine.body().contains("name=\"action\" value=\"start\""), "started assignment hides start action");
         check(!mine.body().contains("Thu hồi bài chưa bắt đầu"), "started assignment hides revoke action");
         check(mine.body().contains("Thời gian còn lại") && mine.body().contains("data-deadline=")
                 && mine.body().contains("15 phút"), "started assignment renders selected duration countdown");
         check(get(outsider, "/hrm/tests?action=assignment&id=" + assignment).statusCode() == 404, "assignment IDOR blocked");
         check(get(member, "/hrm/WEB-INF/views/tests/index.jsp").statusCode() == 404, "JSP direct access blocked");
-        String boundary = "hrm-boundary-" + UUID.randomUUID();
-        StringBuilder multipart = new StringBuilder();
-        String[] fields = {"csrf", memberToken, "action", "submit", "id", assignment, "content", "Nội dung <script>bad()</script>"};
-        for (int i = 0; i < fields.length; i += 2) {
-            multipart.append("--").append(boundary).append("\r\nContent-Disposition: form-data; name=\"")
-                    .append(fields[i]).append("\"\r\n\r\n").append(fields[i + 1]).append("\r\n");
-        }
-        multipart.append("--").append(boundary).append("\r\nContent-Disposition: form-data; name=\"file\"; filename=\"answer.txt\"\r\n")
-                .append("Content-Type: text/plain\r\n\r\nfile-content\r\n--").append(boundary).append("--\r\n");
-        HttpResponse<String> submitted = member.send(HttpRequest.newBuilder(origin.resolve("/hrm/tests"))
-                .header("Content-Type", "multipart/form-data; boundary=" + boundary)
-                .POST(HttpRequest.BodyPublishers.ofString(multipart.toString(), StandardCharsets.UTF_8)).build(), HttpResponse.BodyHandlers.ofString());
-        check(submitted.statusCode() == 303, "multipart submit: " + submitted.statusCode() + " " + submitted.body());
-        HttpResponse<String> result = get(manager, "/hrm/tests?action=assignment&id=" + assignment);
-        check(result.statusCode() == 200 && result.body().contains("&lt;script&gt;bad()&lt;/script&gt;"), "submission escaped on grading page");
-        HttpResponse<String> download = get(member, "/hrm/tests?action=download&id=" + assignment);
-        check(download.statusCode() == 200 && download.body().equals("file-content"), "download payload roundtrip");
-        check(download.headers().firstValue("Content-Disposition").orElse("").startsWith("attachment;"), "force attachment");
-        check(download.headers().firstValue("X-Content-Type-Options").orElse("").equals("nosniff"), "download nosniff");
-        check(get(outsider, "/hrm/tests?action=download&id=" + assignment).statusCode() == 404, "download IDOR blocked");
+        check(post(member, "/hrm/tests", "csrf", memberToken, "action", "submitQuiz", "id", assignment,
+                "answer_" + trueFalseQuestionId, String.valueOf(trueOptionId),
+                "answer_" + multipleQuestionId, String.valueOf(multipleOptionA),
+                "answer_" + multipleQuestionId, String.valueOf(multipleOptionB),
+                "answer_" + multipleQuestionId, String.valueOf(multipleOptionC)).statusCode() == 303,
+                "submit quiz on template");
         check(post(manager, "/hrm/tests", "csrf", token, "action", "evaluate", "id", assignment, "score", "9.25", "comment", "Tốt <b>ok</b>").statusCode() == 303, "grade form");
         HttpResponse<String> graded = get(member, "/hrm/tests?action=assignment&id=" + assignment);
         check(graded.body().contains("9.25") && graded.body().contains("&lt;b&gt;ok&lt;/b&gt;"), "grade visible to owner, escaped");
@@ -340,19 +325,6 @@ public class TestModuleHttpTest {
         String scored = get(member, "/hrm/tests?action=assignment&id=" + qa).body();
         check(scored.contains("10.00") && scored.contains("checked"), "server score ignores client and retains selected choice");
         check(!scored.contains("Đáp án đúng"), "answer key stays private after submission");
-        String et = newId(post(manager, "/hrm/tests", "csrf", token, "action", "create", "title", "Đợt câu hỏi", "description", "Giao câu hỏi", "type", "department",
-                "contentId", String.valueOf(essayContentId), "startDate", now.plusMinutes(10).format(dateFmt), "startTime", now.plusMinutes(10).format(timeFmt),
-                "endDate", now.plusHours(2).format(dateFmt), "endTime", now.plusHours(2).format(timeFmt)));
-        execute(conn, "UPDATE Test_Templates SET start_time=SYSUTCDATETIME() WHERE id=" + et);
-        check(post(manager, "/hrm/tests", "csrf", token, "action", "assign", "id", et, "assigneeId", "2",
-                "contentId", String.valueOf(essayContentId), "durationMinutes", "30").statusCode() == 303, "assign selected essay question");
-        String essayAssignment = assignmentId(conn, et);
-        String essayPage = get(member, "/hrm/tests?action=assignment&id=" + essayAssignment).body();
-        String essayToken = csrf(essayPage);
-        check(post(member, "/hrm/tests", "csrf", essayToken, "action", "start", "id", essayAssignment).statusCode() == 303,
-                "start essay assignment");
-        essayPage = get(member, "/hrm/tests?action=assignment&id=" + essayAssignment).body();
-        check(essayPage.contains("Xử lý phản hồi khách hàng như thế nào?") && essayPage.contains("multipart/form-data") && !essayPage.contains("type=\"radio\""), "essay selection displays correct prompt and submission form");
         System.out.println("PASS: " + assertions + " HTTP assertions on isolated Tomcat and SQL Server.");
     }
 

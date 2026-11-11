@@ -1,6 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" pageEncoding="UTF-8" %>
 <%@ page import="java.util.*,model.*,service.TestService" %>
-<%@ page import="static utils.TestView.h" %>
+<%@ page import="static service.TestView.h" %>
 <%
     TestActor setActor=(TestActor)request.getAttribute("testActor");
     TestService.ContentDetail editingSet=(TestService.ContentDetail)request.getAttribute("editingSet");
