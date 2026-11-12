@@ -71,6 +71,7 @@
                                                                                     <select class="form-control"
                                                                                         id="positionId"
                                                                                         name="positionId"
+                                                                                        onchange="filterClassLevels()"
                                                                                         data-field-name="Vị trí mục tiêu">
                                                                                         <option value="">— Tất cả vị trí
                                                                                             —</option>
@@ -94,9 +95,12 @@
                                                                                         <option value="">— Tất cả cấp
                                                                                             bậc —</option>
                                                                                         <% if (levels !=null) { for
-                                                                                            (JobLevel l : levels) { %>
+                                                                                            (JobLevel l : levels) { 
+                                                                                            int lPosId = (l.getPositionId() != null) ? l.getPositionId() : 0;
+                                                                                        %>
                                                                                             <option
-                                                                                                value="<%= l.getLevelId() %>">
+                                                                                                value="<%= l.getLevelId() %>"
+                                                                                                data-pos="<%= lPosId %>">
                                                                                                 <%= l.getLevelName() %>
                                                                                             </option>
                                                                                             <% } } %>
@@ -642,5 +646,68 @@
                                                             }
                                                         });
                                                     })();
+
+                                                    var allClassLevels = [];
+                                                    function initClassLevels() {
+                                                        var lvlSelect = document.getElementById("levelId");
+                                                        if (lvlSelect && allClassLevels.length === 0) {
+                                                            for (var i = 0; i < lvlSelect.options.length; i++) {
+                                                                var o = lvlSelect.options[i];
+                                                                if (o.value !== "") {
+                                                                    allClassLevels.push({
+                                                                        value: o.value,
+                                                                        text: o.text,
+                                                                        pos: o.getAttribute("data-pos") || "0"
+                                                                    });
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    function filterClassLevels() {
+                                                        initClassLevels();
+                                                        var posSelect = document.getElementById("positionId");
+                                                        var lvlSelect = document.getElementById("levelId");
+                                                        if (!posSelect || !lvlSelect) return;
+                                                        var selectedPos = posSelect.value;
+                                                        var currentLvl = lvlSelect.value;
+                                                        lvlSelect.innerHTML = "";
+                                                        var defOpt = document.createElement("option");
+                                                        defOpt.value = "";
+                                                        defOpt.text = "— Tất cả cấp bậc —";
+                                                        lvlSelect.appendChild(defOpt);
+
+                                                        var matched = [];
+                                                        if (!selectedPos || selectedPos === "") {
+                                                            matched = allClassLevels.filter(function(item) {
+                                                                return item.pos === "0";
+                                                            });
+                                                            if (matched.length === 0) {
+                                                                matched = allClassLevels.slice(0, 6);
+                                                            }
+                                                        } else {
+                                                            matched = allClassLevels.filter(function(item) {
+                                                                return item.pos === selectedPos;
+                                                            });
+                                                            if (matched.length === 0) {
+                                                                matched = allClassLevels.filter(function(item) {
+                                                                    return item.pos === "0";
+                                                                });
+                                                            }
+                                                        }
+
+                                                        matched.forEach(function(item) {
+                                                            var opt = document.createElement("option");
+                                                            opt.value = item.value;
+                                                            opt.text = item.text;
+                                                            if (item.value === currentLvl) {
+                                                                opt.selected = true;
+                                                            }
+                                                            lvlSelect.appendChild(opt);
+                                                        });
+                                                    }
+                                                    document.addEventListener("DOMContentLoaded", function() {
+                                                        initClassLevels();
+                                                        filterClassLevels();
+                                                    });
                                                 </script>
                                                 <jsp:include page="/views/common/footer.jsp" />

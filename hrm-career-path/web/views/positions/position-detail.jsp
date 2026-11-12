@@ -191,20 +191,17 @@
                         <div style="padding: 40px 20px; text-align: center;">
                             <h4 style="color: #334155; margin-bottom: 6px;">Vị trí này chưa có thang cấp bậc riêng!</h4>
                             <p style="color: #64748b; font-size: 13.5px; max-width: 500px; margin: 0 auto 18px auto;">
-                                Bạn có thể khởi tạo nhanh bộ 6 cấp bậc tiêu chuẩn của công ty (Intern &rarr; Fresher &rarr; Junior &rarr; Middle &rarr; Senior &rarr; Lead) hoặc tự thêm các cấp bậc tùy chỉnh.
+                                Bạn có thể khởi tạo nhanh bộ 6 cấp bậc tiêu chuẩn của công ty (Intern &rarr; Fresher &rarr; Junior &rarr; Middle &rarr; Senior &rarr; Lead).
                             </p>
                             <% if (roleId == 1) { %>
                             <div style="display: flex; gap: 10px; justify-content: center;">
                                 <form action="<%= request.getContextPath() %>/positions" method="POST" style="display: inline;">
                                     <input type="hidden" name="action" value="copyDefaultLevels">
                                     <input type="hidden" name="positionId" value="<%= pos.getPositionId() %>">
-                                    <button type="submit" class="btn btn-success">
+                                    <button type="submit" class="btn btn-primary">
                                         Khởi Tạo 6 Cấp Bậc Tiêu Chuẩn
                                     </button>
                                 </form>
-                                <button type="button" class="btn btn-primary" onclick="openAddLevelModal()">
-                                    Thêm Cấp Bậc Tùy Chỉnh
-                                </button>
                             </div>
                             <% } %>
                         </div>

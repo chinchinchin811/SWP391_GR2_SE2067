@@ -87,8 +87,10 @@ public class TransferServlet extends HttpServlet {
                 String filter = request.getParameter("filter");
                 List<TransferRequest> hrRequests = transferDAO.getAllRequestsForHR(filter);
                 List<JobLevel> levels = positionDAO.getAllJobLevels();
+                positions = positionDAO.getAllPositions();
                 request.setAttribute("requests", hrRequests);
                 request.setAttribute("jobLevels", levels);
+                request.setAttribute("positions", positions);
                 request.setAttribute("viewRole", "HR");
                 request.getRequestDispatcher("/views/employees/transfer-list.jsp").forward(request, response);
                 break;
@@ -139,6 +141,13 @@ public class TransferServlet extends HttpServlet {
 
             try {
                 int targetDeptId = Integer.parseInt(targetDeptStr);
+                Department targetDept = departmentDAO.getDepartmentById(targetDeptId);
+                if (targetDept != null && !targetDept.isStatus()) {
+                    session.setAttribute("errorMessage", "Phòng ban '" + targetDept.getDepartmentName()
+                            + "' đang ở trạng thái Tạm ngưng! Không thể tạo nguyện vọng chuyển đến phòng ban này.");
+                    response.sendRedirect(request.getContextPath() + "/transfer?action=requestCreate");
+                    return;
+                }
                 Integer targetPosId = (targetPosStr != null && !targetPosStr.isEmpty() && !targetPosStr.equals("0"))
                         ? Integer.parseInt(targetPosStr) : null;
 
@@ -200,14 +209,17 @@ public class TransferServlet extends HttpServlet {
             String status = request.getParameter("status"); // COMPLETED hoặc REJECTED
             String note = request.getParameter("hrNote");
             String levelIdStr = request.getParameter("levelId");
+            String posIdStr = request.getParameter("positionId");
 
             if (reqIdStr != null && status != null) {
                 try {
                     int reqId = Integer.parseInt(reqIdStr);
                     Integer levelId = (levelIdStr != null && !levelIdStr.isEmpty() && !levelIdStr.equals("0"))
                             ? Integer.parseInt(levelIdStr) : null;
+                    Integer positionId = (posIdStr != null && !posIdStr.isEmpty() && !posIdStr.equals("0"))
+                            ? Integer.parseInt(posIdStr) : null;
 
-                    boolean ok = transferDAO.hrExecuteTransfer(reqId, currentUser.getUserId(), status, note, levelId);
+                    boolean ok = transferDAO.hrExecuteTransfer(reqId, currentUser.getUserId(), status, note, levelId, positionId);
                     if (ok) {
                         if ("COMPLETED".equalsIgnoreCase(status)) {
                             session.setAttribute("successMessage", "Đã THỰC THI ĐIỀU CHUYỂN! Hệ thống đã tự động cập nhật phòng ban/vị trí mới và ghi nhận lịch sử biến động.");

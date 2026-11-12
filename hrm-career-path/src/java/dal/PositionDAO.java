@@ -136,6 +136,45 @@ public class PositionDAO {
         return null;
     }
 
+    public boolean isPositionNameExists(String name, Integer departmentId, Integer excludePositionId) {
+        if (name == null || name.trim().isEmpty()) {
+            return false;
+        }
+        StringBuilder sql = new StringBuilder("""
+            SELECT COUNT(*) 
+            FROM Positions 
+            WHERE LOWER(LTRIM(RTRIM(position_name))) = LOWER(?) 
+              AND is_deleted = 0
+            """);
+        if (departmentId != null && departmentId > 0) {
+            sql.append(" AND department_id = ?");
+        } else {
+            sql.append(" AND department_id IS NULL");
+        }
+        if (excludePositionId != null && excludePositionId > 0) {
+            sql.append(" AND position_id <> ?");
+        }
+        try (Connection conn = DBContext.getInstance().getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            ps.setString(1, name.trim());
+            int idx = 2;
+            if (departmentId != null && departmentId > 0) {
+                ps.setInt(idx++, departmentId);
+            }
+            if (excludePositionId != null && excludePositionId > 0) {
+                ps.setInt(idx++, excludePositionId);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public boolean addPosition(Position pos) {
         String sql = """
             INSERT INTO Positions (position_name, department_id, description, status, is_deleted) 

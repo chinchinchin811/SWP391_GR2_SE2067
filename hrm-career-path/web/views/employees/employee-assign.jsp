@@ -70,8 +70,13 @@
                                     if (departments != null) {
                                         for (Department d : departments) {
                                             boolean isSel = (emp.getDepartmentId() != null && emp.getDepartmentId().equals(d.getDepartmentId()));
+                                            boolean isInactive = !d.isStatus();
                                 %>
-                                <option value="<%= d.getDepartmentId() %>" <%= isSel ? "selected" : "" %>><%= d.getDepartmentName() %></option>
+                                <option value="<%= d.getDepartmentId() %>" 
+                                        <%= isSel ? "selected" : "" %>
+                                        <%= (isInactive && !isSel) ? "disabled style='color: #94a3b8; background-color: #f1f5f9;'" : "" %>>
+                                    <%= d.getDepartmentName() %><%= isInactive ? " (Tạm ngưng - Không thể tiếp nhận)" : "" %>
+                                </option>
                                 <%
                                         }
                                     }

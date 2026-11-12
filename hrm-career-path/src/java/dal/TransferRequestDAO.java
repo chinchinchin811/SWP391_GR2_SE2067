@@ -206,12 +206,19 @@ public class TransferRequestDAO {
     }
 
     public boolean hrExecuteTransfer(int requestId, int hrId, String status, String note, Integer levelId) {
+        return hrExecuteTransfer(requestId, hrId, status, note, levelId, null);
+    }
+
+    public boolean hrExecuteTransfer(int requestId, int hrId, String status, String note, Integer levelId, Integer positionId) {
         TransferRequest req = getRequestById(requestId);
         if (req == null) return false;
 
+        Integer finalPosId = (positionId != null && positionId > 0) ? positionId : req.getTargetPositionId();
+
         String sql = """
             UPDATE dbo.Transfer_Requests 
-            SET hr_status = ?, hr_note = ?, hr_reviewed_by = ?, hr_reviewed_at = GETDATE()
+            SET hr_status = ?, hr_note = ?, hr_reviewed_by = ?, hr_reviewed_at = GETDATE(),
+                target_position_id = ISNULL(?, target_position_id)
             WHERE request_id = ? AND hr_status = 'PENDING'
             """;
         try (Connection conn = DBContext.getInstance().getConnection();
@@ -219,13 +226,18 @@ public class TransferRequestDAO {
             ps.setString(1, status);
             ps.setString(2, note);
             ps.setInt(3, hrId);
-            ps.setInt(4, requestId);
+            if (finalPosId != null && finalPosId > 0) {
+                ps.setInt(4, finalPosId);
+            } else {
+                ps.setNull(4, Types.INTEGER);
+            }
+            ps.setInt(5, requestId);
             boolean ok = ps.executeUpdate() > 0;
 
             if (ok && "COMPLETED".equalsIgnoreCase(status)) {
                 // Tự động kích hoạt cập nhật phòng ban và vị trí mới cho nhân sự
                 UserDAO userDAO = new UserDAO();
-                userDAO.updateEmployeeAssignment(req.getEmployeeId(), req.getTargetDepartmentId(), req.getTargetPositionId(), levelId, "TRANSFER", "Điều chuyển theo đề xuất nguyện vọng #" + requestId, hrId);
+                userDAO.updateEmployeeAssignment(req.getEmployeeId(), req.getTargetDepartmentId(), finalPosId, levelId, "TRANSFER", "Điều chuyển theo đề xuất nguyện vọng #" + requestId, hrId);
             }
             return ok;
         } catch (SQLException e) {
