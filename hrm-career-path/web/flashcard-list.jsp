@@ -572,7 +572,22 @@
 
 <main class="main-content">
     <div class="topbar">
-        <h1><i class="fa-solid" style="color: var(--primary);"></i> <span>Flashcards</span></h1>
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <a href="<%= request.getContextPath() %>/materials" class="btn btn-secondary" style="padding: 7px 14px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; border-radius: var(--radius-md);">
+                    <i class="fa-solid fa-arrow-left"></i> Quay lại kho học liệu
+                </a>
+                <h1 style="margin: 0; font-size: 20px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-clone" style="color: var(--primary);"></i> 
+                    <span>Bộ Thẻ Flashcards Ôn Tập</span>
+                </h1>
+            </div>
+            <% if (currentDeck != null && (("culture".equals(currentDeck.getType()) && canManageCulture) || ("professional".equals(currentDeck.getType()) && canManageProfessional))) { %>
+            <a href="<%= request.getContextPath() %>/flashcards?action=manageCards&deckId=<%= currentDeck.getDeckId() %>" class="btn btn-primary" style="font-size: 13px; font-weight: 600; padding: 7px 14px;">
+                <i class="fa-solid fa-list-check"></i> Quản lý câu hỏi &amp; đáp án
+            </a>
+            <% } %>
+        </div>
     </div>
 
     <div class="content-body flashcard-container">

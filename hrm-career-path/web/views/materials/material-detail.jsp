@@ -41,9 +41,6 @@
             <div class="card-header">
                 <h2>Thông Tin Học Liệu</h2>
                 <div style="display:flex;align-items:center;gap:8px">
-                    <% if (!hasAccess) { %>
-                    <span class="badge" style="background:#e67e22;color:#fff"><i class="fa-solid fa-lock"></i> Cần tham gia lớp</span>
-                    <% } %>
                     <span class="badge"><%= material.getMaterialType() %></span>
                 </div>
             </div>

@@ -85,8 +85,6 @@ public class MentorServlet extends HttpServlet {
                 action = "managerWorkspace";
             } else if (mentorDAO.isMentor(currentUser.getUserId())) {
                 action = "myMentees";
-            } else if (currentUser.getRoleId() == 2) {
-                action = "evaluations";
             } else if (currentUser.getRoleId() == 4) {
                 if (mentorDAO.hasMentor(currentUser.getUserId())) {
                     action = "myMentor";
@@ -95,7 +93,8 @@ public class MentorServlet extends HttpServlet {
                     return;
                 }
             } else {
-                action = "evaluations";
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
             }
         }
 
@@ -125,7 +124,11 @@ public class MentorServlet extends HttpServlet {
                 break;
 
             case "evaluations":
-                if ((currentUser.getRoleId() == 3 || currentUser.getRoleId() == 4) && !mentorDAO.isMentor(currentUser.getUserId())) {
+                if (currentUser.getRoleId() == 2) {
+                    response.sendRedirect(request.getContextPath() + "/dashboard");
+                    return;
+                }
+                if (!mentorDAO.isMentor(currentUser.getUserId())) {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;
                 }
@@ -133,15 +136,6 @@ public class MentorServlet extends HttpServlet {
                     request.setAttribute("evaluations", mentorDAO.getEvaluationsByMentor(currentUser.getUserId()));
                 } else if (currentUser.getRoleId() == 3) {
                     request.setAttribute("evaluations", currentUser.getDepartmentId() == null ? new ArrayList<>() : mentorDAO.getEvaluationsByDepartment(currentUser.getDepartmentId()));
-                } else if (currentUser.getRoleId() == 2) {
-                    MaterialDAO hrMaterialDAO = new MaterialDAO();
-                    List<TrainingClass> hrClasses = hrMaterialDAO.getClasses(null, false);
-                    Map<Integer, List<ClassMenteeEvaluation>> hrClassEvaluations = new LinkedHashMap<>();
-                    for (TrainingClass trainingClass : hrClasses) {
-                        hrClassEvaluations.put(trainingClass.getClassId(), mentorDAO.getClassMenteeEvaluations(trainingClass.getClassId()));
-                    }
-                    request.setAttribute("hrClasses", hrClasses);
-                    request.setAttribute("hrClassEvaluations", hrClassEvaluations);
                 } else {
                     response.sendRedirect(request.getContextPath() + "/dashboard");
                     return;

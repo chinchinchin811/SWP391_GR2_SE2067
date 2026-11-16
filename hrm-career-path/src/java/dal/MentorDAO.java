@@ -146,13 +146,13 @@ public class MentorDAO {
 
     public List<User> getAllMentorsWithSpecialty(Integer departmentId) {
         List<User> list = new ArrayList<>();
-        String sql = "SELECT u.user_id, u.full_name, u.position_id, p.position_name, d.department_name, jl.level_name "
+        String sql = "SELECT u.user_id, u.full_name, u.role_id, r.role_name, u.position_id, p.position_name, d.department_name, jl.level_name "
                 + "FROM Users u "
                 + "LEFT JOIN Positions p ON u.position_id = p.position_id "
                 + "LEFT JOIN Departments d ON u.department_id = d.department_id "
                 + "LEFT JOIN Job_Levels jl ON u.level_id = jl.level_id "
                 + "INNER JOIN Roles r ON u.role_id = r.role_id "
-                + "WHERE u.role_id IN (3, 4) "
+                + "WHERE (u.role_id = 4 OR r.role_name = 'EMPLOYEE') "
                 + "AND (jl.rank_order >= 3 OR jl.rank_order IS NULL) "
                 + "AND (u.is_deleted = 0 OR u.is_deleted IS NULL) "
                 + "AND (u.status = 1 OR u.status IS NULL) "
@@ -168,6 +168,8 @@ public class MentorDAO {
                     User u = new User();
                     u.setUserId(rs.getInt("user_id"));
                     u.setFullName(rs.getString("full_name"));
+                    u.setRoleId(rs.getInt("role_id"));
+                    u.setRoleName(rs.getString("role_name"));
                     u.setPositionId(rs.getInt("position_id"));
                     u.setPositionName(rs.getString("position_name"));
                     u.setDepartmentName(rs.getString("department_name"));

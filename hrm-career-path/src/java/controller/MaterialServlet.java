@@ -9,6 +9,7 @@ import java.sql.Date;
 import java.time.LocalDate;
 import java.util.*;
 import model.*;
+import model.Flashcard.FlashcardDeck;
 
 @MultipartConfig(maxFileSize = 52428800)
 public class MaterialServlet extends HttpServlet {
@@ -43,30 +44,18 @@ public class MaterialServlet extends HttpServlet {
         if ("list".equals(a)) {
             List<TrainingClass> myClasses = dao.getClasses(u.getUserId(), true);
             List<LearningMaterial> allMaterials = dao.getMaterials(u.getUserId(), u.getRoleId());
-            List<LearningMaterial> displayMaterials;
-            boolean canManageUser = canManage(u);
-            boolean isClassMember = myClasses != null && !myClasses.isEmpty();
-
-            if (!canManageUser && isClassMember) {
-                // Mentor và Mentee: chỉ hiển thị học liệu có trong lớp của mình
-                displayMaterials = new ArrayList<>();
-                for (LearningMaterial m : allMaterials) {
-                    if (m.isUserHasAccess()) {
-                        displayMaterials.add(m);
-                    }
-                }
-            } else {
-                displayMaterials = new ArrayList<>();
-                for (LearningMaterial m : allMaterials) {
-                    if (!canManageUser || canManageMaterial(u, m)) {
-                        displayMaterials.add(m);
-                    }
-                }
-            }
-
-            q.setAttribute("materials", displayMaterials);
+            q.setAttribute("materials", allMaterials);
             q.setAttribute("classes", myClasses);
+            
+            FlashcardDAO flashcardDAO = new FlashcardDAO();
+            q.setAttribute("flashcardDecks", flashcardDAO.getAllDecks());
+
             go(q, s, "/views/materials/material-list.jsp");
+            return;
+        }
+        if ("flashcards".equals(a)) {
+            String deckId = q.getParameter("deckId");
+            s.sendRedirect(q.getContextPath() + "/flashcards" + (deckId != null && !deckId.isEmpty() ? "?deckId=" + deckId : ""));
             return;
         }
         if ("view".equals(a)) {
@@ -76,18 +65,11 @@ public class MaterialServlet extends HttpServlet {
                 s.sendRedirect(q.getContextPath() + "/materials");
                 return;
             }
-            if (canManage(u) && !canManageMaterial(u, m)) {
-                forbidden(s, "Học liệu không thuộc phạm vi phòng ban của bạn.");
-                return;
-            }
-            boolean hasAccess = canManageMaterial(u, m) || dao.checkUserCanAccessMaterial(id, u.getUserId(), u.getRoleId());
+            boolean hasAccess = true;
             q.setAttribute("material", m);
             q.setAttribute("hasAccess", hasAccess);
-            q.setAttribute("canManageMaterial", canManageMaterial(u, m));
-            q.setAttribute("checkpoints", hasAccess ? dao.getCheckpoints(id) : Collections.emptyList());
-            if (!hasAccess) {
-                q.setAttribute("relatedClasses", dao.getClassesByMaterial(id));
-            }
+            q.setAttribute("canManageMaterial", canManage(u) && canManageMaterial(u, m));
+            q.setAttribute("checkpoints", dao.getCheckpoints(id));
             go(q, s, "/views/materials/material-detail.jsp");
             return;
         }
@@ -281,7 +263,7 @@ public class MaterialServlet extends HttpServlet {
             c.setTargetLevelId(opt(q, "levelId"));
             c.setMentorId(opt(q, "mentorId"));
             if (c.getMentorId() == null || !isEligibleClassMentor(c.getMentorId(), u.getDepartmentId())) {
-                error(q, "Vui lòng chọn mentor hợp lệ cho lớp. Nhân viên được ghi danh sẽ tự động ghép với mentor này.");
+                error(q, "Vui lòng chọn mentor hợp lệ cho lớp. Mentor đứng lớp phải là nhân sự có vai trò Nhân viên (EMPLOYEE).");
                 s.sendRedirect(q.getContextPath() + "/materials?action=classCreate");
                 return;
             }
@@ -553,7 +535,7 @@ public class MaterialServlet extends HttpServlet {
 
     private boolean isEligibleClassMentor(int mentorId, Integer departmentId) {
         for (User mentor : new MentorDAO().getAllMentorsWithSpecialty(departmentId)) {
-            if (mentor.getUserId() == mentorId) return true;
+            if (mentor.getUserId() == mentorId && (mentor.getRoleId() == 4 || "EMPLOYEE".equalsIgnoreCase(mentor.getRoleName()))) return true;
         }
         return false;
     }

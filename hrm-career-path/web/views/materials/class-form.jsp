@@ -117,7 +117,7 @@
                                                                                         style="display:block;color:#666;margin-bottom:6px">Nhân
                                                                                         viên được ghi danh vào lớp sẽ tự
                                                                                         động trở thành mentee của mentor
-                                                                                        này.</small>
+                                                                                        này (chỉ chọn nhân sự có vai trò Nhân viên - Employee).</small>
                                                                                     <select required
                                                                                         class="form-control"
                                                                                         id="mentorId" name="mentorId"
@@ -128,7 +128,7 @@
                                                                                             (User u : mentors) { %>
                                                                                             <option
                                                                                                 value="<%= u.getUserId() %>">
-                                                                                                <%= u.getFullName() %>
+                                                                                                <%= u.getFullName() %><%= (u.getPositionName() != null ? " (" + u.getPositionName() + (u.getLevelName() != null ? " - " + u.getLevelName() : "") + ")" : "") %>
                                                                                             </option>
                                                                                             <% } } %>
                                                                                     </select>

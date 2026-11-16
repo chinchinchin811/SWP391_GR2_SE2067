@@ -28,59 +28,65 @@
                 <div class="alert alert-danger">Lớp chưa có mentor đứng lớp nên chưa thể ghép mentee. <a href="<%= request.getContextPath() %>/materials?action=classDetail&amp;id=<%= trainingClass.getClassId() %>">Chọn mentor tại chi tiết lớp</a>.</div>
                 <% } else { %>
                 <p><b>Mentor đứng lớp:</b> <%= trainingClass.getMentorName() %>. Nhân viên được ghi danh sẽ tự động được ghép làm mentee của mentor này.</p>
-                <p style="font-size:12.5px;color:#555;margin-bottom:14px;line-height:1.6">
-                    Nhân sự có điểm từ 60 trở lên là nhóm được hệ thống gợi ý.
-                    Nút <strong>Chọn gợi ý</strong> sẽ tự động tích chọn nhóm này.
-                </p>
                 <form method="post" action="<%= request.getContextPath() %>/materials">
                     <input type="hidden" name="action" value="enrollSubmit">
                     <input type="hidden" name="classId" value="<%= trainingClass.getClassId() %>">
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-                        <button type="button" class="btn btn-secondary"
-                                onclick="document.querySelectorAll('.smart-recommended').forEach(function (item) {
-                                            item.checked = true;
-                                        })">
-                            ✓ Chọn gợi ý
+                        <button type="button" class="btn btn-secondary" onclick="toggleSelectAll(this)">
+                            Chọn tất cả
                         </button>
-                        <button class="btn btn-primary">Ghi danh đã chọn</button>
+                        <button class="btn btn-primary">Ghi danh nhân sự đã chọn</button>
                     </div>
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th style="width:4%;text-align:center"></th>
-                                <th style="width:22%;text-align:center">Nhân sự</th>
-                                <th style="width:32%;text-align:center">Phòng ban / Vị trí / Cấp bậc</th>
-                                <th style="width:12%;text-align:center">Điểm</th>
-                                <th style="text-align:center">Lý do</th>
+                                <th style="width:5%;text-align:center">
+                                    <input type="checkbox" id="selectAllCheckbox" onclick="toggleAllCheckboxes(this)">
+                                </th>
+                                <th style="width:25%;text-align:left">Nhân sự</th>
+                                <th style="width:25%;text-align:left">Phòng ban</th>
+                                <th style="width:25%;text-align:left">Vị trí</th>
+                                <th style="width:20%;text-align:left">Cấp bậc</th>
                             </tr>
                         </thead>
                         <tbody>
                             <% if (candidates != null && !candidates.isEmpty()) {
-                                for (SmartCandidate c : candidates) {
-                                    boolean recommended = c.getMatchScore() >= 60; %>
-                            <tr style="<%= recommended ? "background:#fafafa" : "" %>">
+                                for (SmartCandidate c : candidates) { %>
+                            <tr>
                                 <td style="text-align:center">
-                                    <input class="<%= recommended ? "smart-recommended" : "" %>"
-                                           type="checkbox" name="userIds" value="<%= c.getUserId() %>">
+                                    <input class="user-select-chk" type="checkbox" name="userIds" value="<%= c.getUserId() %>">
                                 </td>
-                                <td style="text-align:center">
+                                <td>
                                     <div style="font-size:13px;font-weight:600"><%= c.getFullName() %></div>
                                     <div style="font-size:11.5px;color:#666;margin-top:2px"><%= c.getEmail() %></div>
                                 </td>
-                                <td style="text-align:center;font-size:12.5px"><%= c.getDepartmentName() %> / <%= c.getPositionName() %> / <%= c.getLevelName() %></td>
-                                <td style="text-align:center">
-                                    <span class="badge"><%= c.getMatchScore() %><%= recommended ? " ★" : "" %></span>
-                                </td>
-                                <td style="text-align:center;font-size:12.5px;color:#444"><%= c.getMatchReason() %></td>
+                                <td style="font-size:12.5px"><%= c.getDepartmentName() != null ? c.getDepartmentName() : "-" %></td>
+                                <td style="font-size:12.5px"><%= c.getPositionName() != null ? c.getPositionName() : "-" %></td>
+                                <td style="font-size:12.5px"><%= c.getLevelName() != null ? c.getLevelName() : "-" %></td>
                             </tr>
                             <% } } else { %>
                             <tr>
-                                <td colspan="5" style="text-align:center;padding:20px;color:#666;font-size:13px">Không còn nhân sự phù hợp để gợi ý.</td>
+                                <td colspan="5" style="text-align:center;padding:20px;color:#666;font-size:13px">Không còn nhân sự khả dụng để thêm vào lớp.</td>
                             </tr>
                             <% } %>
                         </tbody>
                     </table>
                 </form>
+                <script>
+                    function toggleAllCheckboxes(master) {
+                        document.querySelectorAll('.user-select-chk').forEach(function (item) {
+                            item.checked = master.checked;
+                        });
+                    }
+                    function toggleSelectAll(btn) {
+                        const checkboxes = document.querySelectorAll('.user-select-chk');
+                        const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
+                        checkboxes.forEach(cb => cb.checked = anyUnchecked);
+                        const master = document.getElementById('selectAllCheckbox');
+                        if (master) master.checked = anyUnchecked;
+                        btn.textContent = anyUnchecked ? 'Bỏ chọn tất cả' : 'Chọn tất cả';
+                    }
+                </script>
                 <% } %>
             </div>
         </div>

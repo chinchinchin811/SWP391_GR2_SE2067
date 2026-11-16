@@ -28,11 +28,7 @@ public class MaterialDAO {
             try (ResultSet r = ps.executeQuery()) {
                 while (r.next()) {
                     LearningMaterial m = mapMaterial(r);
-                    if (roleId != null && roleId == 3) {
-                        m.setUserHasAccess(true);
-                    } else if (userId != null) {
-                        m.setUserHasAccess(m.getEnrolledClassCount() > 0);
-                    }
+                    m.setUserHasAccess(true);
                     out.add(m);
                 }
             }
@@ -185,42 +181,8 @@ public class MaterialDAO {
     }
 
     public boolean checkUserCanAccessMaterial(int materialId, int userId, int roleId) {
-        if (roleId == 3) {
-            String managed = "SELECT COUNT(*) FROM Learning_Materials m JOIN Users u ON u.user_id=? "
-                    + "WHERE m.material_id=? AND m.is_deleted=0 AND (m.department_id=u.department_id "
-                    + "OR (?=2 AND m.scope_type='CULTURE' AND m.department_id IS NULL))";
-            try (Connection c = DBContext.getInstance().getConnection(); PreparedStatement p = c.prepareStatement(managed)) {
-                p.setInt(1, userId);
-                p.setInt(2, materialId);
-                p.setInt(3, roleId);
-                try (ResultSet r = p.executeQuery()) {
-                    return r.next() && r.getInt(1) > 0;
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return false;
-            }
-        }
-        // Mentor hoặc Mentee (học viên) chỉ xem được học liệu trong lớp của mình
-        String sql = "SELECT COUNT(*) FROM Class_Materials cm "
-                + "JOIN Training_Classes tc ON tc.class_id = cm.class_id AND tc.is_deleted = 0 "
-                + "WHERE cm.material_id = ? AND ("
-                + "    tc.mentor_id = ? "
-                + "    OR EXISTS (SELECT 1 FROM Class_Enrollments ce WHERE ce.class_id = tc.class_id AND ce.user_id = ?)"
-                + ")";
-        try (Connection c = DBContext.getInstance().getConnection(); PreparedStatement p = c.prepareStatement(sql)) {
-            p.setInt(1, materialId);
-            p.setInt(2, userId);
-            p.setInt(3, userId);
-            try (ResultSet r = p.executeQuery()) {
-                if (r.next()) {
-                    return r.getInt(1) > 0;
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
+        // Kho học liệu mở cho tất cả nhân viên đều có thể xem và học
+        return true;
     }
 
     public List<TrainingClass> getClassesByMaterial(int materialId) {

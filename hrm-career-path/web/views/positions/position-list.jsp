@@ -29,6 +29,10 @@
                 <a href="<%= request.getContextPath() %>/positions?action=create" class="btn btn-primary">
                     <i class="fa-solid fa-plus"></i> Tạo Vị Trí Mới
                 </a>
+            <% } else if (roleId == 3) { %>
+                <a href="<%= request.getContextPath() %>/positions?action=requestCreate" class="btn btn-primary">
+                    <i class="fa-solid fa-paper-plane"></i> Đề Xuất Vị Trí Mới
+                </a>
             <% } %>
         </div>
     </div>
