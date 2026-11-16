@@ -2,12 +2,10 @@ package controller;
 
 import dal.DepartmentDAO;
 import dal.PositionDAO;
-import dal.PositionRequestDAO;
 import dal.TransferRequestDAO;
 import dal.UserDAO;
 import model.Department;
 import model.EmployeeHistory;
-import model.PositionRequest;
 import model.TransferRequest;
 import model.User;
 import jakarta.servlet.ServletException;
@@ -22,7 +20,6 @@ public class DashboardServlet extends HttpServlet {
 
     private final DepartmentDAO departmentDAO = new DepartmentDAO();
     private final PositionDAO positionDAO = new PositionDAO();
-    private final PositionRequestDAO positionRequestDAO = new PositionRequestDAO();
     private final TransferRequestDAO transferRequestDAO = new TransferRequestDAO();
     private final UserDAO userDAO = new UserDAO();
 
@@ -43,16 +40,11 @@ public class DashboardServlet extends HttpServlet {
             int totalDepartments = departmentDAO.countDepartments();
             int totalPositions = positionDAO.countPositions();
             int totalEmployees = userDAO.countEmployees();
-
-            List<PositionRequest> pendingPositionRequests = positionRequestDAO.getAllRequests("PENDING");
-            int countPendingRequests = (pendingPositionRequests != null) ? pendingPositionRequests.size() : 0;
             List<Department> departments = departmentDAO.getAllDepartments();
 
             request.setAttribute("totalDepartments", totalDepartments);
             request.setAttribute("totalPositions", totalPositions);
             request.setAttribute("totalEmployees", totalEmployees);
-            request.setAttribute("countPendingRequests", countPendingRequests);
-            request.setAttribute("pendingPositionRequests", pendingPositionRequests);
             request.setAttribute("departments", departments);
 
         } else if (roleId == 2) {
