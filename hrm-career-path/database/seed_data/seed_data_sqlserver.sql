@@ -1490,7 +1490,65 @@ BEGIN
     (@deck_java, N'Try-catch trong Java dùng để làm gì?', N'Dùng để xử lý exception và tránh làm chương trình kết thúc đột ngột.'),
     (@deck_java, N'ArrayList trong Java là gì?', N'ArrayList là một collection có thể lưu trữ nhiều phần tử và có kích thước có thể thay đổi.'),
     (@deck_java, N'Git dùng để làm gì?', N'Git là hệ thống quản lý phiên bản giúp theo dõi, lưu trữ và quản lý các thay đổi của source code.'),
-    (@deck_java, N'API là gì?', N'API là giao diện cho phép các ứng dụng hoặc hệ thống giao tiếp và trao đổi dữ liệu với nhau.');
+    (@deck_java, N'API là gì?', N'API là giao diện cho phép các ứng dụng hoặc hệ thống giao tiếp và trao đổi dữ liệu với nhau.'),
+    (@deck_java, N'Tại sao nên dùng PreparedStatement thay vì Statement trong JDBC?', N'PreparedStatement biên dịch trước câu lệnh SQL giúp tăng tốc độ thực thi khi tái sử dụng, đồng thời tự động escape tham số giúp phòng chống hoàn toàn tấn công SQL Injection.'),
+    (@deck_java, N'Nguyên lý ACID trong hệ quản trị cơ sở dữ liệu là gì?', N'Atomicity (Nguyên tử - Tất cả hoặc không gì cả), Consistency (Nhất quán - Dữ liệu luôn đúng ràng buộc), Isolation (Cô lập - Các transaction không xen lẫn nhau), Durability (Bền vững - Dữ liệu lưu vĩnh viễn khi commit).'),
+    (@deck_java, N'Sự khác nhau giữa String, StringBuilder và StringBuffer trong Java?', N'String là immutable (bất biến). StringBuilder là mutable và không đồng bộ (nhanh, thích hợp single-thread). StringBuffer là mutable và thread-safe (chậm hơn do có synchronized).'),
+    (@deck_java, N'Khác nhau giữa Overloading và Overriding trong Java?', N'Overloading (nạp chồng): các hàm cùng tên trong 1 class nhưng khác tham số (xảy ra ở Compile-time). Overriding (ghi đè): class con định nghĩa lại hàm của class cha với cùng tên và tham số (xảy ra ở Runtime).'),
+    (@deck_java, N'Cơ chế Garbage Collection (GC) trong Java hoạt động thế nào?', N'GC là tiến trình ngầm tự động giải phóng bộ nhớ heap cho những object không còn bất kỳ tham chiếu (reference) nào trỏ tới, giúp lập trình viên không phải quản lý bộ nhớ thủ công như C/C++.');
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.FlashcardDecks WHERE title = N'Frontend & ReactJS')
+BEGIN
+    DECLARE @pos_fe INT = (SELECT TOP 1 position_id FROM dbo.Positions WHERE position_name LIKE N'%Frontend%');
+    INSERT INTO dbo.FlashcardDecks (title, description, deck_type, position_id) VALUES
+    (N'Frontend & ReactJS', N'Kiến thức chuyên môn Frontend: HTML5, CSS3, JavaScript ES6+, ReactJS và State Management', 'professional', @pos_fe);
+    DECLARE @deck_fe INT = SCOPE_IDENTITY();
+    INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
+    (@deck_fe, N'DOM trong trình duyệt web là gì?', N'DOM (Document Object Model) là giao diện lập trình biểu diễn tài liệu HTML thành dạng cây các node đối tượng, cho phép JavaScript truy cập và chỉnh sửa nội dung, cấu trúc hoặc thuộc tính CSS.'),
+    (@deck_fe, N'Virtual DOM trong React hoạt động như thế nào?', N'Virtual DOM là bản sao ảo của Real DOM trong bộ nhớ. Khi state thay đổi, React chạy thuật toán Diffing để tìm sự khác biệt giữa 2 cây Virtual DOM và chỉ cập nhật những phần thay đổi lên Real DOM (Re-render), tối ưu hiệu năng.'),
+    (@deck_fe, N'Phân biệt let, const và var trong JavaScript?', N'var có function scope và bị hoisting; let và const có block scope và nằm trong Temporal Dead Zone trước khi khai báo. const không thể gán lại giá trị biến (nhưng thuộc tính bên trong object/array vẫn có thể chỉnh sửa).'),
+    (@deck_fe, N'Hook useEffect trong React dùng để làm gì?', N'Dùng để thực thi các side-effects trong function component như: fetch dữ liệu từ API, lắng nghe sự kiện trình duyệt, thao tác trực tiếp DOM hoặc dọn dẹp bộ nhớ (cleanup).'),
+    (@deck_fe, N'Phân biệt Props và State trong React?', N'Props là dữ liệu truyền từ component cha xuống con (bất biến - read-only). State là dữ liệu nội bộ do component tự quản lý và thay đổi được, kích hoạt render lại giao diện khi cập nhật.'),
+    (@deck_fe, N'CSS Flexbox và CSS Grid khác nhau ở điểm cốt lõi nào?', N'Flexbox là mô hình bố cục 1 chiều (theo hàng hoặc cột), lý tưởng sắp xếp thành phần nhỏ. CSS Grid là mô hình 2 chiều (đồng thời hàng và cột), lý tưởng dàn trang tổng thể giao diện.'),
+    (@deck_fe, N'Closure trong JavaScript là gì?', N'Closure là khả năng một hàm con truy cập và ghi nhớ được các biến trong phạm vi (scope) của hàm cha bao bọc nó, ngay cả khi hàm cha đã kết thúc thực thi.'),
+    (@deck_fe, N'Redux hoặc Context API giải quyết bài toán gì?', N'Giải quyết bài toán "Prop Drilling" (phải truyền props qua quá nhiều tầng component trung gian) bằng cách quản lý trạng thái tập trung cho toàn ứng dụng (Global State).'),
+    (@deck_fe, N'Sự khác nhau giữa == và === trong JavaScript?', N'Toán tử == so sánh giá trị sau khi tự động ép kiểu dữ liệu (loose equality). Toán tử === so sánh cả giá trị và kiểu dữ liệu mà không ép kiểu (strict equality).'),
+    (@deck_fe, N'Event Loop trong JavaScript hoạt động như thế nào?', N'Event Loop liên tục theo dõi Call Stack và Task Queue. Khi Call Stack trống, nó lấy các callback/microtask trong Queue đưa vào Call Stack để thực thi, giúp JS xử lý bất đồng bộ dù là single-threaded.');
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.FlashcardDecks WHERE title = N'Kiểm Thử Phần Mềm (QA/QC)')
+BEGIN
+    DECLARE @pos_qa INT = (SELECT TOP 1 position_id FROM dbo.Positions WHERE position_name LIKE N'%QA%' OR position_name LIKE N'%Tester%');
+    INSERT INTO dbo.FlashcardDecks (title, description, deck_type, position_id) VALUES
+    (N'Kiểm Thử Phần Mềm (QA/QC)', N'Nguyên lý kiểm thử ISTQB, phân loại test, kỹ thuật thiết kế test case và quản lý lỗi', 'professional', @pos_qa);
+    DECLARE @deck_qa INT = SCOPE_IDENTITY();
+    INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
+    (@deck_qa, N'Phân biệt QA (Quality Assurance) và QC (Quality Control)?', N'QA tập trung vào quy trình (process-oriented) nhằm phòng ngừa lỗi xảy ra từ sớm. QC tập trung vào sản phẩm (product-oriented) nhằm kiểm tra và tìm lỗi trên phần mềm thực tế.'),
+    (@deck_qa, N'Kiểm thử hộp đen (Black-box Testing) là gì?', N'Là phương pháp kiểm thử chức năng của hệ thống dựa vào tài liệu yêu cầu (spec) mà không cần quan tâm đến cấu trúc mã nguồn bên trong.'),
+    (@deck_qa, N'Phân biệt Regression Testing và Retesting?', N'Retesting là kiểm tra lại chính xác lỗi vừa được sửa xem đã hết chưa. Regression Testing (kiểm thử hồi quy) là kiểm tra toàn diện để đảm bảo việc sửa lỗi không gây ảnh hưởng hay lỗi chéo sang các tính năng khác.'),
+    (@deck_qa, N'Kỹ thuật phân tích giá trị biên (Boundary Value Analysis - BVA) là gì?', N'Là kỹ thuật thiết kế test case tập trung kiểm tra các giá trị ở ranh giới của các phân vùng tương đương (min, min+1, max-1, max), nơi có xác suất phát sinh lỗi lập trình cao nhất.'),
+    (@deck_qa, N'Vòng đời cơ bản của một Defect (Bug Life Cycle) gồm các bước nào?', N'New -> Assigned -> Open/In Progress -> Fixed -> Retest -> Closed (hoặc Reopen nếu lỗi chưa được khắc phục triệt để).'),
+    (@deck_qa, N'Test Case thường bao gồm các thành phần cơ bản nào?', N'Test Case ID, Tiêu đề/Mô tả, Điều kiện tiên quyết (Preconditions), Các bước thực hiện (Test Steps), Dữ liệu kiểm thử (Test Data), Kết quả mong đợi (Expected Result) và Kết quả thực tế (Actual Result).'),
+    (@deck_qa, N'Nghịch lý thuốc trừ sâu (Pesticide Paradox) trong kiểm thử là gì?', N'Nếu các test case giống nhau cứ lặp đi lặp lại mãi thì phần mềm sẽ kháng lại chúng và không tìm thêm được bug mới. Do đó bộ test case cần được cập nhật thường xuyên.'),
+    (@deck_qa, N'Khác biệt giữa Smoke Test và Sanity Test?', N'Smoke Test kiểm tra nhanh các chức năng sống còn cơ bản nhất của bản build mới. Sanity Test kiểm tra sâu vào một tính năng cụ thể hoặc bản sửa lỗi để xác nhận build đủ ổn định.');
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.FlashcardDecks WHERE title = N'DevOps & CI/CD')
+BEGIN
+    DECLARE @pos_devops INT = (SELECT TOP 1 position_id FROM dbo.Positions WHERE position_name LIKE N'%DevOps%');
+    INSERT INTO dbo.FlashcardDecks (title, description, deck_type, position_id) VALUES
+    (N'DevOps & CI/CD', N'Kiến trúc Docker, Containerization, Pipeline CI/CD tự động và triển khai hạ tầng', 'professional', @pos_devops);
+    DECLARE @deck_devops INT = SCOPE_IDENTITY();
+    INSERT INTO dbo.Flashcards (deck_id, question, answer) VALUES
+    (@deck_devops, N'Container khác Máy ảo (Virtual Machine) ở điểm nào?', N'Máy ảo phải kèm theo cả hệ điều hành khách (Guest OS) qua Hypervisor nên nặng và tốn RAM. Container chia sẻ chung nhân (Kernel) của Host OS, chỉ đóng gói ứng dụng và thư viện cần thiết nên cực kỳ nhẹ và khởi động trong vài giây.'),
+    (@deck_devops, N'Khái niệm CI/CD có ý nghĩa gì?', N'CI (Continuous Integration): Tự động tích hợp, build và test mã nguồn khi lập trình viên commit. CD (Continuous Delivery/Deployment): Tự động hóa việc chuẩn bị và đưa ứng dụng lên môi trường thử nghiệm hoặc production.'),
+    (@deck_devops, N'Quan hệ giữa Dockerfile, Image và Container?', N'Dockerfile là file cấu hình kịch bản tạo image -> Docker Image là khuôn mẫu đóng gói bất biến -> Docker Container là một instance sống đang chạy được tạo ra từ Docker Image.'),
+    (@deck_devops, N'Kubernetes (K8s) dùng để làm gì?', N'Kubernetes là nền tảng mã nguồn mở dùng để tự động hóa việc triển khai (deployment), mở rộng (scaling) và quản lý vận hành hàng loạt container ứng dụng.'),
+    (@deck_devops, N'Chiến lược triển khai Blue-Green Deployment là gì?', N'Là kỹ thuật triển khai không gián đoạn (zero-downtime) sử dụng 2 môi trường sản xuất giống hệt nhau (Blue chạy bản cũ, Green chạy bản mới). Sau khi Green được kiểm thử thành công, lưu lượng mạng (router) sẽ được chuyển ngay lập tức từ Blue sang Green.');
 END
 GO
 
@@ -1603,6 +1661,182 @@ BEGIN
         (@technical_question_id,N'Đúng',1,1),(@technical_question_id,N'Sai',0,2);
 END;
 
+-- =========================================================================
+-- ĐỀ 3: Chuyên môn Frontend & JavaScript Hiện Đại
+-- =========================================================================
+IF NOT EXISTS (SELECT 1 FROM dbo.Test_Content WHERE title = N'Đề thi Chuyên môn Frontend & JavaScript Hiện Đại' AND is_deleted = 0)
+BEGIN
+    INSERT INTO dbo.Test_Content (title, prompt, kind, type, department_id, created_by, status, is_deleted)
+    VALUES (N'Đề thi Chuyên môn Frontend & JavaScript Hiện Đại',
+            N'Đánh giá kiến thức chuyên môn về HTML5, CSS3, JavaScript ES6+, ReactJS, DOM và bất đồng bộ dành cho vị trí Frontend Developer.',
+            'quiz', 'department', @technical_department_id, @technical_creator_id, 'ready', 0);
+    
+    DECLARE @c1 INT = SCOPE_IDENTITY();
+    DECLARE @q1 INT;
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c1, N'Khi sử dụng const để khai báo một object trong JavaScript, ta vẫn có thể thay đổi hoặc thêm bớt các thuộc tính (properties) bên trong object đó.', 'true_false');
+    SET @q1 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q1, N'Đúng', 1, 1), (@q1, N'Sai', 0, 2);
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c1, N'Trong ReactJS, Hook nào thường được sử dụng để tối ưu hiệu năng bằng cách ghi nhớ (memoize) một giá trị tính toán tốn kém giữa các lần re-render?', 'single');
+    SET @q1 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q1, N'useMemo', 1, 1),
+    (@q1, N'useEffect', 0, 2),
+    (@q1, N'useCallback', 0, 3),
+    (@q1, N'useRef', 0, 4);
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c1, N'Chọn đúng các cơ chế tạo ra Promise hoặc xử lý bất đồng bộ trong JavaScript:', 'multiple');
+    SET @q1 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q1, N'fetch(''https://api.example.com'')', 1, 1),
+    (@q1, N'Cú pháp async / await', 1, 2),
+    (@q1, N'Promise.all([p1, p2])', 1, 3),
+    (@q1, N'Hàm JSON.stringify(object)', 0, 4),
+    (@q1, N'Hàm Math.random()', 0, 5);
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c1, N'Nhóm thẻ HTML nào sau đây thuộc nhóm ngữ nghĩa (Semantic HTML5) giúp tăng cường khả năng tiếp cận và tối ưu SEO?', 'single');
+    SET @q1 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q1, N'<article>, <section>, <nav>, <header>', 1, 1),
+    (@q1, N'<div>, <span>, <b>, <i>', 0, 2),
+    (@q1, N'<font>, <center>, <marquee>', 0, 3),
+    (@q1, N'<frameset>, <frame>, <noframes>', 0, 4);
+END;
+
+-- =========================================================================
+-- ĐỀ 4: Năng lực Kiểm Thử Phần Mềm & QA/QC
+-- =========================================================================
+IF NOT EXISTS (SELECT 1 FROM dbo.Test_Content WHERE title = N'Đề thi Năng lực Kiểm Thử Phần Mềm & QA/QC' AND is_deleted = 0)
+BEGIN
+    INSERT INTO dbo.Test_Content (title, prompt, kind, type, department_id, created_by, status, is_deleted)
+    VALUES (N'Đề thi Năng lực Kiểm Thử Phần Mềm & QA/QC',
+            N'Kiểm tra hiểu biết về quy trình kiểm thử phần mềm, kỹ thuật thiết kế test case, phân loại kiểm thử và quản lý vòng đời lỗi (Defect Life Cycle).',
+            'quiz', 'department', @technical_department_id, @technical_creator_id, 'ready', 0);
+
+    DECLARE @c2 INT = SCOPE_IDENTITY();
+    DECLARE @q2 INT;
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c2, N'Kiểm thử hộp trắng (White-box Testing) đòi hỏi người kiểm thử phải nắm rõ cấu trúc mã nguồn, luồng điều khiển và thuật toán bên trong của chương trình.', 'true_false');
+    SET @q2 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q2, N'Đúng', 1, 1), (@q2, N'Sai', 0, 2);
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c2, N'Một trường nhập tuổi cho phép các giá trị nguyên từ 18 đến 60. Theo kỹ thuật Phân tích giá trị biên (BVA 2 giá trị), tập giá trị biên cần kiểm thử là:', 'single');
+    SET @q2 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q2, N'17, 18, 60, 61', 1, 1),
+    (@q2, N'10, 20, 50, 70', 0, 2),
+    (@q2, N'18, 19, 59, 60', 0, 3),
+    (@q2, N'0, 18, 60, 100', 0, 4);
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c2, N'Chọn các thông tin quan trọng bắt buộc phải có khi báo cáo một Defect (Bug Report) lên hệ thống quản lý lỗi:', 'multiple');
+    SET @q2 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q2, N'Các bước tái hiện lỗi (Steps to Reproduce)', 1, 1),
+    (@q2, N'Kết quả thực tế (Actual Result)', 1, 2),
+    (@q2, N'Kết quả mong đợi (Expected Result)', 1, 3),
+    (@q2, N'Mức độ nghiêm trọng (Severity) và Môi trường (Environment)', 1, 4),
+    (@q2, N'Mức lương của lập trình viên gây ra lỗi', 0, 5);
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c2, N'Mục đích chính của Kiểm thử hồi quy (Regression Testing) là gì?', 'single');
+    SET @q2 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q2, N'Đảm bảo rằng những thay đổi mới hoặc việc sửa lỗi không gây ảnh hưởng tiêu cực đến các tính năng đang hoạt động tốt', 1, 1),
+    (@q2, N'Kiểm tra xem hệ thống có chịu được tải 100.000 người dùng đồng thời hay không', 0, 2),
+    (@q2, N'Kiểm tra tính thẩm mỹ của giao diện người dùng', 0, 3),
+    (@q2, N'Đo lường thời gian phản hồi của mạng internet', 0, 4);
+END;
+
+-- =========================================================================
+-- ĐỀ 5: Nghiệp vụ & Kỹ năng Bán hàng (Sales)
+-- =========================================================================
+DECLARE @creator_sales_id INT = (SELECT TOP 1 user_id FROM dbo.Users WHERE username = 'manager_sales');
+DECLARE @dept_sales_id INT = (SELECT TOP 1 department_id FROM dbo.Departments WHERE department_name LIKE N'%Kinh Doanh%');
+IF NOT EXISTS (SELECT 1 FROM dbo.Test_Content WHERE title = N'Đề thi Nghiệp vụ & Kỹ năng Bán hàng (Sales)' AND is_deleted = 0)
+BEGIN
+    INSERT INTO dbo.Test_Content (title, prompt, kind, type, department_id, created_by, status, is_deleted)
+    VALUES (N'Đề thi Nghiệp vụ & Kỹ năng Bán hàng (Sales)',
+            N'Đánh giá quy trình tiếp cận khách hàng tiềm năng, kỹ năng xử lý từ chối, đàm phán hợp đồng và chăm sóc khách hàng sau bán.',
+            'quiz', 'department', @dept_sales_id, @creator_sales_id, 'ready', 0);
+
+    DECLARE @c3 INT = SCOPE_IDENTITY();
+    DECLARE @q3 INT;
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c3, N'Mô hình BANT trong sàng lọc khách hàng tiềm năng là viết tắt của Budget (Ngân sách), Authority (Thẩm quyền), Need (Nhu cầu) và Timeline (Tiến độ).', 'true_false');
+    SET @q3 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q3, N'Đúng', 1, 1), (@q3, N'Sai', 0, 2);
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c3, N'Khi khách hàng phản hồi "Giá dịch vụ của công ty bạn đắt hơn đối thủ", nhân viên kinh doanh nên xử lý theo hướng nào đầu tiên?', 'single');
+    SET @q3 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q3, N'Lắng nghe, đồng cảm và đặt câu hỏi để tìm hiểu rõ nhu cầu và tiêu chí so sánh, sau đó nhấn mạnh giá trị vượt trội và ROI mang lại', 1, 1),
+    (@q3, N'Lập tức giảm giá kịch sàn để giữ khách hàng bằng mọi giá', 0, 2),
+    (@q3, N'Chỉ trích dịch vụ của đối thủ là kém chất lượng', 0, 3),
+    (@q3, N'Từ chối phục vụ và chuyển sang khách hàng khác ngay', 0, 4);
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c3, N'Những giai đoạn nào sau đây thuộc Phễu bán hàng (Sales Funnel) tiêu chuẩn?', 'multiple');
+    SET @q3 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q3, N'Nhận biết / Tiềm năng (Lead / Awareness)', 1, 1),
+    (@q3, N'Quan tâm / Đánh giá nhu cầu (Interest / Consideration)', 1, 2),
+    (@q3, N'Đàm phán & Chốt hợp đồng (Negotiation & Closing)', 1, 3),
+    (@q3, N'Chăm sóc sau bán & Tái ký (Retention & Upsell)', 1, 4),
+    (@q3, N'Tự ý hủy hồ sơ khách hàng mà không cần ghi nhận', 0, 5);
+END;
+
+-- =========================================================================
+-- ĐỀ 6: Quy chuẩn An toàn Thông tin & Bảo mật Dữ liệu (Culture / Toàn công ty)
+-- =========================================================================
+IF NOT EXISTS (SELECT 1 FROM dbo.Test_Content WHERE title = N'Đề thi Quy chuẩn An toàn Thông tin & Bảo mật Dữ liệu' AND is_deleted = 0)
+BEGIN
+    INSERT INTO dbo.Test_Content (title, prompt, kind, type, department_id, created_by, status, is_deleted)
+    VALUES (N'Đề thi Quy chuẩn An toàn Thông tin & Bảo mật Dữ liệu',
+            N'Kiểm tra nhận thức an ninh thông tin, phòng ngừa tấn công lừa đảo (Phishing), quy định sử dụng thiết bị và bảo mật dữ liệu doanh nghiệp.',
+            'quiz', 'culture', NULL, @culture_creator_id, 'ready', 0);
+
+    DECLARE @c4 INT = SCOPE_IDENTITY();
+    DECLARE @q4 INT;
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c4, N'Nhân viên được phép ghi mật khẩu tài khoản hệ thống ra giấy nhớ (post-it) dán tại góc màn hình làm việc.', 'true_false');
+    SET @q4 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q4, N'Đúng', 0, 1), (@q4, N'Sai', 1, 2);
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c4, N'Khi nhân viên rời khỏi bàn làm việc dù chỉ trong thời gian ngắn (đi họp, nghỉ trưa), thao tác an toàn bắt buộc phải làm trên máy tính là gì?', 'single');
+    SET @q4 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q4, N'Khóa màn hình máy tính (Windows + L hoặc tương đương)', 1, 1),
+    (@q4, N'Để nguyên màn hình đang mở để tiếp tục tải dữ liệu', 0, 2),
+    (@q4, N'Rút dây nguồn máy tính đột ngột', 0, 3),
+    (@q4, N'Nhờ đồng nghiệp ngồi bên cạnh trông hộ màn hình', 0, 4);
+
+    INSERT INTO dbo.Test_Questions (content_id, prompt, question_type)
+    VALUES (@c4, N'Dấu hiệu nhận biết điển hình của một Email lừa đảo giả mạo (Phishing Email) bao gồm:', 'multiple');
+    SET @q4 = SCOPE_IDENTITY();
+    INSERT INTO dbo.Test_Question_Options (question_id, option_text, is_correct, display_order) VALUES
+    (@q4, N'Địa chỉ người gửi có tên miền lạ hoặc cố tình sai chính tả nhẹ so với tên miền chính thống', 1, 1),
+    (@q4, N'Nội dung mang tính hối thúc, đe dọa khóa tài khoản ngay lập tức nếu không click link đính kèm', 1, 2),
+    (@q4, N'Yêu cầu người dùng cung cấp mật khẩu, mã OTP hoặc thông tin bảo mật nhạy cảm', 1, 3),
+    (@q4, N'Chứa file đính kèm lạ có đuôi mở rộng dạng .exe, .scr, .zip từ nguồn không rõ ràng', 1, 4),
+    (@q4, N'Email thông báo lịch họp nội bộ định kỳ từ phòng Nhân sự có link Google Meet', 0, 5);
+END;
+
 COMMIT;
 GO
 
@@ -1642,6 +1876,73 @@ BEGIN
      N'Để đảm bảo tính toàn vẹn dữ liệu (ACID) khi thực hiện nhiều thao tác INSERT/UPDATE liên quan mật thiết với nhau, kỹ thuật nào bắt buộc phải áp dụng?',
      N'Bật chế độ tự động lưu (AutoCommit = true)', N'Chỉ dùng câu lệnh Statement thông thường', N'Quản lý giao dịch Database Transaction (setAutoCommit(false), commit() và rollback())', N'Bỏ qua việc bắt lỗi ngoại lệ SQLException', 2,
      N'Chính xác! Database Transaction bảo đảm tính nguyên tử (Atomicity) và nhất quán, rollback lại toàn bộ nếu có bất kỳ bước nào thất bại.');
+END
+GO
+
+-- Bổ sung thêm học liệu mẫu: Video, PDF và Slide
+DECLARE @u_manager_it_seed INT = (SELECT TOP 1 user_id FROM dbo.Users WHERE username = 'manager_it');
+IF NOT EXISTS (SELECT 1 FROM dbo.Learning_Materials WHERE title LIKE N'Video Khóa Học: Tối Ưu Truy Vấn CSDL%')
+BEGIN
+    INSERT INTO dbo.Learning_Materials
+    (title, description, material_type, scope_type, department_id, position_id, level_id, material_url, video_url, duration_minutes, status, created_by, created_at)
+    VALUES
+    (N'Video Khóa Học: Tối Ưu Truy Vấn CSDL SQL Server & Indexing Chuyên Sâu',
+     N'Kỹ thuật phân tích Execution Plan, thiết kế Clustered & Non-Clustered Index, tối ưu hóa hiệu năng truy vấn cho ứng dụng doanh nghiệp.',
+     'VIDEO', 'CULTURE', NULL, NULL, NULL,
+     'https://www.youtube.com/watch?v=CcfEjMISKoQ',
+     'https://www.youtube.com/watch?v=CcfEjMISKoQ',
+     20, 1, @u_manager_it_seed, '2026-09-02 09:00:00');
+
+    DECLARE @new_video_id INT = SCOPE_IDENTITY();
+    INSERT INTO dbo.Video_Checkpoints
+    (material_id, stop_time_seconds, question_prompt, option_a, option_b, option_c, option_d, correct_option, explanation)
+    VALUES
+    (@new_video_id, 25,
+     N'Khi truy vấn WHERE trên một cột có mật độ trùng lặp dữ liệu rất thấp (độ phân biệt cao), loại Index nào mang lại hiệu năng tìm kiếm nhanh nhất?',
+     N'Index Unique / Non-Clustered Index có độ chọn lọc cao',
+     N'Table Scan toàn bộ bảng',
+     N'Không dùng Index để tăng tốc độ ghi',
+     N'Tạo Trigger kiểm tra từng dòng',
+     0,
+     N'Chỉ mục (Index) với độ chọn lọc cao (High Selectivity) giúp hệ thống thực hiện Index Seek tìm thẳng tới node dữ liệu thay vì phải quét toàn bộ bảng.'),
+    (@new_video_id, 50,
+     N'Toán tử nào trong Execution Plan chỉ ra rằng câu truy vấn đang phải duyệt qua từng dòng của bảng vì thiếu Index phù hợp?',
+     N'Index Seek',
+     N'Table Scan hoặc Clustered Index Scan',
+     N'Stream Aggregate',
+     N'Compute Scalar',
+     1,
+     N'Table Scan hoặc Clustered Index Scan xảy ra khi SQL Server phải duyệt qua toàn bộ dữ liệu do không tìm thấy chỉ mục thích hợp cho điều kiện lọc.');
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Learning_Materials WHERE title LIKE N'Sổ Tay An Toàn Thông Tin%')
+BEGIN
+    DECLARE @u_manager_it_seed2 INT = (SELECT TOP 1 user_id FROM dbo.Users WHERE username = 'manager_it');
+    INSERT INTO dbo.Learning_Materials
+    (title, description, material_type, scope_type, department_id, position_id, level_id, material_url, video_url, duration_minutes, status, created_by, created_at)
+    VALUES
+    (N'Sổ Tay An Toàn Thông Tin & Bảo Mật Dữ Liệu Doanh Nghiệp',
+     N'Quy chuẩn an toàn an ninh mạng, chính sách bảo vệ dữ liệu nội bộ khách hàng, hướng dẫn quản lý tài khoản xác thực và xử lý sự cố an ninh.',
+     'PDF', 'CULTURE', NULL, NULL, NULL,
+     '/hrm-career-path/assets/docs/an-toan-thong-tin-doanh-nghiep.pdf',
+     '/hrm-career-path/assets/docs/an-toan-thong-tin-doanh-nghiep.pdf',
+     0, 1, @u_manager_it_seed2, '2026-09-02 09:15:00');
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.Learning_Materials WHERE title LIKE N'Slide Đào Tạo: Kỹ Năng Phối Hợp%')
+BEGIN
+    DECLARE @u_manager_it_seed3 INT = (SELECT TOP 1 user_id FROM dbo.Users WHERE username = 'manager_it');
+    INSERT INTO dbo.Learning_Materials
+    (title, description, material_type, scope_type, department_id, position_id, level_id, material_url, video_url, duration_minutes, status, created_by, created_at)
+    VALUES
+    (N'Slide Đào Tạo: Kỹ Năng Phối Hợp & Giao Tiếp Hiệu Quả Trong Dự Án Phần Mềm',
+     N'Bài trình chiếu tổng hợp các phương pháp cộng tác hiệu quả, kỹ năng lắng nghe, phản hồi tích cực và phối hợp giữa Dev - QA - BA trong chu kỳ phát triển.',
+     'SLIDE', 'CULTURE', NULL, NULL, NULL,
+     'https://docs.google.com/presentation/d/1WX3Lvh6A8TqQBmbr4XyRN8SaWSsxIoQo/edit?slide=id.p1#slide=id.p1',
+     'https://docs.google.com/presentation/d/1WX3Lvh6A8TqQBmbr4XyRN8SaWSsxIoQo/edit?slide=id.p1#slide=id.p1',
+     0, 1, @u_manager_it_seed3, '2026-09-02 09:30:00');
 END
 GO
 
@@ -1706,21 +2007,8 @@ END
 GO
 
 -- =======================================================
--- 11. SEED DATA: ĐỀ XUẤT VỊ TRÍ & ĐỀ XUẤT ĐIỀU CHUYỂN
+-- 11. SEED DATA: ĐỀ XUẤT ĐIỀU CHUYỂN
 -- =======================================================
-DECLARE @u_manager_it INT = (SELECT TOP 1 user_id FROM dbo.Users WHERE username = 'manager_it');
-DECLARE @d_it INT = (SELECT TOP 1 department_id FROM dbo.Departments WHERE department_name = N'Kỹ Thuật (IT)');
-DECLARE @u_admin INT = (SELECT TOP 1 user_id FROM dbo.Users WHERE username = 'admin');
-IF @u_manager_it IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.Position_Requests WHERE department_id = @d_it)
-BEGIN
-    INSERT INTO dbo.Position_Requests (manager_id, department_id, position_name, description, reason, status, created_at)
-    VALUES (@u_manager_it, @d_it, N'AI / Machine Learning Engineer', N'Nghiên cứu và triển khai mô hình học máy cho các sản phẩm nội bộ', N'Dự án quý mới cần bổ sung nhân sự chuyên sâu về xử lý dữ liệu và AI phục vụ khách hàng doanh nghiệp.', 'PENDING', DATEADD(DAY, -3, GETDATE()));
-
-    INSERT INTO dbo.Position_Requests (manager_id, department_id, position_name, description, reason, status, decision_note, reviewed_by, created_at, reviewed_at)
-    VALUES (@u_manager_it, @d_it, N'DevOps Engineer', N'Vận hành hệ thống CI/CD, Docker, Kubernetes', N'Đội ngũ backend cần tự động hóa quy trình deploy để giảm tải thời gian release.', 'APPROVED', N'Đồng ý phê duyệt bổ sung vị trí này vào cơ cấu phòng Kỹ thuật.', @u_admin, DATEADD(DAY, -10, GETDATE()), DATEADD(DAY, -8, GETDATE()));
-END
-GO
-
 DECLARE @u_dev_fresher INT = (SELECT TOP 1 user_id FROM dbo.Users WHERE username = 'dev_fresher');
 DECLARE @d_it INT = (SELECT TOP 1 department_id FROM dbo.Departments WHERE department_name = N'Kỹ Thuật (IT)');
 DECLARE @p_java INT = (SELECT TOP 1 position_id FROM dbo.Positions WHERE position_name = N'Java Developer');

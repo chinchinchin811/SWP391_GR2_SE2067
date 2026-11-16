@@ -29,10 +29,6 @@
                 <a href="<%= request.getContextPath() %>/positions?action=create" class="btn btn-primary">
                     <i class="fa-solid fa-plus"></i> Tạo Vị Trí Mới
                 </a>
-            <% } else if (roleId == 3) { %>
-                <a href="<%= request.getContextPath() %>/positions?action=requestCreate" class="btn btn-primary">
-                    <i class="fa-solid fa-paper-plane"></i> Đề Xuất Vị Trí Mới
-                </a>
             <% } %>
         </div>
     </div>
@@ -84,21 +80,23 @@
                 <h2 style="font-size: 16px; margin: 0; color: #1e293b;">
                     Danh Mục Vị Trí Chuyên Môn
                 </h2>
-                <span style="font-size: 13px; color: #64748b; font-weight: 600;">Tổng số: <%= positions != null ? positions.size() : 0 %> vị trí</span>
+                <span style="font-size: 13px; color: #64748b; font-weight: 500;">
+                    Tổng số: <strong><%= positions != null ? positions.size() : 0 %></strong> vị trí
+                </span>
             </div>
             <div class="card-body" style="padding: 0;">
                 <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 13.5px;">
                     <thead>
-                        <tr style="background: #f1f5f9; border-bottom: 1px solid #e2e8f0;">
+                        <tr style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 600; text-align: left;">
                             <th style="padding: 12px 16px; width: 60px;">ID</th>
                             <th style="padding: 12px 16px;">Tên Vị Trí Chuyên Môn</th>
-                            <th style="padding: 12px 16px;">Phòng Ban Phụ Trách</th>
-                            <th style="padding: 12px 16px; text-align: center;">Số Nhân Sự</th>
-                            <th style="padding: 12px 16px; text-align: center; width: 120px;">Trạng Thái</th>
+                            <th style="padding: 12px 16px; width: 180px;">Phòng Ban Phụ Trách</th>
+                            <th style="padding: 12px 16px; text-align: center; width: 130px;">Số Nhân Sự</th>
+                            <th style="padding: 12px 16px; text-align: center; width: 130px;">Trạng Thái</th>
                             <% if (roleId == 1) { %>
-                                <th style="padding: 12px 16px; text-align: center; width: 240px;">Thao Tác</th>
+                            <th style="padding: 12px 16px; text-align: center; width: 220px;">Thao Tác</th>
                             <% } else { %>
-                                <th style="padding: 12px 16px; text-align: center; width: 140px;">Chi Tiết</th>
+                            <th style="padding: 12px 16px; text-align: center; width: 140px;">Chi Tiết</th>
                             <% } %>
                         </tr>
                     </thead>
@@ -107,14 +105,21 @@
                             if (positions != null && !positions.isEmpty()) {
                                 for (Position p : positions) {
                         %>
-                        <tr onclick="handleRowClick(event, '<%= request.getContextPath() %>/positions?action=detail&id=<%= p.getPositionId() %>')" style="border-bottom: 1px solid #f1f5f9; cursor: pointer;" title="Nhấp vào dòng để xem chi tiết vị trí <%= p.getPositionName() %>">
-                            <td style="padding: 14px 16px; font-weight: 700; color: #64748b;">#<%= p.getPositionId() %></td>
+                        <tr onclick="handleRowClick(event, '<%= request.getContextPath() %>/positions?action=detail&id=<%= p.getPositionId() %>')"
+                            style="border-bottom: 1px solid #f1f5f9; cursor: pointer;"
+                            title="Nhấp vào dòng để xem chi tiết vị trí <%= p.getPositionName() %>">
+                            <td style="padding: 14px 16px; font-weight: 700; color: #64748b;">
+                                #<%= p.getPositionId() %>
+                            </td>
                             <td style="padding: 14px 16px;">
-                                <a href="<%= request.getContextPath() %>/positions?action=detail&amp;id=<%= p.getPositionId() %>" style="color: #1e293b; font-weight: 700; font-size: 14.5px; text-decoration: none;">
+                                <a href="<%= request.getContextPath() %>/positions?action=detail&amp;id=<%= p.getPositionId() %>" 
+                                   style="color: #1e293b; font-weight: 700; font-size: 14.5px; text-decoration: none;">
                                     <%= p.getPositionName() %>
                                 </a>
                                 <% if (p.getDescription() != null && !p.getDescription().isEmpty()) { %>
-                                <div style="font-size: 12px; color: #64748b; margin-top: 3px;"><%= p.getDescription() %></div>
+                                <div style="font-size: 12px; color: #64748b; margin-top: 3px;">
+                                    <%= p.getDescription() %>
+                                </div>
                                 <% } %>
                             </td>
                             <td style="padding: 14px 16px;">
@@ -165,7 +170,7 @@
                             } else {
                         %>
                         <tr>
-                            <td colspan="<%= (roleId == 1) ? "6" : "5" %>" style="text-align: center; padding: 30px; color: #94a3b8;">
+                            <td colspan="<%= (roleId == 1) ? 6 : 5 %>" style="text-align: center; padding: 30px; color: #94a3b8;">
                                 <i class="fa-solid fa-inbox" style="font-size: 32px; display: block; margin-bottom: 8px;"></i>
                                 Không tìm thấy vị trí chuyên môn nào phù hợp bộ lọc.
                             </td>

@@ -582,11 +582,6 @@
                     <span>Bộ Thẻ Flashcards Ôn Tập</span>
                 </h1>
             </div>
-            <% if (currentDeck != null && (("culture".equals(currentDeck.getType()) && canManageCulture) || ("professional".equals(currentDeck.getType()) && canManageProfessional))) { %>
-            <a href="<%= request.getContextPath() %>/flashcards?action=manageCards&deckId=<%= currentDeck.getDeckId() %>" class="btn btn-primary" style="font-size: 13px; font-weight: 600; padding: 7px 14px;">
-                <i class="fa-solid fa-list-check"></i> Quản lý câu hỏi &amp; đáp án
-            </a>
-            <% } %>
         </div>
     </div>
 
@@ -633,7 +628,7 @@
                 </div>
             </section>
 
-            <details class="deck-group professional-group" <%= currentDeck != null && "professional".equals(currentDeck.getType()) ? "open" : "" %>>
+            <details class="deck-group professional-group" open>
                 <summary class="deck-group-title">
                     <span>Chuyên môn</span>
                     <% if (canManageProfessional) { %>
@@ -674,12 +669,6 @@
             <div class="deck-heading">
                 <h2><%= html(currentDeck.getTitle()) %></h2>
                 <p><%= currentDeck.getDescription() != null ? html(currentDeck.getDescription()) : "Bộ câu hỏi trắc nghiệm & ôn tập kiến thức" %></p>
-                <% if (("culture".equals(currentDeck.getType()) && canManageCulture)
-                        || ("professional".equals(currentDeck.getType()) && canManageProfessional)) { %>
-                <a class="deck-add-action" style="margin: 0 auto 14px; width: fit-content;" href="<%= request.getContextPath() %>/flashcards?action=manageCards&deckId=<%= currentDeck.getDeckId() %>">
-                    <i class="fa-solid fa-list-check"></i><span>Quản lý câu hỏi và đáp án</span>
-                </a>
-                <% } %>
             </div>
 
             <% if (cards != null && !cards.isEmpty()) { %>
