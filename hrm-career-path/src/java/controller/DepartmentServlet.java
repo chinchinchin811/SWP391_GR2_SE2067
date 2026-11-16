@@ -41,7 +41,8 @@ public class DepartmentServlet extends HttpServlet {
         }
 
         // HR và Manager chỉ được xem danh sách phòng ban, không được tạo/sửa/xóa
-        if ((currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3) && ("create".equals(action) || "edit".equals(action))) {
+        if ((currentUser.getRoleId() == 2 || currentUser.getRoleId() == 3)
+                && ("create".equals(action) || "edit".equals(action))) {
             response.sendRedirect(request.getContextPath() + "/departments");
             return;
         }
@@ -171,7 +172,8 @@ public class DepartmentServlet extends HttpServlet {
             return;
         }
 
-        // Kiểm tra trùng tên phòng ban TRƯỚC KHI insert để tránh nhảy IDENTITY trong SQL Server
+        // Kiểm tra trùng tên phòng ban TRƯỚC KHI insert để tránh nhảy IDENTITY trong
+        // SQL Server
         if (departmentDAO.isDepartmentNameExists(name, null)) {
             request.setAttribute("error", "Tên phòng ban '" + name.trim() + "' đã tồn tại trên hệ thống!");
             Department dept = new Department();
@@ -295,7 +297,8 @@ public class DepartmentServlet extends HttpServlet {
                 }
                 User cand = userDAO.getUserById(mid);
                 if (cand != null && cand.getRoleId() == 1) {
-                    request.getSession().setAttribute("errorMessage", "Quản trị viên (Admin) không thể được bổ nhiệm làm Trưởng phòng!");
+                    request.getSession().setAttribute("errorMessage",
+                            "Quản trị viên (Admin) không thể được bổ nhiệm làm Trưởng phòng!");
                     response.sendRedirect(request.getContextPath() + "/departments");
                     return;
                 }
@@ -303,7 +306,9 @@ public class DepartmentServlet extends HttpServlet {
                 // Kiểm tra người này đã là manager của phòng ban khác chưa
                 Department existingManaging = departmentDAO.getDepartmentByManagerId(mid);
                 if (existingManaging != null && existingManaging.getDepartmentId() != deptId) {
-                    request.getSession().setAttribute("errorMessage", "Nhân sự " + (cand != null ? cand.getFullName() : "") + " hiện đang là Trưởng phòng của " + existingManaging.getDepartmentName() + "!");
+                    request.getSession().setAttribute("errorMessage",
+                            "Nhân sự " + (cand != null ? cand.getFullName() : "") + " hiện đang là Trưởng phòng của "
+                                    + existingManaging.getDepartmentName() + "!");
                     response.sendRedirect(request.getContextPath() + "/departments");
                     return;
                 }
@@ -338,7 +343,8 @@ public class DepartmentServlet extends HttpServlet {
             if (success) {
                 request.getSession().setAttribute("successMessage", "Xóa phòng ban thành công!");
             } else {
-                request.getSession().setAttribute("errorMessage", "Không thể xóa phòng ban này vì đang có ràng buộc dữ liệu!");
+                request.getSession().setAttribute("errorMessage",
+                        "Không thể xóa phòng ban này vì đang có ràng buộc dữ liệu!");
             }
         } catch (NumberFormatException e) {
             e.printStackTrace();
