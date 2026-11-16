@@ -60,12 +60,6 @@
 
                                     </ul>
                                 </li>
-                                <li class="<%= currentURI.contains(" /positions") && "requests" .equals(action)
-                                    ? "active" : "" %>">
-                                    <a href="<%= request.getContextPath() %>/positions?action=requests"><i
-                                            class="fa-solid fa-clipboard-check nav-icon"></i> <span>Duyệt Đề Xuất Vị
-                                            Trí</span></a>
-                                </li>
                                 <li class="<%= currentURI.contains(" /employees") ? "active" : "" %>">
                                     <a href="<%= request.getContextPath() %>/employees"><i
                                             class="fa-solid fa-address-book nav-icon"></i> <span>Danh sách Nhân
@@ -205,24 +199,11 @@
                                                                                 <span>Nhân viên trực thuộc</span></a>
                                                                         </li>
                                                                         <li class="<%= currentURI.contains("
-                                                                            /positions") && !"myRequests".equals(action)
-                                                                            && !"requestCreate".equals(action)
-                                                                            ? "active" : "" %>">
-                                                                        <li class="<%= currentURI.contains("
                                                                             /positions") ? "active" : "" %>">
                                                                             <a
                                                                                 href="<%= request.getContextPath() %>/positions"><i
                                                                                     class="fa-solid fa-id-badge nav-icon"></i>
                                                                                 <span>Vị trí phòng ban</span></a>
-                                                                        </li>
-                                                                        <li class="<%= currentURI.contains("
-                                                                            /positions") && ("myRequests".equals(action)
-                                                                            || "requestCreate" .equals(action))
-                                                                            ? "active" : "" %>">
-                                                                            <a
-                                                                                href="<%= request.getContextPath() %>/positions?action=myRequests"><i
-                                                                                    class="fa-solid fa-paper-plane nav-icon"></i>
-                                                                                <span>Đề Xuất Vị Trí Mới</span></a>
                                                                         </li>
                                                                         <li class="<%= currentURI.contains(" /transfer")
                                                                             && "managerRequests" .equals(action)
