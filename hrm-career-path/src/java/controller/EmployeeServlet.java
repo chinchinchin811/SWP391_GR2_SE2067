@@ -211,6 +211,12 @@ public class EmployeeServlet extends HttpServlet {
         }
         User user = userDAO.getUserById(id);
         if (user != null) {
+            // HR không được phép sửa tài khoản Quản trị viên (Admin)
+            if (user.getRoleId() == 1) {
+                request.getSession().setAttribute("errorMessage", "Bộ phận Nhân sự (HR) không có quyền chỉnh sửa tài khoản Quản trị viên (Admin)!");
+                response.sendRedirect(request.getContextPath() + "/employees");
+                return;
+            }
             request.setAttribute("employee", user);
             loadFormData(request);
             request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
@@ -227,6 +233,11 @@ public class EmployeeServlet extends HttpServlet {
                 int id = Integer.parseInt(idStr);
                 User user = userDAO.getUserById(id);
                 if (user != null) {
+                    if (user.getRoleId() == 1) {
+                        request.getSession().setAttribute("errorMessage", "Quản trị viên (Admin) không thuộc phạm vi phân bổ vị trí nhân sự!");
+                        response.sendRedirect(request.getContextPath() + "/employees");
+                        return;
+                    }
                     request.setAttribute("employee", user);
                     loadFormData(request);
                     request.getRequestDispatcher("/views/employees/employee-assign.jsp").forward(request, response);
@@ -240,8 +251,20 @@ public class EmployeeServlet extends HttpServlet {
 
     private void showDetail(HttpServletRequest request, HttpServletResponse response, int id)
             throws ServletException, IOException {
+        HttpSession session = request.getSession(false);
+        User currentUser = (session != null) ? (User) session.getAttribute("currentUser") : null;
         User user = userDAO.getUserById(id);
         if (user != null) {
+            // Manager (role 3) chỉ được xem nhân sự thuộc phòng ban mình phụ trách
+            if (currentUser != null && currentUser.getRoleId() == 3) {
+                Department myDept = departmentDAO.getDepartmentByManagerId(currentUser.getUserId());
+                if (myDept == null || user.getDepartmentId() == null || myDept.getDepartmentId() != user.getDepartmentId().intValue()) {
+                    request.getSession().setAttribute("errorMessage", "Bạn không có quyền xem thông tin nhân sự ngoài phòng ban phụ trách!");
+                    response.sendRedirect(request.getContextPath() + "/employees");
+                    return;
+                }
+            }
+
             List<EmployeeHistory> historyList = userDAO.getHistoryByUserId(id);
             request.setAttribute("employee", user);
             request.setAttribute("historyList", historyList);
@@ -355,16 +378,13 @@ public class EmployeeServlet extends HttpServlet {
             }
         }
 
-        // 1. RÀNG BUỘC ADMIN: Chỉ duy nhất 1 Admin trên toàn hệ thống
+        // 1. RÀNG BUỘC ADMIN: HR tuyệt đối không được tạo tài khoản Admin
         if (roleId == 1) {
-            if (userDAO.countAdmin() >= 1) {
-                request.setAttribute("error",
-                        "Hệ thống chỉ cho phép duy nhất 1 Quản trị viên (Admin) và tài khoản này đã tồn tại!");
-                request.setAttribute("employee", user);
-                loadFormData(request);
-                request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
-                return;
-            }
+            request.setAttribute("error", "Bộ phận Nhân sự (HR) không có quyền tạo tài khoản Quản trị viên (Admin)!");
+            request.setAttribute("employee", user);
+            loadFormData(request);
+            request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+            return;
         }
 
         // 2. RÀNG BUỘC MANAGER: Bắt buộc chọn phòng ban và mỗi phòng chỉ có tối đa 1 Manager
@@ -473,6 +493,13 @@ public class EmployeeServlet extends HttpServlet {
                 return;
             }
 
+            // HR tuyệt đối không được sửa đổi thông tin của tài khoản Admin
+            if (existingUser.getRoleId() == 1) {
+                request.getSession().setAttribute("errorMessage", "Bộ phận Nhân sự (HR) không có quyền thay đổi thông tin của Quản trị viên (Admin)!");
+                response.sendRedirect(request.getContextPath() + "/employees");
+                return;
+            }
+
             int newRoleId = parseInteger(roleIdStr) != null ? parseInteger(roleIdStr) : 4;
             User user = new User();
             user.setUserId(id);
@@ -525,15 +552,13 @@ public class EmployeeServlet extends HttpServlet {
             user.setRoleId(newRoleId);
             user.setStatus("1".equals(statusStr) || "true".equalsIgnoreCase(statusStr));
 
-            // 1. RÀNG BUỘC ADMIN
+            // 1. RÀNG BUỘC ADMIN: Không cho phép đổi vai trò của bất kỳ ai thành Admin
             if (newRoleId == 1 && existingUser.getRoleId() != 1) {
-                if (userDAO.countAdmin() >= 1) {
-                    request.setAttribute("error", "Hệ thống chỉ cho phép duy nhất 1 Quản trị viên (Admin)!");
-                    request.setAttribute("employee", user);
-                    loadFormData(request);
-                    request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
-                    return;
-                }
+                request.setAttribute("error", "Bộ phận Nhân sự (HR) không có quyền nâng cấp tài khoản thành Quản trị viên (Admin)!");
+                request.setAttribute("employee", user);
+                loadFormData(request);
+                request.getRequestDispatcher("/views/employees/employee-form.jsp").forward(request, response);
+                return;
             }
 
             // 2. RÀNG BUỘC MANAGER
@@ -643,6 +668,12 @@ public class EmployeeServlet extends HttpServlet {
             int userId = Integer.parseInt(idStr);
             User targetUser = userDAO.getUserById(userId);
             if (targetUser == null) {
+                response.sendRedirect(request.getContextPath() + "/employees");
+                return;
+            }
+
+            if (targetUser.getRoleId() == 1) {
+                request.getSession().setAttribute("errorMessage", "Quản trị viên (Admin) không thuộc phạm vi phân bổ vị trí nhân sự!");
                 response.sendRedirect(request.getContextPath() + "/employees");
                 return;
             }

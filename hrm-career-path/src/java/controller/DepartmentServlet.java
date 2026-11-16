@@ -79,16 +79,17 @@ public class DepartmentServlet extends HttpServlet {
             action = "list";
         }
 
-        // Admin (role 1) có toàn quyền tạo/sửa/xóa/gán manager
-        // HR (role 2) có quyền gán/thay đổi/miễn nhiệm Trưởng phòng (assign-manager)
-        if (currentUser.getRoleId() == 2) {
-            if (!"assign-manager".equals(action)) {
+        // Theo sơ đồ Swimlane Luồng 1: Admin chỉ tạo/sửa/xóa phòng ban; duy nhất HR (role 2) phụ trách Bổ nhiệm Trưởng phòng (assign-manager)
+        if ("assign-manager".equals(action)) {
+            if (currentUser.getRoleId() != 2) {
                 response.sendRedirect(request.getContextPath() + "/departments");
                 return;
             }
-        } else if (currentUser.getRoleId() != 1) {
-            response.sendRedirect(request.getContextPath() + "/departments");
-            return;
+        } else {
+            if (currentUser.getRoleId() != 1) {
+                response.sendRedirect(request.getContextPath() + "/departments");
+                return;
+            }
         }
 
         switch (action) {
@@ -286,6 +287,7 @@ public class DepartmentServlet extends HttpServlet {
         try {
             int deptId = Integer.parseInt(deptIdStr);
             Department targetDept = departmentDAO.getDepartmentById(deptId);
+            Integer oldManagerId = (targetDept != null) ? targetDept.getManagerId() : null;
             Integer managerId = null;
             if (managerIdStr != null && !managerIdStr.isEmpty() && !managerIdStr.equals("0")) {
                 int mid = Integer.parseInt(managerIdStr);
@@ -317,6 +319,14 @@ public class DepartmentServlet extends HttpServlet {
 
             boolean success = departmentDAO.assignManager(deptId, managerId);
             if (success) {
+                // Nếu có Trưởng phòng cũ và khác Trưởng phòng mới: hạ quyền Trưởng phòng cũ về Employee (role 4) nếu đang là role 3
+                if (oldManagerId != null && (managerId == null || !oldManagerId.equals(managerId))) {
+                    User oldMgr = userDAO.getUserById(oldManagerId);
+                    if (oldMgr != null && oldMgr.getRoleId() == 3) {
+                        userDAO.updateUserDepartmentAndRole(oldManagerId, oldMgr.getDepartmentId(), 4);
+                    }
+                }
+
                 if (managerId != null) {
                     User cand = userDAO.getUserById(managerId);
                     int targetRole = (cand != null && cand.getRoleId() == 2) ? 2 : 3;

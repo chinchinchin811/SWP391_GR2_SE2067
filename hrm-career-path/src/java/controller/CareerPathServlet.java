@@ -40,9 +40,20 @@ public class CareerPathServlet extends HttpServlet {
         String servletPath = request.getServletPath();
 
         if ("/career-path".equals(servletPath)) {
+            // Theo sơ đồ Swimlane Luồng 5: Lộ trình phát triển dành cho nhân sự (Employee - Role 4)
+            // Admin (Role 1) và HR (Role 2) chỉ làm quản trị tổ chức, không tham gia lộ trình cá nhân
+            if (currentUser.getRoleId() == 1 || currentUser.getRoleId() == 2) {
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
+            }
             showMyCareerPath(request, response, currentUser);
         } else {
-            // /promotions path
+            // /promotions path: Theo sơ đồ Swimlane Luồng 5, chỉ Trưởng phòng (Role 3) mới thẩm định thăng tiến
+            if (currentUser.getRoleId() != 3) {
+                String target = (currentUser.getRoleId() == 4) ? "/career-path" : "/dashboard";
+                response.sendRedirect(request.getContextPath() + target);
+                return;
+            }
             String action = request.getParameter("action");
             if ("review".equals(action)) {
                 showReviewDetail(request, response, currentUser);
@@ -68,8 +79,16 @@ public class CareerPathServlet extends HttpServlet {
         String action = request.getParameter("action");
 
         if ("submitPromotion".equals(action)) {
+            if (currentUser.getRoleId() != 4) {
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
+            }
             submitPromotionRequest(request, response, currentUser);
         } else if ("submitSingleEvidence".equals(action)) {
+            if (currentUser.getRoleId() != 4) {
+                response.sendRedirect(request.getContextPath() + "/dashboard");
+                return;
+            }
             submitSingleEvidence(request, response, currentUser);
         } else if ("verifyEvidence".equals(action)) {
             if (currentUser.getRoleId() != 3) {
@@ -99,6 +118,19 @@ public class CareerPathServlet extends HttpServlet {
     // ==========================================
     // GET HANDLERS
     // ==========================================
+
+    private boolean isRequestInManagerDepartment(PromotionRequest reqItem, User manager) {
+        if (reqItem == null || manager == null) {
+            return false;
+        }
+        Department myDept = departmentDAO.getDepartmentByManagerId(manager.getUserId());
+        if (myDept == null) {
+            return false;
+        }
+        User reqUser = userDAO.getUserById(reqItem.getUserId());
+        return reqUser != null && reqUser.getDepartmentId() != null
+                && reqUser.getDepartmentId().intValue() == myDept.getDepartmentId();
+    }
 
     private void showMyCareerPath(HttpServletRequest request, HttpServletResponse response, User currentUser)
             throws ServletException, IOException {
@@ -200,6 +232,13 @@ public class CareerPathServlet extends HttpServlet {
                 return;
             }
 
+            // Kiểm tra phân quyền: Trưởng phòng chỉ được xem hồ sơ nhân sự thuộc phòng mình phụ trách
+            if (!isRequestInManagerDepartment(reqItem, currentUser)) {
+                request.getSession().setAttribute("errorMessage", "Bạn không có quyền thẩm định hồ sơ thăng tiến ngoài phòng ban phụ trách!");
+                response.sendRedirect(request.getContextPath() + "/promotions");
+                return;
+            }
+
             PositionLevelCriteria criteria = careerProgressionDAO.getCriteriaById(reqItem.getCriteriaId());
             request.setAttribute("criteria", criteria);
             request.setAttribute("requestItem", reqItem);
@@ -276,6 +315,14 @@ public class CareerPathServlet extends HttpServlet {
             int requestId = Integer.parseInt(reqIdStr);
             int requirementId = Integer.parseInt(rIdStr);
 
+            // Bắt buộc xác thực quyền sở hữu hồ sơ: chỉ nhân viên nộp cho chính mình
+            PromotionRequest pr = careerProgressionDAO.getPromotionRequestById(requestId);
+            if (pr == null || pr.getUserId() != currentUser.getUserId()) {
+                request.getSession().setAttribute("errorMessage", "Bạn không có quyền nộp minh chứng cho hồ sơ thăng cấp của người khác!");
+                response.sendRedirect(request.getContextPath() + "/career-path");
+                return;
+            }
+
             if (summary == null || summary.trim().isEmpty()) {
                 request.getSession().setAttribute("errorMessage", "Vui lòng nhập tóm tắt minh chứng!");
                 response.sendRedirect(request.getContextPath() + "/career-path");
@@ -310,6 +357,15 @@ public class CareerPathServlet extends HttpServlet {
         try {
             int evId = Integer.parseInt(evIdStr);
             int reqId = Integer.parseInt(reqIdStr);
+
+            // Kiểm tra phân quyền: Trưởng phòng chỉ được thẩm định minh chứng của nhân viên phòng mình
+            PromotionRequest reqItem = careerProgressionDAO.getPromotionRequestById(reqId);
+            if (!isRequestInManagerDepartment(reqItem, currentUser)) {
+                request.getSession().setAttribute("errorMessage", "Bạn không có quyền thẩm định minh chứng ngoài phòng ban phụ trách!");
+                response.sendRedirect(request.getContextPath() + "/promotions");
+                return;
+            }
+
             boolean verified = "true".equalsIgnoreCase(isVerifiedStr);
             careerProgressionDAO.verifyEvidence(evId, verified, null);
 
@@ -337,6 +393,15 @@ public class CareerPathServlet extends HttpServlet {
         String reqIdStr = request.getParameter("requestId");
         try {
             int reqId = Integer.parseInt(reqIdStr);
+
+            // Kiểm tra phân quyền: Trưởng phòng chỉ được mở lại hồ sơ nhân sự phòng mình
+            PromotionRequest reqItem = careerProgressionDAO.getPromotionRequestById(reqId);
+            if (!isRequestInManagerDepartment(reqItem, currentUser)) {
+                request.getSession().setAttribute("errorMessage", "Bạn không có quyền mở lại hồ sơ thăng tiến ngoài phòng ban phụ trách!");
+                response.sendRedirect(request.getContextPath() + "/promotions");
+                return;
+            }
+
             boolean ok = careerProgressionDAO.reopenPromotionRequest(reqId);
             if (ok) {
                 request.getSession().setAttribute("successMessage", "Đã mở lại hồ sơ để Quản lý tiếp tục thẩm định và chỉnh sửa minh chứng.");
@@ -375,6 +440,15 @@ public class CareerPathServlet extends HttpServlet {
 
         try {
             int reqId = Integer.parseInt(reqIdStr);
+
+            // Kiểm tra phân quyền: Trưởng phòng chỉ được đánh giá nhân sự phòng mình
+            PromotionRequest reqItem = careerProgressionDAO.getPromotionRequestById(reqId);
+            if (!isRequestInManagerDepartment(reqItem, currentUser)) {
+                request.getSession().setAttribute("errorMessage", "Bạn không có quyền đánh giá hồ sơ thăng tiến ngoài phòng ban phụ trách!");
+                response.sendRedirect(request.getContextPath() + "/promotions");
+                return;
+            }
+
             BigDecimal rating = new BigDecimal(ratingStr != null ? ratingStr.trim() : "8.0");
             if (testScoreStr != null && !testScoreStr.trim().isEmpty()) {
                 try {

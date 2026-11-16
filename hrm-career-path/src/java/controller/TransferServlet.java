@@ -80,7 +80,8 @@ public class TransferServlet extends HttpServlet {
                 break;
 
             case "hrRequests":
-                if (currentUser.getRoleId() != 2 && currentUser.getRoleId() != 1) {
+                // Chỉ HR (role 2) mới xử lý và thực thi điều chuyển nhân sự
+                if (currentUser.getRoleId() != 2) {
                     response.sendRedirect(request.getContextPath() + "/transfer");
                     return;
                 }
@@ -200,8 +201,8 @@ public class TransferServlet extends HttpServlet {
         }
 
         if ("hrExecute".equals(action)) {
-            // HR thực thi điều chuyển
-            if (currentUser.getRoleId() != 2 && currentUser.getRoleId() != 1) {
+            // Chỉ duy nhất HR (role 2) thực thi điều chuyển
+            if (currentUser.getRoleId() != 2) {
                 response.sendRedirect(request.getContextPath() + "/transfer");
                 return;
             }

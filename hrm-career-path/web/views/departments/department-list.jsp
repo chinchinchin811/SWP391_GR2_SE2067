@@ -68,8 +68,15 @@
                                 <% boolean hasManager = (d.getManagerName() != null && !d.getManagerName().trim().isEmpty() && !"Chưa bổ nhiệm".equalsIgnoreCase(d.getManagerName().trim())); %>
                                 <% if (hasManager) { %>
                                     <span style="font-weight: 500; color: #1e293b;"><%= d.getManagerName() %></span>
+                                    <% if (roleId == 2) { %>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" style="margin-left: 6px; padding: 2px 7px; font-size: 11px;"
+                                                title="Thay đổi hoặc Miễn nhiệm Trưởng phòng"
+                                                onclick="openAssignModal(<%= d.getDepartmentId() %>, '<%= d.getDepartmentName().replace("'", "\\'") %>', <%= d.getManagerId() != null ? d.getManagerId() : 0 %>)">
+                                            <i class="fa-solid fa-user-pen"></i> Đổi / Miễn nhiệm
+                                        </button>
+                                    <% } %>
                                 <% } else { %>
-                                    <% if (roleId == 1 || roleId == 2) { %>
+                                    <% if (roleId == 2) { %>
                                         <% if (!d.isStatus()) { %>
                                         <button type="button" class="btn btn-sm btn-outline-secondary" style="padding: 3px 10px; font-size: 12px; font-weight: 500; opacity: 0.6; cursor: not-allowed;" disabled title="Phòng ban đang tạm ngưng, vui lòng kích hoạt lại để bổ nhiệm">
                                             <i class="fa-solid fa-ban"></i> Tạm ngưng
@@ -131,8 +138,8 @@
     </div>
 </main>
 
-<%-- MODAL BỔ NHIỆM TRƯỞNG PHÒNG DÀNH CHO HR VÀ ADMIN --%>
-<% if (roleId == 1 || roleId == 2) { %>
+<%-- MODAL BỔ NHIỆM TRƯỞNG PHÒNG DÀNH CHO HR THEO LUỒNG SWIMLANE --%>
+<% if (roleId == 2) { %>
 <div id="assignManagerModalOverlay" style="display: none; position: fixed; inset: 0; z-index: 99999; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); justify-content: center; align-items: center; padding: 20px;">
     <div style="background: #ffffff; width: 540px; max-width: 100%; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: column; overflow: hidden; animation: modalFadeIn 0.2s ease;">
         <div style="padding: 16px 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc;">
