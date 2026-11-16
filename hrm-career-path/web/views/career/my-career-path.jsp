@@ -65,10 +65,7 @@
 <main class="main-content">
     <div class="topbar">
         <div>
-            <h1 style="margin-bottom: 4px;">Lộ Trình Nghề Nghiệp &amp; Thăng Tiến</h1>
-            <p style="color: #64748b; font-size: 13.5px; margin: 0;">
-                Theo dõi tiêu chuẩn năng lực, tích lũy minh chứng thực tế cho từng điều kiện và tự động nâng bậc khi hoàn thành.
-            </p>
+            <h1>Lộ Trình Nghề Nghiệp &amp; Thăng Tiến</h1>
         </div>
         <div>
             <% if (existingRequest != null) { %>
